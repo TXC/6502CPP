@@ -1,19 +1,11 @@
 #pragma once
 
-// With little modification, reliance upon the stdlib can
-// be removed entirely if required.
+#include "Executioner.hpp"
 
-// Ths is required for translation table and disassembler. The table
-// could be implemented straight up as an array, but I used a vector.
 #include <vector>
 #include <map>
 #include <memory>
-
-// These are required for disassembler. If you dont require disassembly
-// then just remove the function.
 #include <string>
-
-#include "Executioner.hpp"
 
 namespace CPU
 {

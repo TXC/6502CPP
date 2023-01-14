@@ -1,9 +1,7 @@
 #include "Processor.hpp"
-#include "Operation.hpp"
 #include "Executioner.hpp"
 #include "Bus.hpp"
 #include "Log.hpp"
-#include "Instructions/AddressMode.hpp"
 #include <stdexcept>
 
 
@@ -248,11 +246,9 @@ namespace CPU
     // Get Starting number of cycles
     //cycles = lookup[opcode].cycles;
 
-    Operation* operation = new Operation(opcode);
-
     // Perform operation incl. fetch of intermmediate
     // data using the required addressing mode
-    uint8_t opcycle = operation->execute(&executioner);
+    uint8_t opcycle = executioner.execute(opcode);
 
     // The addressmode and opcode may have altered the number
     // of cycles this instruction requires before its completed
@@ -270,7 +266,7 @@ namespace CPU
       //disassemble(log_pc);
       fprintf(logfile,
         "%10d:%02d OP: 0x%02X / %s:%s PC:%04X %-13s A:%02X X:%02X Y:%02X %s STKP:%02X\n",
-        clock_count, cycle_count, opcode, operation->getInstructionName(), operation->getAddressModeName(),
+        clock_count, cycle_count, opcode, executioner.getInstructionName(opcode), executioner.getAddressModeName(opcode),
         log_pc, "XXX", a, x, y, GetFlagString().c_str(), stkp);
       fflush(logfile);
     }
@@ -618,18 +614,17 @@ namespace CPU
 
     // Read instruction, and get its readable name
     uint8_t opcode = bus->read(addr, true);
-    Operation* operation = new Operation(opcode);
 
     // Prefix line with instruction address
     std::string sInst = string_format(
       "$%04X: %s ",
-      addr, operation->getInstructionName()
+      addr, executioner.getInstructionName(opcode)
     );
     addr++;
 
     Processor::DISASSEMBLY CurrentDisassembly;
     CurrentDisassembly.OpCode = opcode;
-    CurrentDisassembly.OpCodeString = operation->getInstructionName();
+    CurrentDisassembly.OpCodeString = executioner.getInstructionName(opcode);
     CurrentDisassembly.HighAddress = hi;
     CurrentDisassembly.LowAddress = lo;
 
@@ -639,9 +634,9 @@ namespace CPU
     // 6502 in order to get accurate data as part of the
     // instruction
 
-    IN::AddressMode::AddressingModes addrModes;
+    Executioner::AddressingModes addrModes;
 
-    switch (operation->getAddressMode())
+    switch (executioner.getAddressMode(opcode))
     {
     case addrModes.Accumulator:
       sInst += "AC {ACC}";

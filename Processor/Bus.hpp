@@ -1,7 +1,7 @@
 #pragma once
 
-#include <array>
 #include "Processor.hpp"
+#include <array>
 
 namespace CPU
 {

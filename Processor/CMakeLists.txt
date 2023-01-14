@@ -20,50 +20,7 @@ GET_FILENAME_COMPONENT(PARENT_DIR ../ ABSOLUTE)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PARENT_DIR}/CMake)
 
-SET(Processor_Instructions
-  #${PROJECT_SOURCE_DIR}/Instructions/
-  ${PROJECT_SOURCE_DIR}/Instructions/AddressMode.hpp
-  ${PROJECT_SOURCE_DIR}/Instructions/Instruction.hpp
-  ${PROJECT_SOURCE_DIR}/Instructions/InstructionTable.hpp
-
-  ${PROJECT_SOURCE_DIR}/Instructions/AddressMode.cpp
-  ${PROJECT_SOURCE_DIR}/Instructions/Instruction.cpp
-  ${PROJECT_SOURCE_DIR}/Instructions/InstructionTable.cpp
-)
-
-SET(Processor_Base
-  #${PROJECT_SOURCE_DIR}/
-  ${PROJECT_SOURCE_DIR}/Bus.hpp
-  ${PROJECT_SOURCE_DIR}/Executioner.hpp
-  ${PROJECT_SOURCE_DIR}/Log.hpp
-  ${PROJECT_SOURCE_DIR}/Operation.hpp
-  ${PROJECT_SOURCE_DIR}/Processor.hpp
-  ${PROJECT_SOURCE_DIR}/Singleton.hpp
-  ${PROJECT_SOURCE_DIR}/Types.hpp
-
-  ${PROJECT_SOURCE_DIR}/Bus.cpp
-  ${PROJECT_SOURCE_DIR}/Executioner.cpp
-  ${PROJECT_SOURCE_DIR}/Log.cpp
-  ${PROJECT_SOURCE_DIR}/Operation.cpp
-  ${PROJECT_SOURCE_DIR}/Processor.cpp
-)
-
-ADD_LIBRARY(Processor SHARED
-  ${PROJECT_SOURCE_DIR}/Types.hpp
-  ${PROJECT_SOURCE_DIR}/Processor.hpp
-  ${PROJECT_SOURCE_DIR}/Operation.hpp
-  ${PROJECT_SOURCE_DIR}/Bus.hpp
-  ${PROJECT_SOURCE_DIR}/Executioner.hpp
-  ${PROJECT_SOURCE_DIR}/Singleton.hpp
-  ${PROJECT_SOURCE_DIR}/Log.hpp
-  ${PROJECT_SOURCE_DIR}/Processor.cpp
-  ${PROJECT_SOURCE_DIR}/Operation.cpp
-  ${PROJECT_SOURCE_DIR}/Bus.cpp
-  ${PROJECT_SOURCE_DIR}/Executioner.cpp
-  ${PROJECT_SOURCE_DIR}/Log.cpp
-
-  ${Processor_Instructions}
-)
+ADD_LIBRARY(Processor SHARED)
 
 OPTION(WITH_LOGGING "Enable logging" ${DEBUG})
 OPTION(WITH_ILLEGAL "Enable illegal instructions" ON)
@@ -89,6 +46,21 @@ ENDIF()
 IF(WITH_ILLEGAL)
   ADD_DEFINITIONS(-DILLEGAL)
 ENDIF()
+
+TARGET_SOURCES(Processor
+  PUBLIC  ${PROJECT_SOURCE_DIR}/Bus.hpp
+          ${PROJECT_SOURCE_DIR}/Executioner.hpp
+          ${PROJECT_SOURCE_DIR}/Log.hpp
+          ${PROJECT_SOURCE_DIR}/Processor.hpp
+          ${PROJECT_SOURCE_DIR}/Singleton.hpp
+          ${PROJECT_SOURCE_DIR}/Types.hpp
+
+  PRIVATE ${PROJECT_SOURCE_DIR}/Bus.cpp
+          ${PROJECT_SOURCE_DIR}/Executioner.cpp
+          ${PROJECT_SOURCE_DIR}/Log.cpp
+          ${PROJECT_SOURCE_DIR}/Instructions.cpp
+          ${PROJECT_SOURCE_DIR}/Processor.cpp
+)
 
 TARGET_INCLUDE_DIRECTORIES(Processor PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>

@@ -1,18 +1,59 @@
-#include "InstructionTable.hpp"
-#include "AddressMode.hpp"
-#include "Instruction.hpp"
-#include <map>
-#include <stdexcept>
+#include "Executioner.hpp"
+#include "Processor.hpp"
 
-namespace IN = CPU::Instructions;
 namespace CPU
 {
-  namespace Instructions
+  void Executioner::loadInstructions()
   {
-    InstructionTable::InstructionTable()
-    {
-      IN::AddressMode::AddressingModes addrMode;
-      IN::Instruction::InstructionSet instSet;
+    // Assembles the translation table.
+    // The table is one big initialiser list of initialiser lists...
+
+    using I = CPU::Executioner;
+    AddressingModes addrMode;
+    InstructionSet instSet;
+
+    addressModes = {
+      {addrMode.Accumulator, {&I::ACC, "ACC"}},
+      {addrMode.Implied, {&I::IMP, "IMP"}},
+      {addrMode.Immediate, {&I::IMM, "IMM"}},
+      {addrMode.Relative, {&I::REL, "REL"}},
+      {addrMode.Absolute, {&I::ABS, "ABS"}},
+      {addrMode.AbsoluteX, {&I::ABX, "ABX"}},
+      {addrMode.AbsoluteY, {&I::ABY, "ABY"}},
+      {addrMode.ZeroPage, {&I::ZP0, "ZP0"}},
+      {addrMode.ZeroPageX, {&I::ZPX, "ZPX"}},
+      {addrMode.ZeroPageY, {&I::ZPY, "ZPY"}},
+      {addrMode.Indirect, {&I::IND, "IND"}},
+      {addrMode.IndirectX, {&I::IZX, "IZX"}},
+      {addrMode.IndirectY, {&I::IZY, "IZY"}}
+    };
+    operationCodes = {
+      {instSet.ADC, {&I::ADC, "ADC"}}, {instSet.AND, {&I::AND, "AND"}}, {instSet.ASL, {&I::ASL, "ASL"}}, {instSet.BCC, {&I::BCC, "BCC"}},
+      {instSet.BCS, {&I::BCS, "BCS"}}, {instSet.BEQ, {&I::BEQ, "BEQ"}}, {instSet.BIT, {&I::BIT, "BIT"}}, {instSet.BMI, {&I::BMI, "BMI"}},
+      {instSet.BNE, {&I::BNE, "BNE"}}, {instSet.BPL, {&I::BPL, "BPL"}}, {instSet.BRK, {&I::BRK, "BRK"}}, {instSet.BVC, {&I::BVC, "BVC"}},
+      {instSet.BVS, {&I::BVS, "BVS"}}, {instSet.CLC, {&I::CLC, "CLC"}}, {instSet.CLD, {&I::CLD, "CLD"}}, {instSet.CLI, {&I::CLI, "CLI"}},
+      {instSet.CLV, {&I::CLV, "CLV"}}, {instSet.CMP, {&I::CMP, "CMP"}}, {instSet.CPX, {&I::CPX, "CPX"}}, {instSet.CPY, {&I::CPY, "CPY"}},
+      {instSet.DEC, {&I::DEC, "DEC"}}, {instSet.DEX, {&I::DEX, "DEX"}}, {instSet.DEY, {&I::DEY, "DEY"}}, {instSet.EOR, {&I::EOR, "EOR"}},
+      {instSet.INC, {&I::INC, "INC"}}, {instSet.INX, {&I::INX, "INX"}}, {instSet.INY, {&I::INY, "INY"}}, {instSet.JMP, {&I::JMP, "JMP"}},
+      {instSet.JSR, {&I::JSR, "JSR"}}, {instSet.LDA, {&I::LDA, "LDA"}}, {instSet.LDX, {&I::LDX, "LDX"}}, {instSet.LDY, {&I::LDY, "LDY"}},
+      {instSet.LSR, {&I::LSR, "LSR"}}, {instSet.NOP, {&I::NOP, "NOP"}}, {instSet.ORA, {&I::ORA, "ORA"}}, {instSet.PHA, {&I::PHA, "PHA"}},
+      {instSet.PHP, {&I::PHP, "PHP"}}, {instSet.PLA, {&I::PLA, "PLA"}}, {instSet.PLP, {&I::PLP, "PLP"}}, {instSet.ROL, {&I::ROL, "ROL"}},
+      {instSet.ROR, {&I::ROR, "ROR"}}, {instSet.RTI, {&I::RTI, "RTI"}}, {instSet.RTS, {&I::RTS, "RTS"}}, {instSet.SBC, {&I::SBC, "SBC"}},
+      {instSet.SEC, {&I::SEC, "SEC"}}, {instSet.SED, {&I::SED, "SED"}}, {instSet.SEI, {&I::SEI, "SEI"}}, {instSet.STA, {&I::STA, "STA"}},
+      {instSet.STX, {&I::STX, "STX"}}, {instSet.STY, {&I::STY, "STY"}}, {instSet.TAX, {&I::TAX, "TAX"}}, {instSet.TAY, {&I::TAY, "TAY"}},
+      {instSet.TSX, {&I::TSX, "TSX"}}, {instSet.TXA, {&I::TXA, "TXA"}}, {instSet.TXS, {&I::TXS, "TXS"}}, {instSet.TYA, {&I::TYA, "TYA"}},
+#ifdef ILLEGAL
+      {instSet.ANC, {&I::ANC, "ANC"}}, {instSet.ALR, {&I::ALR, "ALR"}}, {instSet.ANC2, {&I::ANC2, "ANC2"}}, {instSet.ANE, {&I::ANE, "ANE"}},
+      {instSet.ARR, {&I::ARR, "ARR"}}, {instSet.DCP, {&I::DCP, "DCP"}}, {instSet.ISC, {&I::ISC, "ISC"}}, {instSet.LAS, {&I::LAS, "LAS"}},
+      {instSet.LAX, {&I::LAX, "LAX"}}, {instSet.LXA, {&I::LXA, "LXA"}}, {instSet.RLA, {&I::RLA, "RLA"}}, {instSet.RRA, {&I::RRA, "RRA"}},
+      {instSet.SAX, {&I::SAX, "SAX"}}, {instSet.SBX, {&I::SBX, "SBX"}}, {instSet.SHA, {&I::SHA, "SHA"}}, {instSet.SHX, {&I::SHX, "SHX"}},
+      {instSet.SHY, {&I::SHY, "SHY"}}, {instSet.SLO, {&I::SLO, "SLO"}}, {instSet.SRE, {&I::SRE, "SRE"}}, {instSet.TAS, {&I::TAS, "TAS"}},
+      {instSet.USBC, {&I::USBC, "USBC"}}, {instSet.DOP, {&I::DOP, "DOP"}}, {instSet.TOP, {&I::TOP, "TOP"}}, {instSet.JAM, {&I::JAM, "JAM"}},
+#else
+      {instSet.XXX, {&I::XXX, "XXX"}}
+#endif
+    };
+
 
 #ifndef ILLEGAL
       for (uint8_t z = 0x00; z <= 0xFF; z++)
@@ -460,34 +501,5 @@ namespace CPU
 #pragma endregion Instructions 0xF
 #pragma endregion Instructions
 
-    };
-
-    uint8_t InstructionTable::exists(uint8_t opcode)
-    {
-      return !(lookup.find(opcode) == lookup.end());
-    }
-
-    InstructionTable::OperationType InstructionTable::get(uint8_t opcode)
-    {
-      if (exists(opcode) == false) {
-        throw std::invalid_argument("Invalid operation");
-      }
-
-      return lookup[opcode];
-    }
-    InstructionTable::ExpandedOperationType InstructionTable::getExpanded(uint8_t opcode)
-    {
-      IN::AddressMode* addressMode = &IN::AddressMode::getInstance();
-      IN::Instruction* instruction = &IN::Instruction::getInstance();
-      //IN::InstructionTable *tableObj = &IN::InstructionTable::getInstance();
-
-      OperationType operation = get(opcode);
-      ExpandedOperationType op;
-      op.cycles = operation.cycles;
-      op.addrmode = addressMode->get(operation.addrmode);
-      op.operate = instruction->get(operation.operate);
-
-      return op;
-    }
   };
 };

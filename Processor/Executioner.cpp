@@ -2,22 +2,15 @@
 #include "Types.hpp"
 #include "Processor.hpp"
 #include "Log.hpp"
-#include "Instructions/AddressMode.hpp"
-#include "Instructions/Instruction.hpp"
-#include "Instructions/InstructionTable.hpp"
 #include <iostream>
 #include <vector>
 #include <stdexcept>
 
 
-namespace IN = CPU::Instructions;
 namespace CPU
 {
   Executioner::Executioner()
   {
-    // Assembles the translation table.
-    // The table is one big initialiser list of initialiser lists...
-
     opcode = &cpu->opcode;
     cycle_count = &cpu->cycle_count;
     clock_count = &cpu->clock_count;
@@ -45,24 +38,56 @@ namespace CPU
     fetched = 0x00;
   }
 
-  uint8_t Executioner::getAddressMode()
+  uint8_t Executioner::execute()
   {
-    IN::InstructionTable* instTable = &IN::InstructionTable::getInstance();
-    auto expOp = instTable->get(cpu->opcode);
-    return expOp.addrmode;
+    auto currentOp = lookup[cpu->opcode];
+
+    uint8_t addressModeCycles = (this->*addressModes[currentOp.addrmode].op)();
+    uint8_t operationCycles = (this->*operationCodes[currentOp.operate].op)();
+    return (currentOp.cycles + (addressModeCycles & operationCycles));
   }
 
-  std::string Executioner::getInstructionName()
+  uint8_t Executioner::execute(uint8_t op)
   {
-    IN::InstructionTable* instTable = &IN::InstructionTable::getInstance();
-    auto expOp = instTable->getExpanded(cpu->opcode);
-    return expOp.operate.name.c_str();
+    auto currentOp = lookup[op];
+
+    uint8_t addressModeCycles = (this->*addressModes[currentOp.addrmode].op)();
+    uint8_t operationCycles = (this->*operationCodes[currentOp.operate].op)();
+    return (currentOp.cycles + (addressModeCycles & operationCycles));
   }
-  std::string Executioner::getAddressModeName()
+
+  uint8_t Executioner::getAddressMode()
   {
-    IN::InstructionTable* instTable = &IN::InstructionTable::getInstance();
-    auto expOp = instTable->getExpanded(cpu->opcode);
-    return expOp.addrmode.name.c_str();
+    return lookup[cpu->opcode].addrmode;
+  }
+
+  uint8_t Executioner::getAddressMode(uint8_t op)
+  {
+    return lookup[op].addrmode;
+  }
+
+  const char* Executioner::getInstructionName()
+  {
+    uint8_t instSet = lookup[cpu->opcode].operate;
+    return operationCodes[instSet].name.c_str();
+  }
+
+  const char* Executioner::getInstructionName(uint8_t op)
+  {
+    uint8_t instSet = lookup[op].operate;
+    return operationCodes[instSet].name.c_str();
+  }
+
+  const char* Executioner::getAddressModeName()
+  {
+    uint8_t addrMode = lookup[cpu->opcode].addrmode;
+    return addressModes[addrMode].name.c_str();
+  }
+
+  const char* Executioner::getAddressModeName(uint8_t op)
+  {
+    uint8_t addrMode = lookup[op].addrmode;
+    return addressModes[addrMode].name.c_str();
   }
 
   // This function sources the data used by the instruction into 
@@ -79,22 +104,18 @@ namespace CPU
   // function. It also returns it for convenience.
   uint8_t Executioner::fetch()
   {
-    IN::AddressMode::AddressingModes a;
+    AddressingModes a;
     std::vector<uint8_t> ignoredAddrModes;
     ignoredAddrModes.push_back(a.Accumulator);
     ignoredAddrModes.push_back(a.Implied);
 
-    IN::InstructionTable* instTable = &IN::InstructionTable::getInstance();
-    auto currOp = instTable->get(cpu->opcode);
-    if (!in_array<uint8_t>(currOp.addrmode, ignoredAddrModes))
-      //if (!in_array<uint8_t>(getAddressMode(), ignoredAddrModes))
+    if (!in_array<uint8_t>(getAddressMode(), ignoredAddrModes))
     {
       fetched = cpu->readMemory(addr_abs);
 #ifdef DEBUG
-      auto expOp = instTable->getExpanded(cpu->opcode)
       log(string_format(
         "%s: FETCHED 0x%04X FROM $%04X ",
-        expOp.operate.name.c_str(), fetched, addr_abs
+        getInstructionName(), fetched, addr_abs
       ));
 #endif
     }
@@ -916,8 +937,7 @@ namespace CPU
   {
     fetch();
 
-    IN::AddressMode::AddressingModes addrMode;
-
+    AddressingModes addrMode;
     if (getAddressMode() == addrMode.Accumulator)
     {
       cpu->incrementCycleCount();
@@ -1138,7 +1158,7 @@ namespace CPU
   {
     fetch();
 
-    IN::AddressMode::AddressingModes addrMode;
+    AddressingModes addrMode;
 
     cpu->writeMemory(addr_abs, fetched & 0x00FF);
     temp = fetched - 1;
@@ -1224,7 +1244,7 @@ namespace CPU
   {
     fetch();
 
-    IN::AddressMode::AddressingModes addrMode;
+    AddressingModes addrMode;
 
     cpu->writeMemory(addr_abs, fetched & 0x00FF);
     temp = fetched + 1;
@@ -1389,7 +1409,7 @@ namespace CPU
   {
     fetch();
 
-    IN::AddressMode::AddressingModes addrMode;
+    AddressingModes addrMode;
 
     if (getAddressMode() == addrMode.Accumulator)
     {
@@ -1520,7 +1540,7 @@ namespace CPU
   {
     fetch();
 
-    IN::AddressMode::AddressingModes addrMode;
+    AddressingModes addrMode;
 
     if (getAddressMode() == addrMode.Accumulator)
     {
@@ -1561,7 +1581,7 @@ namespace CPU
   {
     fetch();
 
-    IN::AddressMode::AddressingModes addrMode;
+    AddressingModes addrMode;
 
     if (getAddressMode() == addrMode.Accumulator)
     {
@@ -1692,7 +1712,7 @@ namespace CPU
   {
     cpu->writeMemory(addr_abs, cpu->getRegister(cpu->AC));
 
-    IN::AddressMode::AddressingModes addrMode;
+    AddressingModes addrMode;
 
     std::vector<uint8_t> affectedAddrModes;
     affectedAddrModes.push_back(addrMode.AbsoluteX);
@@ -1909,7 +1929,7 @@ namespace CPU
   {
     fetch();
 
-    IN::AddressMode::AddressingModes addrMode;
+    AddressingModes addrMode;
 
     uint8_t value = cpu->getRegister(cpu->AC);
     temp = (cpu->GetFlag(cpu->C) << 7) | ((value & fetched) >> 1);
@@ -2157,7 +2177,7 @@ namespace CPU
   {
     fetch();
 
-    IN::AddressMode::AddressingModes addrMode;
+    AddressingModes addrMode;
 
     cpu->SetFlag(cpu->C, fetched & 0x0001);
     temp = fetched >> 1;
