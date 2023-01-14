@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include <stdexcept>
-//#include <cstdio>
+#include <vector>
 
 namespace CPU
 {
@@ -13,15 +13,15 @@ namespace CPU
   template <typename T>
   bool in_array(const T& needle, const std::vector<T>& haystack)
   {
-    int max = haystack.size();
+    size_t max = haystack.size();
     if (max == 0)
     {
       return false;
     }
 
-    for (int i = 0; i < max; i++)
+    for (auto i : haystack)
     {
-      if (haystack[i] == needle)
+      if (i == needle)
       {
         return true;
       }
