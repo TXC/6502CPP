@@ -1,5 +1,5 @@
-#include <cstdio>
 #include "Log.hpp"
+#include <cstdio>
 
 #ifndef LOGFILE
 #define LOGFILE "ProcessorLog.txt"
@@ -13,19 +13,19 @@
 
 namespace CPU
 {
-    void log(std::string text)
+  void log(std::string text)
+  {
+#ifdef LOGMODE
+    if (logfile == nullptr)
     {
-    #ifdef LOGMODE
-        if (logfile == nullptr)
-        {
-            logfile = fopen(LOGFILE, "a+");
-        }
-        if (logfile != nullptr)
-        {
-            fprintf(logfile, "%s\n", text.c_str());
-            fflush(logfile);
-        }
-    #endif
+      logfile = fopen(LOGFILE, "a+");
     }
+    if (logfile != nullptr)
+    {
+      fprintf(logfile, "%s\n", text.c_str());
+      fflush(logfile);
+    }
+#endif
+  }
 
 };

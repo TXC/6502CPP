@@ -1,35 +1,35 @@
-#include <iostream>
-#include <vector>
-#include <stdexcept>
-#include "Types.hpp"
 #include "Executioner.hpp"
+#include "Types.hpp"
 #include "Processor.hpp"
 #include "Log.hpp"
-
 #include "Instructions/AddressMode.hpp"
 #include "Instructions/Instruction.hpp"
 #include "Instructions/InstructionTable.hpp"
+#include <iostream>
+#include <vector>
+#include <stdexcept>
+
 
 namespace IN = CPU::Instructions;
 namespace CPU
 {
-Executioner::Executioner()
-{
+  Executioner::Executioner()
+  {
     // Assembles the translation table.
     // The table is one big initialiser list of initialiser lists...
 
-    opcode           = &cpu->opcode;
-    cycle_count      = &cpu->cycle_count;
-    clock_count      = &cpu->clock_count;
-}
+    opcode = &cpu->opcode;
+    cycle_count = &cpu->cycle_count;
+    clock_count = &cpu->clock_count;
+  }
 
-Executioner::~Executioner()
-{
+  Executioner::~Executioner()
+  {
     // Destructor - has nothing to do
-}
+  }
 
-void Executioner::reset()
-{
+  void Executioner::reset()
+  {
     // Get address to set program counter to
     addr_abs = 0xFFFC;
     uint16_t lo = cpu->readMemory(addr_abs + 0);
@@ -43,39 +43,65 @@ void Executioner::reset()
     addr_rel = 0x0000;
     addr_abs = 0x0000;
     fetched = 0x00;
-}
+  }
 
-// This function sources the data used by the instruction into 
-// a convenient numeric variable. Some instructions dont have to 
-// fetch data as the source is implied by the instruction. For example
-// "INX" increments the X register. There is no additional data
-// required. For all other addressing modes, the data resides at 
-// the location held within addr_abs, so it is read from there. 
-// Immediate adress mode exploits this slightly, as that has
-// set addr_abs = pc + 1, so it fetches the data from the
-// next byte for example "LDA $FF" just loads the accumulator with
-// 256, i.e. no far reaching memory fetch is required. "fetched"
-// is a variable global to the CPU, and is set by calling this 
-// function. It also returns it for convenience.
-uint8_t Executioner::fetch()
-{
+  uint8_t Executioner::getAddressMode()
+  {
+    IN::InstructionTable* instTable = &IN::InstructionTable::getInstance();
+    auto expOp = instTable->get(cpu->opcode);
+    return expOp.addrmode;
+  }
+
+  std::string Executioner::getInstructionName()
+  {
+    IN::InstructionTable* instTable = &IN::InstructionTable::getInstance();
+    auto expOp = instTable->getExpanded(cpu->opcode);
+    return expOp.operate.name.c_str();
+  }
+  std::string Executioner::getAddressModeName()
+  {
+    IN::InstructionTable* instTable = &IN::InstructionTable::getInstance();
+    auto expOp = instTable->getExpanded(cpu->opcode);
+    return expOp.addrmode.name.c_str();
+  }
+
+  // This function sources the data used by the instruction into 
+  // a convenient numeric variable. Some instructions dont have to 
+  // fetch data as the source is implied by the instruction. For example
+  // "INX" increments the X register. There is no additional data
+  // required. For all other addressing modes, the data resides at 
+  // the location held within addr_abs, so it is read from there. 
+  // Immediate adress mode exploits this slightly, as that has
+  // set addr_abs = pc + 1, so it fetches the data from the
+  // next byte for example "LDA $FF" just loads the accumulator with
+  // 256, i.e. no far reaching memory fetch is required. "fetched"
+  // is a variable global to the CPU, and is set by calling this 
+  // function. It also returns it for convenience.
+  uint8_t Executioner::fetch()
+  {
     IN::AddressMode::AddressingModes a;
     std::vector<uint8_t> ignoredAddrModes;
     ignoredAddrModes.push_back(a.Accumulator);
     ignoredAddrModes.push_back(a.Implied);
 
-    if (!in_array<uint8_t>(getAddressMode(), ignoredAddrModes))
+    IN::InstructionTable* instTable = &IN::InstructionTable::getInstance();
+    auto currOp = instTable->get(cpu->opcode);
+    if (!in_array<uint8_t>(currOp.addrmode, ignoredAddrModes))
+      //if (!in_array<uint8_t>(getAddressMode(), ignoredAddrModes))
     {
-        fetched = cpu->readMemory(addr_abs);
-        log(string_format(
-            "%s: FETCHED 0x%04X FROM $%04X ",
-            getInstructionName(), fetched, addr_abs
-        ));
+      fetched = cpu->readMemory(addr_abs);
+#ifdef DEBUG
+      auto expOp = instTable->getExpanded(cpu->opcode)
+      log(string_format(
+        "%s: FETCHED 0x%04X FROM $%04X ",
+        expOp.operate.name.c_str(), fetched, addr_abs
+      ));
+#endif
     }
     return fetched;
-}
+  }
 
-///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
 #pragma region ADDRESSING MODES
 // ADDRESSING MODES
 
@@ -91,49 +117,49 @@ uint8_t Executioner::fetch()
 
 // Address Mode: Accumulator
 // Operand is always AC
-uint8_t Executioner::ACC()
-{
+  uint8_t Executioner::ACC()
+  {
     //cpu->readMemory(pc);
     //cpu->incrementCycleCount();
     fetched = cpu->getRegister(cpu->AC);
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - a: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), cpu->getRegister(cpu->AC), cpu->getProgramCounter()
+      "OP %s : %s - a: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), cpu->getRegister(cpu->AC), cpu->getProgramCounter()
     ));
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Implied
-// There is no additional data required for this instruction. The instruction
-// does something very simple like like sets a status bit. However, we will
-// target the accumulator, for instructions like PHA
-uint8_t Executioner::IMP()
-{
+  // Address Mode: Implied
+  // There is no additional data required for this instruction. The instruction
+  // does something very simple like like sets a status bit. However, we will
+  // target the accumulator, for instructions like PHA
+  uint8_t Executioner::IMP()
+  {
     //fetched = a;
     //cpu->incrementCycleCount();
     fetched = 0x0;
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - a: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), fetched, cpu->getProgramCounter()
+      "OP %s : %s - a: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), fetched, cpu->getProgramCounter()
     ));
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Immediate
-// The instruction expects the next byte to be used as a value, so we'll prep
-// the read address to point to the next byte
-uint8_t Executioner::IMM()
-{
+  // Address Mode: Immediate
+  // The instruction expects the next byte to be used as a value, so we'll prep
+  // the read address to point to the next byte
+  uint8_t Executioner::IMM()
+  {
     uint16_t pc = cpu->getProgramCounter();
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, pc
+      "OP %s : %s - addr_abs: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, pc
     ));
 #endif
     addr_abs = pc;
@@ -141,24 +167,24 @@ uint8_t Executioner::IMM()
     //cpu->incrementCycleCount();
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, pc
+      "OP %s : %s - addr_abs: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, pc
     ));
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Zero Page
-// To save program bytes, zero page addressing allows you to absolutely address
-// a location in first 0xFF bytes of address range. Clearly this only requires
-// one byte instead of the usual two.
-uint8_t Executioner::ZP0()
-{
+  // Address Mode: Zero Page
+  // To save program bytes, zero page addressing allows you to absolutely address
+  // a location in first 0xFF bytes of address range. Clearly this only requires
+  // one byte instead of the usual two.
+  uint8_t Executioner::ZP0()
+  {
     uint16_t pc = cpu->getProgramCounter();
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, pc
+      "OP %s : %s - addr_abs: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, pc
     ));
 #endif
 
@@ -169,25 +195,25 @@ uint8_t Executioner::ZP0()
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, pc
+      "OP %s : %s - addr_abs: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, pc
     ));
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Zero Page with X Offset
-// Fundamentally the same as Zero Page addressing, but the contents of the X Register
-// is added to the supplied single byte address. This is useful for iterating through
-// ranges within the first page.
-uint8_t Executioner::ZPX()
-{
+  // Address Mode: Zero Page with X Offset
+  // Fundamentally the same as Zero Page addressing, but the contents of the X Register
+  // is added to the supplied single byte address. This is useful for iterating through
+  // ranges within the first page.
+  uint8_t Executioner::ZPX()
+  {
     uint16_t pc = cpu->getProgramCounter();
     uint8_t x = cpu->getRegister(cpu->X);
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, pc
+      "OP %s : %s - addr_abs: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, pc
     ));
 #endif
 
@@ -202,23 +228,23 @@ uint8_t Executioner::ZPX()
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - x: %02X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, x, pc
+      "OP %s : %s - addr_abs: %04X - x: %02X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, x, pc
     ));
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Zero Page with Y Offset
-// Same as above but uses Y Register for offset
-uint8_t Executioner::ZPY()
-{
+  // Address Mode: Zero Page with Y Offset
+  // Same as above but uses Y Register for offset
+  uint8_t Executioner::ZPY()
+  {
     uint16_t pc = cpu->getProgramCounter();
     uint8_t y = cpu->getRegister(cpu->Y);
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, pc
+      "OP %s : %s - addr_abs: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, pc
     ));
 #endif
     addr_abs = cpu->readMemory(pc);
@@ -232,24 +258,24 @@ uint8_t Executioner::ZPY()
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - Y: %02X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, y, pc
+      "OP %s : %s - addr_abs: %04X - Y: %02X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, y, pc
     ));
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Relative
-// This address mode is exclusive to branch instructions. The address
-// must reside within -128 to +127 of the branch instruction, i.e.
-// you cant directly branch to any address in the addressable range.
-uint8_t Executioner::REL()
-{
+  // Address Mode: Relative
+  // This address mode is exclusive to branch instructions. The address
+  // must reside within -128 to +127 of the branch instruction, i.e.
+  // you cant directly branch to any address in the addressable range.
+  uint8_t Executioner::REL()
+  {
     uint16_t pc = cpu->getProgramCounter();
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_rel: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_rel, pc
+      "OP %s : %s - addr_rel: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_rel, pc
     ));
 #endif
 
@@ -262,41 +288,41 @@ uint8_t Executioner::REL()
 
     if (addr_rel & 0x80)
     {
-        addr_rel |= 0xFF00;
+      addr_rel |= 0xFF00;
 #ifdef DEBUG
-        log(string_format(
-            "OP %s : %s - addr_rel (Page Boundary): %04X - PC: %04X",
-            getInstructionName(), getAddressModeName(), addr_rel, pc
-        ));
+      log(string_format(
+        "OP %s : %s - addr_rel (Page Boundary): %04X - PC: %04X",
+        getInstructionName(), getAddressModeName(), addr_rel, pc
+      ));
 #endif
 
-        cpu->incrementProgramCounter();
+      cpu->incrementProgramCounter();
 
 #ifdef DEBUG
-        log(string_format(
-            "OP %s : %s - addr_rel (Page Boundary): %04X - PC: %04X",
-            getInstructionName(), getAddressModeName(), addr_rel, pc
-        ));
+      log(string_format(
+        "OP %s : %s - addr_rel (Page Boundary): %04X - PC: %04X",
+        getInstructionName(), getAddressModeName(), addr_rel, pc
+      ));
 #endif
     }
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_rel: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_rel, pc
+      "OP %s : %s - addr_rel: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_rel, pc
     ));
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Absolute 
-// A full 16-bit address is loaded and used
-uint8_t Executioner::ABS()
-{
+  // Address Mode: Absolute 
+  // A full 16-bit address is loaded and used
+  uint8_t Executioner::ABS()
+  {
     uint16_t pc = cpu->getProgramCounter();
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_rel: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_rel, pc
+      "OP %s : %s - addr_rel: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_rel, pc
     ));
 #endif
 
@@ -310,25 +336,25 @@ uint8_t Executioner::ABS()
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, hi, lo, pc
+      "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, hi, lo, pc
     ));
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Absolute with X Offset
-// Fundamentally the same as absolute addressing, but the contents of the X Register
-// is added to the supplied two byte address. If the resulting address changes
-// the page, an additional clock cycle is required
-uint8_t Executioner::ABX()
-{
+  // Address Mode: Absolute with X Offset
+  // Fundamentally the same as absolute addressing, but the contents of the X Register
+  // is added to the supplied two byte address. If the resulting address changes
+  // the page, an additional clock cycle is required
+  uint8_t Executioner::ABX()
+  {
     uint16_t pc = cpu->getProgramCounter();
     uint8_t x = cpu->getRegister(cpu->X);
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_rel: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_rel, pc
+      "OP %s : %s - addr_rel: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_rel, pc
     ));
 #endif
     uint16_t lo = cpu->readMemory(pc);
@@ -342,8 +368,8 @@ uint8_t Executioner::ABX()
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - X: %02X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, hi, lo, x, pc
+      "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - X: %02X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, hi, lo, x, pc
     ));
 #endif
 
@@ -355,41 +381,41 @@ uint8_t Executioner::ABX()
     ignoredOpCodes.push_back(0x3E);
     ignoredOpCodes.push_back(0x7E);
     ignoredOpCodes.push_back(0x9D);
-    
+
     if ((addr_abs & 0xFF00) != (hi << 8) && !in_array<uint8_t>(*opcode, ignoredOpCodes))
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
 #ifdef DEBUG
-        log(string_format(
-            "OP %s : %s - addr_abs (Page Boundary): %04X - HI: %02X- LO: %02X - X: %02X - PC: %04X",
-            getInstructionName(), getAddressModeName(), addr_abs, hi, lo, x, pc
-        ));
+      log(string_format(
+        "OP %s : %s - addr_abs (Page Boundary): %04X - HI: %02X- LO: %02X - X: %02X - PC: %04X",
+        getInstructionName(), getAddressModeName(), addr_abs, hi, lo, x, pc
+      ));
 #endif
     }
 #ifdef LOGMODE
     else if (in_array<uint8_t>(*opcode, ignoredOpCodes))
     {
-        log(string_format(
-            "OP %s : %s - Caught ignored OPCode",
-            getInstructionName(), getAddressModeName()
-        ));
+      log(string_format(
+        "OP %s : %s - Caught ignored OPCode",
+        getInstructionName(), getAddressModeName()
+      ));
     }
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Absolute with Y Offset
-// Fundamentally the same as absolute addressing, but the contents of the Y Register
-// is added to the supplied two byte address. If the resulting address changes
-// the page, an additional clock cycle is required
-uint8_t Executioner::ABY()
-{
+  // Address Mode: Absolute with Y Offset
+  // Fundamentally the same as absolute addressing, but the contents of the Y Register
+  // is added to the supplied two byte address. If the resulting address changes
+  // the page, an additional clock cycle is required
+  uint8_t Executioner::ABY()
+  {
     uint16_t pc = cpu->getProgramCounter();
     uint8_t y = cpu->getRegister(cpu->Y);
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_rel: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_rel, pc
+      "OP %s : %s - addr_rel: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_rel, pc
     ));
 #endif
 
@@ -403,8 +429,8 @@ uint8_t Executioner::ABY()
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - Y: %02X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, hi, lo, y, pc
+      "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - Y: %02X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, hi, lo, y, pc
     ));
 #endif
 
@@ -412,43 +438,43 @@ uint8_t Executioner::ABY()
     ignoredOpCodes.push_back(0x99);
     if ((addr_abs & 0xFF00) != (hi << 8) && !in_array<uint8_t>(*opcode, ignoredOpCodes))
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
 #ifdef DEBUG
-        log(string_format(
-            "OP %s : %s - addr_abs (Page Boundary): %04X - HI: %02X- LO: %02X - Y: %02X - PC: %04X",
-            getInstructionName(), getAddressModeName(), addr_abs, hi, lo, y, pc
-        ));
+      log(string_format(
+        "OP %s : %s - addr_abs (Page Boundary): %04X - HI: %02X- LO: %02X - Y: %02X - PC: %04X",
+        getInstructionName(), getAddressModeName(), addr_abs, hi, lo, y, pc
+      ));
 #endif
     }
 #ifdef LOGMODE
     else if (in_array<uint8_t>(*opcode, ignoredOpCodes))
     {
-        log(string_format(
-            "OP %s : %s - Caught ignored OPCode",
-            getInstructionName(), getAddressModeName()
-        ));
+      log(string_format(
+        "OP %s : %s - Caught ignored OPCode",
+        getInstructionName(), getAddressModeName()
+      ));
     }
 #endif
     return 0;
-}
+  }
 
-// Note: The next 3 address modes use indirection (aka Pointers!)
+  // Note: The next 3 address modes use indirection (aka Pointers!)
 
-// Address Mode: Indirect
-// The supplied 16-bit address is read to get the actual 16-bit address. This is
-// instruction is unusual in that it has a bug in the hardware! To emulate its
-// function accurately, we also need to emulate this bug. If the low byte of the
-// supplied address is 0xFF, then to read the high byte of the actual address
-// we need to cross a page boundary. This doesnt actually work on the chip as 
-// designed, instead it wraps back around in the same page, yielding an 
-// invalid actual address
-uint8_t Executioner::IND()
-{
+  // Address Mode: Indirect
+  // The supplied 16-bit address is read to get the actual 16-bit address. This is
+  // instruction is unusual in that it has a bug in the hardware! To emulate its
+  // function accurately, we also need to emulate this bug. If the low byte of the
+  // supplied address is 0xFF, then to read the high byte of the actual address
+  // we need to cross a page boundary. This doesnt actually work on the chip as 
+  // designed, instead it wraps back around in the same page, yielding an 
+  // invalid actual address
+  uint8_t Executioner::IND()
+  {
     uint16_t pc = cpu->getProgramCounter();
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - PC: %04X",
-        getInstructionName(), getAddressModeName(), pc
+      "OP %s : %s - PC: %04X",
+      getInstructionName(), getAddressModeName(), pc
     ));
 #endif
 
@@ -464,43 +490,43 @@ uint8_t Executioner::IND()
     // page address when the indirect pointer crosses a
     // page boundary. JMP ($xxFF) will fetch the address
     // from $xxFF and $xx00.
-    if (ptr_lo == 0x00FF) 
+    if (ptr_lo == 0x00FF)
     {
-        addr_abs = (cpu->readMemory(ptr & 0xFF00) << 8) | cpu->readMemory(ptr + 0);
+      addr_abs = (cpu->readMemory(ptr & 0xFF00) << 8) | cpu->readMemory(ptr + 0);
 #ifdef DEBUG
-        log(string_format(
-            "OP %s : %s - HW BUG - addr_abs: %04X - PTR: %04X - HI: %02X- LO: %02X - PC: %04X",
-            getInstructionName(), getAddressModeName(), addr_abs, ptr, 0x00, ptr_lo, pc
-        ));
+      log(string_format(
+        "OP %s : %s - HW BUG - addr_abs: %04X - PTR: %04X - HI: %02X- LO: %02X - PC: %04X",
+        getInstructionName(), getAddressModeName(), addr_abs, ptr, 0x00, ptr_lo, pc
+      ));
 #endif
     }
     else // Behave normally
     {
-        addr_abs = (cpu->readMemory(ptr + 1) << 8) | cpu->readMemory(ptr + 0);
+      addr_abs = (cpu->readMemory(ptr + 1) << 8) | cpu->readMemory(ptr + 0);
 #ifdef DEBUG
-        log(string_format(
-            "OP %s : %s - addr_abs: %04X - PTR: %04X - HI: %02X- LO: %02X - PC: %04X",
-            getInstructionName(), getAddressModeName(), addr_abs, ptr, ptr_hi, ptr_lo, pc
-        ));
+      log(string_format(
+        "OP %s : %s - addr_abs: %04X - PTR: %04X - HI: %02X- LO: %02X - PC: %04X",
+        getInstructionName(), getAddressModeName(), addr_abs, ptr, ptr_hi, ptr_lo, pc
+      ));
 #endif
     }
     return 0;
-}
+  }
 
-// Address Mode: Indirect X
-// The supplied 8-bit address is offset by X Register to index
-// a location in page 0x00. The actual 16-bit address is read 
-// from this location
-uint8_t Executioner::IZX()
-{
+  // Address Mode: Indirect X
+  // The supplied 8-bit address is offset by X Register to index
+  // a location in page 0x00. The actual 16-bit address is read 
+  // from this location
+  uint8_t Executioner::IZX()
+  {
     uint16_t pc = cpu->getProgramCounter();
     uint16_t t = cpu->readMemory(pc);
     uint8_t x = cpu->getRegister(cpu->X);
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - t: 0x%02X - PC: %04X",
-        getInstructionName(), getAddressModeName(), t, pc
+      "OP %s : %s - t: 0x%02X - PC: %04X",
+      getInstructionName(), getAddressModeName(), t, pc
     ));
 #endif
 
@@ -515,28 +541,28 @@ uint8_t Executioner::IZX()
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - X: %02X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, hi, lo, x, pc
+      "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - X: %02X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, hi, lo, x, pc
     ));
 #endif
     return 0;
-}
+  }
 
-// Address Mode: Indirect Y
-// The supplied 8-bit address indexes a location in page 0x00. From 
-// here the actual 16-bit address is read, and the contents of
-// Y Register is added to it to offset it. If the offset causes a
-// change in page then an additional clock cycle is required.
-uint8_t Executioner::IZY()
-{
+  // Address Mode: Indirect Y
+  // The supplied 8-bit address indexes a location in page 0x00. From 
+  // here the actual 16-bit address is read, and the contents of
+  // Y Register is added to it to offset it. If the offset causes a
+  // change in page then an additional clock cycle is required.
+  uint8_t Executioner::IZY()
+  {
     uint16_t pc = cpu->getProgramCounter();
     uint16_t t = cpu->readMemory(pc);
     uint8_t y = cpu->getRegister(cpu->Y);
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - t: 0x%02X - PC: %04X",
-        getInstructionName(), getAddressModeName(), t, pc
+      "OP %s : %s - t: 0x%02X - PC: %04X",
+      getInstructionName(), getAddressModeName(), t, pc
     ));
 #endif
 
@@ -551,8 +577,8 @@ uint8_t Executioner::IZY()
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - Y: %02X - PC: %04X",
-        getInstructionName(), getAddressModeName(), addr_abs, hi, lo, y, pc
+      "OP %s : %s - addr_abs: %04X - HI: %02X- LO: %02X - Y: %02X - PC: %04X",
+      getInstructionName(), getAddressModeName(), addr_abs, hi, lo, y, pc
     ));
 #endif
 
@@ -560,46 +586,46 @@ uint8_t Executioner::IZY()
     ignoredOpCodes.push_back(0x91);
     if ((addr_abs & 0xFF00) != (hi << 8) && !in_array<uint8_t>(*opcode, ignoredOpCodes))
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
 
 #ifdef DEBUG
-        log(string_format(
-            "OP %s : %s - addr_abs (Page Boundary): %04X - HI: %02X- LO: %02X - Y: %02X - PC: %04X",
-            getInstructionName(), getAddressModeName(), addr_abs, hi, lo, y, pc
-        ));
+      log(string_format(
+        "OP %s : %s - addr_abs (Page Boundary): %04X - HI: %02X- LO: %02X - Y: %02X - PC: %04X",
+        getInstructionName(), getAddressModeName(), addr_abs, hi, lo, y, pc
+      ));
 #endif
     }
 #ifdef LOGMODE
     else if (in_array<uint8_t>(*opcode, ignoredOpCodes))
     {
-        log(string_format(
-            "OP %s : %s - Caught ignored OPCode",
-            getInstructionName(), getAddressModeName()
-        ));
+      log(string_format(
+        "OP %s : %s - Caught ignored OPCode",
+        getInstructionName(), getAddressModeName()
+      ));
     }
 #endif
     return 0;
-}
+  }
 #pragma endregion ADDRESSING MODES
 
-///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
 #pragma region COMMON OPERATION
 
 // Performs the different branch operations.
 // Based on performBranch is true or not
-void Executioner::branchOperation(bool performBranch)
-{
+  void Executioner::branchOperation(bool performBranch)
+  {
     if (performBranch == false)
     {
 #ifdef DEBUG
-        log(string_format(
-            "OP %s : %s - %02X - Not Branching",
-            getInstructionName(), getAddressModeName(), opcode
-        ));
+      log(string_format(
+        "OP %s : %s - %02X - Not Branching",
+        getInstructionName(), getAddressModeName(), opcode
+      ));
 #endif
-        //cpu->incrementCycleCount();
-        cpu->incrementProgramCounter();
-        return;
+      //cpu->incrementCycleCount();
+      cpu->incrementProgramCounter();
+      return;
     }
 
     uint16_t pc = cpu->getProgramCounter();
@@ -608,19 +634,19 @@ void Executioner::branchOperation(bool performBranch)
 
 #ifdef DEBUG
     log(string_format(
-        "OP %s : %s - %02X - addr_abs: %04X - addr_rel: %04X - PC: %04X",
-        getInstructionName(), getAddressModeName(), opcode, addr_abs, addr_rel, pc
+      "OP %s : %s - %02X - addr_abs: %04X - addr_rel: %04X - PC: %04X",
+      getInstructionName(), getAddressModeName(), opcode, addr_abs, addr_rel, pc
     ));
 #endif
 
     if ((addr_abs & 0xFF00) != (pc & 0xFF00))
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
 #ifdef DEBUG
-        log(string_format(
-            "OP %s : %s - %02X (Page Boundary) - addr_abs: %04X - addr_rel: %04X - PC: %04X",
-            getInstructionName(), getAddressModeName(), opcode, addr_abs, addr_rel, pc
-        ));
+      log(string_format(
+        "OP %s : %s - %02X (Page Boundary) - addr_abs: %04X - addr_rel: %04X - PC: %04X",
+        getInstructionName(), getAddressModeName(), opcode, addr_abs, addr_rel, pc
+      ));
 #endif
     }
 
@@ -628,13 +654,13 @@ void Executioner::branchOperation(bool performBranch)
     cpu->setProgramCounter(addr_abs);
     //cpu->readMemory(addr_abs);
     cpu->incrementCycleCount();
-}
+  }
 
 
-// The BRK routine. Called when a BRK occurs.
-// Also called from NMI/IRQ operations
-void Executioner::breakOperation(bool isBreak, uint16_t vector)
-{
+  // The BRK routine. Called when a BRK occurs.
+  // Also called from NMI/IRQ operations
+  void Executioner::breakOperation(bool isBreak, uint16_t vector)
+  {
     cpu->incrementProgramCounter();
     //cpu->readMemory(pc);
     cpu->incrementCycleCount();
@@ -658,11 +684,11 @@ void Executioner::breakOperation(bool isBreak, uint16_t vector)
 
     if (isBreak)
     {
-        cpu->SetFlag(cpu->B, true);
+      cpu->SetFlag(cpu->B, true);
     }
     else
     {
-        cpu->SetFlag(cpu->B, false);
+      cpu->SetFlag(cpu->B, false);
     }
     //cpu->writeMemoryWithoutCycle(0x0100 + stkp, status);
     //stkp--;
@@ -677,10 +703,10 @@ void Executioner::breakOperation(bool isBreak, uint16_t vector)
     cpu->setProgramCounter(cpu->readMemory(vector) | cpu->readMemory(vector + 1) << 8);
 
     cpu->_previousInterrupt = false;
-}
+  }
 #pragma endregion COMMON OPERATION
 
-///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
 #pragma region INSTRUCTION IMPLEMENTATIONS
 // INSTRUCTION IMPLEMENTATIONS
 
@@ -750,106 +776,106 @@ void Executioner::breakOperation(bool isBreak, uint16_t vector)
 //       Positive Number + Negative Number = Either Result -> Cannot Overflow
 //       Positive Number + Positive Number = Positive Result -> OK! No Overflow
 //       Negative Number + Negative Number = Negative Result -> OK! NO Overflow
-uint8_t Executioner::ADC()
-{
+  uint8_t Executioner::ADC()
+  {
     // Grab the data that we are adding to the accumulator
     fetch();
 
     uint8_t current = cpu->getRegister(cpu->AC);
     if (cpu->GetFlag(cpu->D))
     {
-        uint8_t d0 = (fetched & 0x0F) + (current & 0x0F) + (uint8_t)cpu->GetFlag(cpu->C);
-        uint8_t d1 = (fetched >> 4) + (current >> 4) + (d0 > 9 ? 1 : 0);
+      uint8_t d0 = (fetched & 0x0F) + (current & 0x0F) + (uint8_t)cpu->GetFlag(cpu->C);
+      uint8_t d1 = (fetched >> 4) + (current >> 4) + (d0 > 9 ? 1 : 0);
 
-        temp = d0 % 10 | (d1 % 10 << 4);
+      temp = d0 % 10 | (d1 % 10 << 4);
 
-        cpu->SetFlag(cpu->C, d1 > 9);
+      cpu->SetFlag(cpu->C, d1 > 9);
     }
     else
     {
-        // Add is performed in 16-bit domain for emulation to capture any
-        // carry bit, which will exist in bit 8 of the 16-bit word
-        temp = (uint16_t)current + (uint16_t)fetched + (uint16_t)cpu->GetFlag(cpu->C);
-        
-        // The signed Overflow flag is set based on all that up there! :D
-        cpu->SetFlag(cpu->V, (~((uint16_t)fetched ^ (uint16_t)current) & ((uint16_t)temp ^ (uint16_t)current)) & 0x80);
+      // Add is performed in 16-bit domain for emulation to capture any
+      // carry bit, which will exist in bit 8 of the 16-bit word
+      temp = (uint16_t)current + (uint16_t)fetched + (uint16_t)cpu->GetFlag(cpu->C);
 
-        //log(string_format("A: 0x%04X - Fetched: 0x%04X - TEMP: 0x%04X", a, fetched, temp));
+      // The signed Overflow flag is set based on all that up there! :D
+      cpu->SetFlag(cpu->V, (~((uint16_t)fetched ^ (uint16_t)current) & ((uint16_t)temp ^ (uint16_t)current)) & 0x80);
 
-        cpu->SetFlag(cpu->C, temp > 255);
-        temp = temp & 0x00FF;
+      //log(string_format("A: 0x%04X - Fetched: 0x%04X - TEMP: 0x%04X", a, fetched, temp));
+
+      cpu->SetFlag(cpu->C, temp > 255);
+      temp = temp & 0x00FF;
     }
 
     // The Zero flag is set if the result is 0
     cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0);
-    
+
     //std::cout << "N: " << (temp & 0x80) << "" << std::endl;
     // The negative flag is set to the most significant bit of the result
     cpu->SetFlag(cpu->N, (temp & 0x80) > 0);
-    
+
     // Load the result into the accumulator (it's 8-bit dont forget!)
-    cpu->setRegister(cpu->AC, (uint8_t) (temp & 0x00FF));
-    
+    cpu->setRegister(cpu->AC, (uint8_t)(temp & 0x00FF));
+
     // This instruction has the potential to require an additional clock cycle
     return 1;
-}
+  }
 
 
-// Instruction: Subtraction with Borrow In
-// Function:    A = A - M - (1 - C)
-// Flags Out:   C, V, N, Z
-//
-// Explanation:
-// Given the explanation for ADC above, we can reorganise our data
-// to use the same computation for addition, for subtraction by multiplying
-// the data by -1, i.e. make it negative
-//
-// A = A - M - (1 - C)  ->  A = A + -1 * (M - (1 - C))  ->  A = A + (-M + 1 + C)
-//
-// To make a signed positive number negative, we can invert the bits and add 1
-// (OK, I lied, a little bit of 1 and 2s complement :P)
-//
-//  5 = 00000101
-// -5 = 11111010 + 00000001 = 11111011 (or 251 in our 0 to 255 range)
-//
-// The range is actually unimportant, because if I take the value 15, and add 251
-// to it, given we wrap around at 256, the result is 10, so it has effectively 
-// subtracted 5, which was the original intention. (15 + 251) % 256 = 10
-//
-// Note that the equation above used (1-C), but this got converted to + 1 + C.
-// This means we already have the +1, so all we need to do is invert the bits
-// of M, the data(!) therfore we can simply add, exactly the same way we did 
-// before.
-uint8_t Executioner::SBC()
-{
+  // Instruction: Subtraction with Borrow In
+  // Function:    A = A - M - (1 - C)
+  // Flags Out:   C, V, N, Z
+  //
+  // Explanation:
+  // Given the explanation for ADC above, we can reorganise our data
+  // to use the same computation for addition, for subtraction by multiplying
+  // the data by -1, i.e. make it negative
+  //
+  // A = A - M - (1 - C)  ->  A = A + -1 * (M - (1 - C))  ->  A = A + (-M + 1 + C)
+  //
+  // To make a signed positive number negative, we can invert the bits and add 1
+  // (OK, I lied, a little bit of 1 and 2s complement :P)
+  //
+  //  5 = 00000101
+  // -5 = 11111010 + 00000001 = 11111011 (or 251 in our 0 to 255 range)
+  //
+  // The range is actually unimportant, because if I take the value 15, and add 251
+  // to it, given we wrap around at 256, the result is 10, so it has effectively 
+  // subtracted 5, which was the original intention. (15 + 251) % 256 = 10
+  //
+  // Note that the equation above used (1-C), but this got converted to + 1 + C.
+  // This means we already have the +1, so all we need to do is invert the bits
+  // of M, the data(!) therfore we can simply add, exactly the same way we did 
+  // before.
+  uint8_t Executioner::SBC()
+  {
     fetch();
-    
+
     uint8_t current = cpu->getRegister(cpu->AC);
     uint8_t value = 0x00;
     if (cpu->GetFlag(cpu->D))
     {
-        int8_t d0 = (current & 0x0F) - (fetched & 0x0F) - (cpu->GetFlag(cpu->C) ? 0 : 1);
-        int8_t d1 = (current >> 4) - (fetched >> 4) - (d0 < 0 ? 1 : 0);
+      int8_t d0 = (current & 0x0F) - (fetched & 0x0F) - (cpu->GetFlag(cpu->C) ? 0 : 1);
+      int8_t d1 = (current >> 4) - (fetched >> 4) - (d0 < 0 ? 1 : 0);
 
-        value = (d0 < 0 ? 10 + d0 : d0) | ((d1 < 0 ? 10 + d1 : d1) << 4);
-        cpu->setRegister(cpu->AC, value);
+      value = (d0 < 0 ? 10 + d0 : d0) | ((d1 < 0 ? 10 + d1 : d1) << 4);
+      cpu->setRegister(cpu->AC, value);
 
-        cpu->SetFlag(cpu->C, d1 < 0);
+      cpu->SetFlag(cpu->C, d1 < 0);
     }
     else
     {
-        // Operating in 16-bit domain to capture carry out
-        
-        // We can invert the bottom 8 bits with bitwise xor
-        uint16_t bottom = ((uint16_t)fetched) ^ 0x00FF;
-        
-        // Notice this is exactly the same as addition from here!
-        value = (uint16_t)current + bottom + (uint16_t)cpu->GetFlag(cpu->C);
+      // Operating in 16-bit domain to capture carry out
 
-        cpu->SetFlag(cpu->V, (value ^ (uint16_t)current) & (value ^ value) & 0x0080);
-        cpu->SetFlag(cpu->C, value & 0xFF00);
+      // We can invert the bottom 8 bits with bitwise xor
+      uint16_t bottom = ((uint16_t)fetched) ^ 0x00FF;
 
-        cpu->setRegister(cpu->AC, (uint8_t) (value & 0xFF));
+      // Notice this is exactly the same as addition from here!
+      value = (uint16_t)current + bottom + (uint16_t)cpu->GetFlag(cpu->C);
+
+      cpu->SetFlag(cpu->V, (value ^ (uint16_t)current) & (value ^ value) & 0x0080);
+      cpu->SetFlag(cpu->C, value & 0xFF00);
+
+      cpu->setRegister(cpu->AC, (uint8_t)(value & 0xFF));
     }
 
     //std::cout << "Z: " << (temp & 0x00FF) << "" << std::endl;
@@ -857,48 +883,48 @@ uint8_t Executioner::SBC()
     cpu->SetFlag(cpu->N, value & 0x0080);
 
     return 1;
-}
+  }
 
 
-// OK! Complicated operations are done! the following are much simpler
-// and conventional. The typical order of events is:
-// 1) Fetch the data you are working with
-// 2) Perform calculation
-// 3) Store the result in desired place
-// 4) Set Flags of the status register
-// 5) Return if instruction has potential to require additional 
-//    clock cycle
+  // OK! Complicated operations are done! the following are much simpler
+  // and conventional. The typical order of events is:
+  // 1) Fetch the data you are working with
+  // 2) Perform calculation
+  // 3) Store the result in desired place
+  // 4) Set Flags of the status register
+  // 5) Return if instruction has potential to require additional 
+  //    clock cycle
 
-// Instruction: Bitwise Logic AND
-// Function:    A = A & M
-// Flags Out:   N, Z
-uint8_t Executioner::AND()
-{
+  // Instruction: Bitwise Logic AND
+  // Function:    A = A & M
+  // Flags Out:   N, Z
+  uint8_t Executioner::AND()
+  {
     fetch();
     uint8_t value = (cpu->getRegister(cpu->AC) & fetched);
     cpu->setRegister(cpu->AC, value);
     cpu->SetFlag(cpu->Z, value == 0x00);
     cpu->SetFlag(cpu->N, value & 0x80);
     return 1;
-}
+  }
 
 
-// Instruction: Arithmetic Shift Left
-// Function:    A = C <- (A << 1) <- 0
-// Flags Out:   N, Z, C
-uint8_t Executioner::ASL()
-{
+  // Instruction: Arithmetic Shift Left
+  // Function:    A = C <- (A << 1) <- 0
+  // Flags Out:   N, Z, C
+  uint8_t Executioner::ASL()
+  {
     fetch();
 
     IN::AddressMode::AddressingModes addrMode;
 
     if (getAddressMode() == addrMode.Accumulator)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
     else
     {
-        cpu->writeMemory(addr_abs, fetched & 0x00FF);
+      cpu->writeMemory(addr_abs, fetched & 0x00FF);
     }
 
     uint16_t value = (uint16_t)fetched << 1;
@@ -908,54 +934,54 @@ uint8_t Executioner::ASL()
 
     if (getAddressMode() == addrMode.Accumulator)
     {
-        //a = (uint8_t) (value & 0x00FF);
-        cpu->setRegister(cpu->AC, (uint8_t) (value & 0x00FF));
+      //a = (uint8_t) (value & 0x00FF);
+      cpu->setRegister(cpu->AC, (uint8_t)(value & 0x00FF));
     }
     else
     {
-        cpu->writeMemory(addr_abs, (uint8_t) (value & 0x00FF));
+      cpu->writeMemory(addr_abs, (uint8_t)(value & 0x00FF));
     }
 
     if (getAddressMode() == addrMode.AbsoluteX)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
     return 0;
-}
+  }
 
 
-// Instruction: Branch if Carry Clear
-// Function:    if(C == 0) pc = address 
-uint8_t Executioner::BCC()
-{
+  // Instruction: Branch if Carry Clear
+  // Function:    if(C == 0) pc = address 
+  uint8_t Executioner::BCC()
+  {
     branchOperation(cpu->GetFlag(cpu->C) == 0);
     return 0;
-}
+  }
 
 
-// Instruction: Branch if Carry Set
-// Function:    if(C == 1) pc = address
-uint8_t Executioner::BCS()
-{
+  // Instruction: Branch if Carry Set
+  // Function:    if(C == 1) pc = address
+  uint8_t Executioner::BCS()
+  {
     branchOperation(cpu->GetFlag(cpu->C) == 1);
     return 0;
-}
+  }
 
 
-// Instruction: Branch if Equal
-// Function:    if(Z == 1) pc = address
-uint8_t Executioner::BEQ()
-{
+  // Instruction: Branch if Equal
+  // Function:    if(Z == 1) pc = address
+  uint8_t Executioner::BEQ()
+  {
     branchOperation(cpu->GetFlag(cpu->Z) == 1);
     return 0;
-}
+  }
 
 
-// Instruction: Test Bits in Memory with Accumulator
-// Function:    A & M, M7 -> N, M6 -> V
-// Flags Out:   N, Z, V
-uint8_t Executioner::BIT()
-{
+  // Instruction: Test Bits in Memory with Accumulator
+  // Function:    A & M, M7 -> N, M6 -> V
+  // Flags Out:   N, Z, V
+  uint8_t Executioner::BIT()
+  {
     fetch();
     //uint8_t value = a & fetched;
     uint8_t value = (cpu->getRegister(cpu->AC) & fetched);
@@ -964,107 +990,107 @@ uint8_t Executioner::BIT()
     cpu->SetFlag(cpu->N, fetched & (1 << 7));
     cpu->SetFlag(cpu->V, fetched & (1 << 6));
     return 0;
-}
+  }
 
 
-// Instruction: Branch if Negative
-// Function:    if(N == 1) pc = address
-uint8_t Executioner::BMI()
-{
+  // Instruction: Branch if Negative
+  // Function:    if(N == 1) pc = address
+  uint8_t Executioner::BMI()
+  {
     branchOperation(cpu->GetFlag(cpu->N) == 1);
     return 0;
-}
+  }
 
 
-// Instruction: Branch if Not Equal
-// Function:    if(Z == 0) pc = address
-uint8_t Executioner::BNE()
-{
+  // Instruction: Branch if Not Equal
+  // Function:    if(Z == 0) pc = address
+  uint8_t Executioner::BNE()
+  {
     branchOperation(cpu->GetFlag(cpu->Z) == 0);
     return 0;
-}
+  }
 
 
-// Instruction: Branch if Positive
-// Function:    if(N == 0) pc = address
-uint8_t Executioner::BPL()
-{
+  // Instruction: Branch if Positive
+  // Function:    if(N == 0) pc = address
+  uint8_t Executioner::BPL()
+  {
     branchOperation(cpu->GetFlag(cpu->N) == 0);
     return 0;
-}
+  }
 
 
-// Instruction: Break
-// Function:    Program Sourced Interrupt
-uint8_t Executioner::BRK()
-{
+  // Instruction: Break
+  // Function:    Program Sourced Interrupt
+  uint8_t Executioner::BRK()
+  {
     breakOperation(true, 0xFFFE);
     return 0;
-}
+  }
 
 
-// Instruction: Branch if Overflow Clear
-// Function:    if(V == 0) pc = address
-uint8_t Executioner::BVC()
-{
-    branchOperation(cpu->GetFlag(cpu->V) == false);
+  // Instruction: Branch if Overflow Clear
+  // Function:    if(V == 0) pc = address
+  uint8_t Executioner::BVC()
+  {
+    branchOperation(cpu->GetFlag(cpu->V) == 0);
     return 0;
-}
+  }
 
 
-// Instruction: Branch if Overflow Set
-// Function:    if(V == 1) pc = address
-uint8_t Executioner::BVS()
-{
-    branchOperation(cpu->GetFlag(cpu->V) == true);
+  // Instruction: Branch if Overflow Set
+  // Function:    if(V == 1) pc = address
+  uint8_t Executioner::BVS()
+  {
+    branchOperation(cpu->GetFlag(cpu->V) == 1);
     return 0;
-}
+  }
 
 
-// Instruction: Clear Carry Flag
-// Function:    C = 0
-uint8_t Executioner::CLC()
-{
+  // Instruction: Clear Carry Flag
+  // Function:    C = 0
+  uint8_t Executioner::CLC()
+  {
     cpu->SetFlag(cpu->C, false);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Clear Decimal Flag
-// Function:    D = 0
-uint8_t Executioner::CLD()
-{
+  // Instruction: Clear Decimal Flag
+  // Function:    D = 0
+  uint8_t Executioner::CLD()
+  {
     cpu->SetFlag(cpu->D, false);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Disable Interrupts / Clear Interrupt Flag
-// Function:    I = 0
-uint8_t Executioner::CLI()
-{
+  // Instruction: Disable Interrupts / Clear Interrupt Flag
+  // Function:    I = 0
+  uint8_t Executioner::CLI()
+  {
     cpu->SetFlag(cpu->I, false);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Clear Overflow Flag
-// Function:    V = 0
-uint8_t Executioner::CLV()
-{
+  // Instruction: Clear Overflow Flag
+  // Function:    V = 0
+  uint8_t Executioner::CLV()
+  {
     cpu->SetFlag(cpu->V, false);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
-// Instruction: Compare Accumulator
-// Function:    C <- A >= M      Z <- (A - M) == 0
-// Flags Out:   N, C, Z
-uint8_t Executioner::CMP()
-{
+  // Instruction: Compare Accumulator
+  // Function:    C <- A >= M      Z <- (A - M) == 0
+  // Flags Out:   N, C, Z
+  uint8_t Executioner::CMP()
+  {
     fetch();
     //uint8_t value = (uint16_t)a - (uint16_t)fetched;
     uint8_t value = (cpu->getRegister(cpu->AC) - fetched);
@@ -1072,14 +1098,14 @@ uint8_t Executioner::CMP()
     cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
     cpu->SetFlag(cpu->N, value & 0x0080);
     return 1;
-}
+  }
 
 
-// Instruction: Compare X Register
-// Function:    C <- X >= M      Z <- (X - M) == 0
-// Flags Out:   N, C, Z
-uint8_t Executioner::CPX()
-{
+  // Instruction: Compare X Register
+  // Function:    C <- X >= M      Z <- (X - M) == 0
+  // Flags Out:   N, C, Z
+  uint8_t Executioner::CPX()
+  {
     fetch();
     //uint8_t value = (uint16_t)x - (uint16_t)fetched;
     uint8_t value = (cpu->getRegister(cpu->X) - fetched);
@@ -1087,14 +1113,14 @@ uint8_t Executioner::CPX()
     cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
     cpu->SetFlag(cpu->N, value & 0x0080);
     return 0;
-}
+  }
 
 
-// Instruction: Compare Y Register
-// Function:    C <- Y >= M      Z <- (Y - M) == 0
-// Flags Out:   N, C, Z
-uint8_t Executioner::CPY()
-{
+  // Instruction: Compare Y Register
+  // Function:    C <- Y >= M      Z <- (Y - M) == 0
+  // Flags Out:   N, C, Z
+  uint8_t Executioner::CPY()
+  {
     fetch();
     //uint16_t value = (uint16_t)y - (uint16_t)fetched;
     uint8_t value = (cpu->getRegister(cpu->Y) - fetched);
@@ -1102,14 +1128,14 @@ uint8_t Executioner::CPY()
     cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
     cpu->SetFlag(cpu->N, value & 0x0080);
     return 0;
-}
+  }
 
 
-// Instruction: Decrement Value at Memory Location
-// Function:    M = M - 1
-// Flags Out:   N, Z
-uint8_t Executioner::DEC()
-{
+  // Instruction: Decrement Value at Memory Location
+  // Function:    M = M - 1
+  // Flags Out:   N, Z
+  uint8_t Executioner::DEC()
+  {
     fetch();
 
     IN::AddressMode::AddressingModes addrMode;
@@ -1123,18 +1149,18 @@ uint8_t Executioner::DEC()
 
     if (getAddressMode() == addrMode.AbsoluteX)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
 
     return 0;
-}
+  }
 
 
-// Instruction: Decrement X Register
-// Function:    X = X - 1
-// Flags Out:   N, Z
-uint8_t Executioner::DEX()
-{
+  // Instruction: Decrement X Register
+  // Function:    X = X - 1
+  // Flags Out:   N, Z
+  uint8_t Executioner::DEX()
+  {
     //temp = x - 1;
     //x = temp & 0x00FF;
     //cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
@@ -1148,14 +1174,14 @@ uint8_t Executioner::DEX()
 
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Decrement Y Register
-// Function:    Y = Y - 1
-// Flags Out:   N, Z
-uint8_t Executioner::DEY()
-{
+  // Instruction: Decrement Y Register
+  // Function:    Y = Y - 1
+  // Flags Out:   N, Z
+  uint8_t Executioner::DEY()
+  {
     //temp = y - 1;
     //y = temp & 0x00FF;
     //cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
@@ -1169,14 +1195,14 @@ uint8_t Executioner::DEY()
 
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Bitwise Logic XOR
-// Function:    A = A xor M
-// Flags Out:   N, Z
-uint8_t Executioner::EOR()
-{
+  // Instruction: Bitwise Logic XOR
+  // Function:    A = A xor M
+  // Flags Out:   N, Z
+  uint8_t Executioner::EOR()
+  {
     fetch();
     //a = a ^ fetched;
     //cpu->SetFlag(cpu->Z, a == 0x00);
@@ -1188,14 +1214,14 @@ uint8_t Executioner::EOR()
     cpu->SetFlag(cpu->N, value & 0x80);
 
     return 1;
-}
+  }
 
 
-// Instruction: Increment Value at Memory Location
-// Function:    M = M + 1
-// Flags Out:   N, Z
-uint8_t Executioner::INC()
-{
+  // Instruction: Increment Value at Memory Location
+  // Function:    M = M + 1
+  // Flags Out:   N, Z
+  uint8_t Executioner::INC()
+  {
     fetch();
 
     IN::AddressMode::AddressingModes addrMode;
@@ -1208,20 +1234,20 @@ uint8_t Executioner::INC()
 
     cpu->writeMemory(addr_abs, temp & 0x00FF);
 
-    if (getAddressMode() == addrMode::AbsoluteX)
+    if (getAddressMode() == addrMode.AbsoluteX)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
 
     return 0;
-}
+  }
 
 
-// Instruction: Increment X Register
-// Function:    X = X + 1
-// Flags Out:   N, Z
-uint8_t Executioner::INX()
-{
+  // Instruction: Increment X Register
+  // Function:    X = X + 1
+  // Flags Out:   N, Z
+  uint8_t Executioner::INX()
+  {
     //temp = x + 1;
     //x = temp & 0x00FF;
     //cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
@@ -1235,14 +1261,14 @@ uint8_t Executioner::INX()
 
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Increment Y Register
-// Function:    Y = Y + 1
-// Flags Out:   N, Z
-uint8_t Executioner::INY()
-{
+  // Instruction: Increment Y Register
+  // Function:    Y = Y + 1
+  // Flags Out:   N, Z
+  uint8_t Executioner::INY()
+  {
     //temp = y + 1;
     //y = temp & 0x00FF;
     //cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
@@ -1256,23 +1282,23 @@ uint8_t Executioner::INY()
 
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Jump To Location
-// Function:    pc = address
-uint8_t Executioner::JMP()
-{
+  // Instruction: Jump To Location
+  // Function:    pc = address
+  uint8_t Executioner::JMP()
+  {
     //pc = addr_abs;
     cpu->setProgramCounter(addr_abs);
     return 0;
-}
+  }
 
 
-// Instruction: Jump To Sub-Routine
-// Function:    Push current pc to stack, pc = address
-uint8_t Executioner::JSR()
-{
+  // Instruction: Jump To Sub-Routine
+  // Function:    Push current pc to stack, pc = address
+  uint8_t Executioner::JSR()
+  {
     cpu->incrementCycleCount();
 
     //pc--;
@@ -1300,14 +1326,14 @@ uint8_t Executioner::JSR()
     //pc = addr_abs;
     cpu->setProgramCounter(addr_abs);
     return 0;
-}
+  }
 
 
-// Instruction: Load The Accumulator
-// Function:    A = M
-// Flags Out:   N, Z
-uint8_t Executioner::LDA()
-{
+  // Instruction: Load The Accumulator
+  // Function:    A = M
+  // Flags Out:   N, Z
+  uint8_t Executioner::LDA()
+  {
     fetch();
 
     //a = fetched;
@@ -1318,14 +1344,14 @@ uint8_t Executioner::LDA()
     cpu->SetFlag(cpu->Z, fetched == 0x00);
     cpu->SetFlag(cpu->N, fetched & 0x80);
     return 1;
-}
+  }
 
 
-// Instruction: Load The X Register
-// Function:    X = M
-// Flags Out:   N, Z
-uint8_t Executioner::LDX()
-{
+  // Instruction: Load The X Register
+  // Function:    X = M
+  // Flags Out:   N, Z
+  uint8_t Executioner::LDX()
+  {
     fetch();
     //x = fetched;
     //cpu->SetFlag(cpu->Z, x == 0x00);
@@ -1335,14 +1361,14 @@ uint8_t Executioner::LDX()
     cpu->SetFlag(cpu->Z, fetched == 0x00);
     cpu->SetFlag(cpu->N, fetched & 0x80);
     return 1;
-}
+  }
 
 
-// Instruction: Load The Y Register
-// Function:    Y = M
-// Flags Out:   N, Z
-uint8_t Executioner::LDY()
-{
+  // Instruction: Load The Y Register
+  // Function:    Y = M
+  // Flags Out:   N, Z
+  uint8_t Executioner::LDY()
+  {
     fetch();
 
     //y = fetched;
@@ -1353,29 +1379,29 @@ uint8_t Executioner::LDY()
     cpu->SetFlag(cpu->Z, fetched == 0x00);
     cpu->SetFlag(cpu->N, fetched & 0x80);
     return 1;
-}
+  }
 
 
-// Instruction: Logical Shift Right
-// Function:    A = C <- (A << 1) <- 0
-// Flags Out:   N=0, Z, C
-uint8_t Executioner::LSR()
-{
+  // Instruction: Logical Shift Right
+  // Function:    A = C <- (A << 1) <- 0
+  // Flags Out:   N=0, Z, C
+  uint8_t Executioner::LSR()
+  {
     fetch();
 
     IN::AddressMode::AddressingModes addrMode;
 
     if (getAddressMode() == addrMode.Accumulator)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
     else
     {
-        cpu->writeMemory(addr_abs, fetched & 0x00FF);
+      cpu->writeMemory(addr_abs, fetched & 0x00FF);
     }
 
     cpu->SetFlag(cpu->C, fetched & 0x0001);
-    temp = fetched >> 1;    
+    temp = fetched >> 1;
     cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
     cpu->SetFlag(cpu->N, temp & 0x0080);
 
@@ -1384,35 +1410,35 @@ uint8_t Executioner::LSR()
 
     if (getAddressMode() == addrMode.Accumulator)
     {
-        cpu->setRegister(cpu->AC, value);
+      cpu->setRegister(cpu->AC, value);
     }
     else
     {
-        cpu->writeMemory(addr_abs, value);
+      cpu->writeMemory(addr_abs, value);
     }
 
     if (getAddressMode() == addrMode.AbsoluteX)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
     return 0;
-}
+  }
 
 
-// Instruction: No Operation
-// Function:    -
-uint8_t Executioner::NOP()
-{
+  // Instruction: No Operation
+  // Function:    -
+  uint8_t Executioner::NOP()
+  {
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Bitwise Logic OR
-// Function:    A = A | M
-// Flags Out:   N, Z
-uint8_t Executioner::ORA()
-{
+  // Instruction: Bitwise Logic OR
+  // Function:    A = A | M
+  // Flags Out:   N, Z
+  uint8_t Executioner::ORA()
+  {
     fetch();
     //a = a | fetched;
     //cpu->SetFlag(cpu->Z, a == 0x00);
@@ -1423,24 +1449,24 @@ uint8_t Executioner::ORA()
     cpu->SetFlag(cpu->Z, value == 0x00);
     cpu->SetFlag(cpu->N, value & 0x80);
     return 1;
-}
+  }
 
 
-// Instruction: Push Accumulator to Stack
-// Function:    A -> stack
-uint8_t Executioner::PHA()
-{
+  // Instruction: Push Accumulator to Stack
+  // Function:    A -> stack
+  uint8_t Executioner::PHA()
+  {
     //cpu->PushStack(a);
     cpu->PushStack(cpu->getRegister(cpu->AC));
     return 0;
-}
+  }
 
 
-// Instruction: Push Status Register to Stack
-// Function:    status -> stack
-// Note:        Break flag is set to 1 before push
-uint8_t Executioner::PHP()
-{
+  // Instruction: Push Status Register to Stack
+  // Function:    status -> stack
+  // Note:        Break flag is set to 1 before push
+  uint8_t Executioner::PHP()
+  {
     uint8_t _sr = cpu->getRegister(cpu->SR) | cpu->B | cpu->U;
     uint8_t _sp = cpu->getRegister(cpu->SP);
     cpu->writeMemory(0x0100 + _sp, _sr);
@@ -1451,14 +1477,14 @@ uint8_t Executioner::PHP()
     cpu->decrementStackPointer();
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Pop Accumulator off Stack
-// Function:    A <- stack
-// Flags Out:   N, Z
-uint8_t Executioner::PLA()
-{
+  // Instruction: Pop Accumulator off Stack
+  // Function:    A <- stack
+  // Flags Out:   N, Z
+  uint8_t Executioner::PLA()
+  {
     //stkp++;
     //cpu->incrementCycleCount();
     //a = cpu->PopStack();
@@ -1468,13 +1494,13 @@ uint8_t Executioner::PLA()
     cpu->SetFlag(cpu->N, value & 0x80);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Pop Status Register off Stack
-// Function:    Status <- stack
-uint8_t Executioner::PLP()
-{
+  // Instruction: Pop Status Register off Stack
+  // Function:    Status <- stack
+  uint8_t Executioner::PLP()
+  {
     //stkp++;
     cpu->incrementStackPointer();
     cpu->incrementCycleCount();
@@ -1484,25 +1510,25 @@ uint8_t Executioner::PLP()
     cpu->SetFlag(cpu->U, 1);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Rotate Left
-// Function:    (C << 1)
-// Flags Out:    N, Z, C
-uint8_t Executioner::ROL()
-{
+  // Instruction: Rotate Left
+  // Function:    (C << 1)
+  // Flags Out:    N, Z, C
+  uint8_t Executioner::ROL()
+  {
     fetch();
 
     IN::AddressMode::AddressingModes addrMode;
 
     if (getAddressMode() == addrMode.Accumulator)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
     else
     {
-        cpu->writeMemory(addr_abs, fetched & 0x00FF);
+      cpu->writeMemory(addr_abs, fetched & 0x00FF);
     }
 
     temp = (uint16_t)(fetched << 1) | cpu->GetFlag(cpu->C);
@@ -1512,38 +1538,38 @@ uint8_t Executioner::ROL()
 
     if (getAddressMode() == addrMode.Accumulator)
     {
-        cpu->setRegister(cpu->AC, (uint8_t) (temp & 0x00FF));
+      cpu->setRegister(cpu->AC, (uint8_t)(temp & 0x00FF));
     }
     else
     {
-        cpu->writeMemory(addr_abs, temp & 0x00FF);
+      cpu->writeMemory(addr_abs, temp & 0x00FF);
     }
 
     if (getAddressMode() == addrMode.AbsoluteX)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
 
     return 0;
-}
+  }
 
 
-// Instruction: Rotate Right
-// Function:    (C >> 1)
-// Flags Out:    N, Z, C
-uint8_t Executioner::ROR()
-{
+  // Instruction: Rotate Right
+  // Function:    (C >> 1)
+  // Flags Out:    N, Z, C
+  uint8_t Executioner::ROR()
+  {
     fetch();
 
     IN::AddressMode::AddressingModes addrMode;
 
     if (getAddressMode() == addrMode.Accumulator)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
     else
     {
-        cpu->writeMemory(addr_abs, fetched & 0x00FF);
+      cpu->writeMemory(addr_abs, fetched & 0x00FF);
     }
 
     temp = (uint16_t)(cpu->GetFlag(cpu->C) << 7) | (fetched >> 1);
@@ -1553,27 +1579,27 @@ uint8_t Executioner::ROR()
 
     if (getAddressMode() == addrMode.Accumulator)
     {
-        cpu->setRegister(cpu->AC, (uint8_t) (temp & 0x00FF));
+      cpu->setRegister(cpu->AC, (uint8_t)(temp & 0x00FF));
     }
     else
     {
-        cpu->writeMemory(addr_abs, temp & 0x00FF);
+      cpu->writeMemory(addr_abs, temp & 0x00FF);
     }
 
     if (getAddressMode() == addrMode.AbsoluteX)
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
 
     return 0;
-}
+  }
 
 
-// Instruction: Return from Interrupt
-// Function:    Pull SR, Pull PC
-// Flags Out:    From Stack
-uint8_t Executioner::RTI()
-{
+  // Instruction: Return from Interrupt
+  // Function:    Pull SR, Pull PC
+  // Flags Out:    From Stack
+  uint8_t Executioner::RTI()
+  {
     //stkp++;
     //cpu->incrementCycleCount();
     //status = cpu->readMemory(0x0100 + stkp);
@@ -1601,25 +1627,25 @@ uint8_t Executioner::RTI()
     //cpu->incrementProgramCounter();
     //_pc |= (uint16_t) cpu->PeekStack() << 8;
 
-    _pc = (uint16_t) cpu->PopStack() | (uint16_t) cpu->PopStack() << 8;
+    _pc = (uint16_t)cpu->PopStack() | (uint16_t)cpu->PopStack() << 8;
 
     cpu->setProgramCounter(_pc);
     return 0;
-}
+  }
 
 
-// Instruction: Return from Subroutine
-// Function:    Pull PC, PC+1 -> PC
-// Flags Out:    -
-uint8_t Executioner::RTS()
-{
+  // Instruction: Return from Subroutine
+  // Function:    Pull PC, PC+1 -> PC
+  // Flags Out:    -
+  uint8_t Executioner::RTS()
+  {
     //stkp++;
     //cpu->incrementCycleCount();
 
     //pc = (uint16_t)cpu->readMemory(0x0100 + stkp);
     //stkp++;
     //pc |= (uint16_t)cpu->readMemory(0x0100 + stkp) << 8;
-    
+
     //pc = cpu->PopStack();
     //pc |= (cpu->PopStack() << 8);
     cpu->setProgramCounter(cpu->PopStack() | (cpu->PopStack() << 8));
@@ -1627,43 +1653,43 @@ uint8_t Executioner::RTS()
     cpu->incrementProgramCounter();
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Set Carry Flag
-// Function:    C = 1
-uint8_t Executioner::SEC()
-{
+  // Instruction: Set Carry Flag
+  // Function:    C = 1
+  uint8_t Executioner::SEC()
+  {
     cpu->SetFlag(cpu->C, true);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Set Decimal Flag
-// Function:    D = 1
-uint8_t Executioner::SED()
-{
+  // Instruction: Set Decimal Flag
+  // Function:    D = 1
+  uint8_t Executioner::SED()
+  {
     cpu->SetFlag(cpu->D, true);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Set Interrupt Flag / Enable Interrupts
-// Function:    I = 1
-uint8_t Executioner::SEI()
-{
+  // Instruction: Set Interrupt Flag / Enable Interrupts
+  // Function:    I = 1
+  uint8_t Executioner::SEI()
+  {
     cpu->SetFlag(cpu->I, true);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Store Accumulator at Address
-// Function:    M = A
-uint8_t Executioner::STA()
-{
+  // Instruction: Store Accumulator at Address
+  // Function:    M = A
+  uint8_t Executioner::STA()
+  {
     cpu->writeMemory(addr_abs, cpu->getRegister(cpu->AC));
 
     IN::AddressMode::AddressingModes addrMode;
@@ -1673,38 +1699,38 @@ uint8_t Executioner::STA()
     affectedAddrModes.push_back(addrMode.AbsoluteY);
     affectedAddrModes.push_back(addrMode.IndirectY);
 
-    if (in_array<uint8_t>(getAddressMode(opcode), affectedAddrModes))
+    if (in_array<uint8_t>(getAddressMode(), affectedAddrModes))
     {
-        cpu->incrementCycleCount();
+      cpu->incrementCycleCount();
     }
 
     return 0;
-}
+  }
 
 
-// Instruction: Store X Register at Address
-// Function:    M = X
-uint8_t Executioner::STX()
-{
+  // Instruction: Store X Register at Address
+  // Function:    M = X
+  uint8_t Executioner::STX()
+  {
     cpu->writeMemory(addr_abs, cpu->getRegister(cpu->X));
     return 0;
-}
+  }
 
 
-// Instruction: Store Y Register at Address
-// Function:    M = Y
-uint8_t Executioner::STY()
-{
+  // Instruction: Store Y Register at Address
+  // Function:    M = Y
+  uint8_t Executioner::STY()
+  {
     cpu->writeMemory(addr_abs, cpu->getRegister(cpu->Y));
     return 0;
-}
+  }
 
 
-// Instruction: Transfer Accumulator to X Register
-// Function:    X = A
-// Flags Out:   N, Z
-uint8_t Executioner::TAX()
-{
+  // Instruction: Transfer Accumulator to X Register
+  // Function:    X = A
+  // Flags Out:   N, Z
+  uint8_t Executioner::TAX()
+  {
     cpu->incrementCycleCount();
 
     uint8_t value = cpu->getRegister(cpu->AC);
@@ -1713,14 +1739,14 @@ uint8_t Executioner::TAX()
     cpu->SetFlag(cpu->Z, value == 0x00);
     cpu->SetFlag(cpu->N, value & 0x80);
     return 0;
-}
+  }
 
 
-// Instruction: Transfer Accumulator to Y Register
-// Function:    Y = A
-// Flags Out:   N, Z
-uint8_t Executioner::TAY()
-{
+  // Instruction: Transfer Accumulator to Y Register
+  // Function:    Y = A
+  // Flags Out:   N, Z
+  uint8_t Executioner::TAY()
+  {
     cpu->incrementCycleCount();
 
     uint8_t value = cpu->getRegister(cpu->AC);
@@ -1729,14 +1755,14 @@ uint8_t Executioner::TAY()
     cpu->SetFlag(cpu->Z, value == 0x00);
     cpu->SetFlag(cpu->N, value & 0x80);
     return 0;
-}
+  }
 
 
-// Instruction: Transfer Stack Pointer to X Register
-// Function:    X = stack pointer
-// Flags Out:   N, Z
-uint8_t Executioner::TSX()
-{
+  // Instruction: Transfer Stack Pointer to X Register
+  // Function:    X = stack pointer
+  // Flags Out:   N, Z
+  uint8_t Executioner::TSX()
+  {
     uint8_t value = cpu->getRegister(cpu->SP);
     cpu->setRegister(cpu->X, value);
 
@@ -1744,14 +1770,14 @@ uint8_t Executioner::TSX()
     cpu->SetFlag(cpu->N, value & 0x80);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Transfer X Register to Accumulator
-// Function:    A = X
-// Flags Out:   N, Z
-uint8_t Executioner::TXA()
-{
+  // Instruction: Transfer X Register to Accumulator
+  // Function:    A = X
+  // Flags Out:   N, Z
+  uint8_t Executioner::TXA()
+  {
     cpu->incrementCycleCount();
     uint8_t value = cpu->getRegister(cpu->X);
     cpu->setRegister(cpu->AC, value);
@@ -1759,26 +1785,26 @@ uint8_t Executioner::TXA()
     cpu->SetFlag(cpu->Z, value == 0x00);
     cpu->SetFlag(cpu->N, value & 0x80);
     return 0;
-}
+  }
 
 
-// Instruction: Transfer X Register to Stack Pointer
-// Function:    stack pointer = X
-uint8_t Executioner::TXS()
-{
+  // Instruction: Transfer X Register to Stack Pointer
+  // Function:    stack pointer = X
+  uint8_t Executioner::TXS()
+  {
 
     uint8_t value = cpu->getRegister(cpu->X);
     cpu->setRegister(cpu->SP, value);
     cpu->incrementCycleCount();
     return 0;
-}
+  }
 
 
-// Instruction: Transfer Y Register to Accumulator
-// Function:    A = Y
-// Flags Out:   N, Z
-uint8_t Executioner::TYA()
-{
+  // Instruction: Transfer Y Register to Accumulator
+  // Function:    A = Y
+  // Flags Out:   N, Z
+  uint8_t Executioner::TYA()
+  {
     cpu->incrementCycleCount();
 
     uint8_t value = cpu->getRegister(cpu->Y);
@@ -1786,441 +1812,441 @@ uint8_t Executioner::TYA()
     cpu->SetFlag(cpu->Z, value == 0x00);
     cpu->SetFlag(cpu->N, value & 0x80);
     return 0;
-}
+  }
 
 #ifdef ILLEGAL
-    // Illegal opcodes
+  // Illegal opcodes
 
-    // Instruction: AND oper + LSR
-    // Function:    A AND oper, 0 -> [76543210] -> C
-    // Flags Out:   N, Z, C
-    // Note:        AKA ASR
-    uint8_t Executioner::ALR()
+  // Instruction: AND oper + LSR
+  // Function:    A AND oper, 0 -> [76543210] -> C
+  // Flags Out:   N, Z, C
+  // Note:        AKA ASR
+  uint8_t Executioner::ALR()
+  {
+    fetch();
+
+    temp = cpu->getRegister(cpu->AC) & fetched;
+    cpu->setRegister(cpu->AC, (uint8_t)(temp >> 1));
+
+    cpu->SetFlag(cpu->Z, temp == 0x00);
+    cpu->SetFlag(cpu->N, temp & 0x80);
+    cpu->SetFlag(cpu->C, temp & 0x0001);
+    return 0;
+  }
+
+
+  // Instruction: AND oper + set C as ASL
+  // Function:    A AND oper, bit(7) -> C
+  // Flags Out:   N, Z, C
+  // OpCode:      0x0B
+  uint8_t Executioner::ANC()
+  {
+    fetch();
+
+    uint8_t value = cpu->getRegister(cpu->AC) & fetched;
+    cpu->setRegister(cpu->AC, value);
+
+    cpu->SetFlag(cpu->Z, value == 0x00);
+    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->SetFlag(cpu->C, (value & 0xFF00) > 0);
+    return 0;
+  }
+
+  // Instruction: AND oper + set C as ROL
+  // Function:    A AND oper, bit(7) -> C
+  // Flags Out:   N, Z, C
+  // OpCode:      0x2B
+  // @see OPCode::ANC
+  uint8_t Executioner::ANC2()
+  {
+    fetch();
+
+    uint8_t value = cpu->getRegister(cpu->AC) & fetched;
+    cpu->setRegister(cpu->AC, value);
+
+    cpu->SetFlag(cpu->Z, value == 0x00);
+    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->SetFlag(cpu->C, value & 0xFF00);
+    return 0;
+  }
+
+
+  // Instruction: * AND X + AND oper
+  // Function:    (A OR CONST) AND X AND oper -> A
+  // Flags Out:   N, Z
+  // Note:        Highly unstable, involves a "magic" constant
+  //              A base value in A is determined based on the
+  //              contets of A and a constant, which may be
+  //              typically $00, $ff, $ee, etc. The value of
+  //              this constant depends on temerature, the chip
+  //              series, and maybe other factors, as well.
+  //              In order to eliminate these uncertaincies from
+  //              the equation, use either 0 as the operand or a
+  //              value of $FF in the accumulator.
+  uint8_t Executioner::ANE()
+  {
+    fetch();
+
+    uint8_t ac_value = cpu->getRegister(cpu->AC);
+    uint8_t x_value = cpu->getRegister(cpu->X);
+
+
+    ac_value = (ac_value ^ magic) & x_value & fetched;
+
+    cpu->setRegister(cpu->AC, ac_value);
+
+    cpu->SetFlag(cpu->Z, (ac_value & 0x00FF) == 0x00);
+    cpu->SetFlag(cpu->N, ac_value & 0x0080);
+
+    return 0;
+  }
+
+
+  // Instruction: AND oper + ROR
+  // Function:    A AND oper, C -> [76543210] -> C
+  // Flags Out:   N, Z, C, V
+  uint8_t Executioner::ARR()
+  {
+    fetch();
+
+    IN::AddressMode::AddressingModes addrMode;
+
+    uint8_t value = cpu->getRegister(cpu->AC);
+    temp = (cpu->GetFlag(cpu->C) << 7) | ((value & fetched) >> 1);
+    cpu->SetFlag(cpu->C, fetched & 0x01);
+    cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x00);
+    cpu->SetFlag(cpu->N, temp & 0x0080);
+    cpu->SetFlag(cpu->V, (temp & 0x40) ^ ((temp & 0x20) << 1));
+
+    if (getAddressMode() == addrMode.Implied)
     {
-        fetch();
+      cpu->setRegister(cpu->AC, (uint8_t)(temp & 0x00FF));
+    }
+    else
+    {
+      cpu->writeMemory(addr_abs, temp & 0x00FF);
+    }
+    return 0;
+  }
 
-        temp = cpu->getRegister(cpu->AC) & fetched;
-        cpu->setRegister(cpu->AC, (uint8_t) (temp >> 1));
 
-        cpu->SetFlag(cpu->Z, temp == 0x00);
-        cpu->SetFlag(cpu->N, temp & 0x80);
-        cpu->SetFlag(cpu->C, temp & 0x0001);
-        return 0;
+  // Instruction: DEC oper + CMP oper
+  // Function:    M - 1 -> M, A - M
+  // Flags Out:   N, Z, C
+  uint8_t Executioner::DCP()
+  {
+    fetch();
+    uint8_t value = cpu->getRegister(cpu->AC);
+    temp = fetched - 1;
+    //cpu->writeMemory(addr_abs, temp);
+    cpu->writeMemory(addr_abs, temp & 0x00FF);
+    cpu->SetFlag(cpu->C, value >= fetched);
+    cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x00);
+    cpu->SetFlag(cpu->N, temp & 0x0080);
+    return 0;
+  }
+
+
+  // Instruction: INC oper + SBC oper
+  // Function:    M + 1 -> M, A - M - (C - 1) -> A
+  // Flags Out:   N, Z, C, V
+  uint8_t Executioner::ISC()
+  {
+    fetch();
+    temp = fetched + 1;
+    //cpu->writeMemory(addr_abs, temp);
+    cpu->writeMemory(addr_abs, temp & 0x00FF);
+    SBC();
+    return 0;
+  }
+
+
+  // Instruction: LDA/TSX oper
+  // Function:    M AND SP -> A, X, SP
+  // Flags Out:   N, Z
+  uint8_t Executioner::LAS()
+  {
+    fetch();
+    uint8_t value = cpu->getRegister(cpu->SP);
+    uint8_t result = value & fetched;
+    cpu->setRegister(cpu->SP, result);
+    cpu->setRegister(cpu->AC, result);
+    cpu->setRegister(cpu->X, result);
+
+    cpu->SetFlag(cpu->Z, (result & 0xFF) == 0x00);
+    cpu->SetFlag(cpu->N, result & 0x80);
+
+    return 1;
+  }
+
+
+  // Instruction: LDA oper + LDX oper
+  // Function:    M -> A -> X
+  // Flags Out:   N, Z
+  uint8_t Executioner::LAX()
+  {
+    fetch();
+
+    cpu->setRegister(cpu->AC, fetched);
+    cpu->setRegister(cpu->X, fetched);
+
+    cpu->SetFlag(cpu->Z, (fetched & 0xFF) == 0x00);
+    cpu->SetFlag(cpu->N, fetched & 0x80);
+
+    return 1;
+  }
+
+
+  // Instruction: Store * AND oper in A and X
+  // Function:    (A OR CONST) AND oper -> A -> X
+  // Flags Out:   N, Z
+  // Note:        Highly unstable, involves a "magic" constant
+  // See:         Processor::ANE
+  uint8_t Executioner::LXA()
+  {
+    fetch();
+
+    uint8_t value = (cpu->getRegister(cpu->AC) ^ magic) & fetched;
+
+    cpu->setRegister(cpu->AC, value);
+    cpu->setRegister(cpu->X, value);
+
+    cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x00);
+    cpu->SetFlag(cpu->N, value & 0x0080);
+
+    return 0;
+  }
+
+
+  // Instruction: ROL oper + AND oper
+  // Function:    M = C <- [76543210] <- C, A AND M -> A
+  // Flags Out:   N, Z, C
+  uint8_t Executioner::RLA()
+  {
+    fetch();
+    temp = (uint16_t)((fetched << 1) & 0xFF) | cpu->GetFlag(cpu->C);
+    cpu->writeMemory(addr_abs, temp & 0x00FF);
+    cpu->SetFlag(cpu->C, (fetched & 0xFF00) > 0);
+  Processor:AND();
+    return 0;
+  }
+
+
+  // Instruction: ROL oper + ADC oper
+  // Function:    M = C -> [76543210] -> C, A + M + C -> A, C
+  // Flags Out:   N, Z, C, V
+  uint8_t Executioner::RRA()
+  {
+    fetch();
+    temp = (uint16_t)(fetched << 1) | cpu->GetFlag(cpu->C);
+    cpu->writeMemory(addr_abs, temp & 0x00FF);
+    cpu->SetFlag(cpu->C, (fetched & 0xFF00) > 0);
+  Processor:ADC();
+    return 0;
+  }
+
+
+  // Instruction: A and X are put on the bus at the same
+  //              time (resulting effectively in an AND
+  //              operation) and stored in M
+  // Function:    A AND X -> M
+  // Flags Out:   -
+  uint8_t Executioner::SAX()
+  {
+    fetch();
+
+    uint8_t value = cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X);
+    cpu->writeMemory(addr_abs, value & 0x00FF);
+    cpu->SetFlag(cpu->Z, value == 0x00);
+    cpu->SetFlag(cpu->N, value & 0x80);
+    return 0;
+  }
+
+
+  // Instruction: CMP and DEX at once, sets flags like CMP
+  // Function:    (A AND X) - oper -> X
+  // Flags Out:   N, Z, C
+  uint8_t Executioner::SBX()
+  {
+    fetch();
+
+    uint8_t value = (cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X)) - fetched;
+    cpu->setRegister(cpu->X, value);
+    //x = ((uint16_t)a & (uint16_t)x) - (uint16_t)fetched;
+    cpu->SetFlag(cpu->C, value & 0xFF00);
+    cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
+    cpu->SetFlag(cpu->N, value & 0x0080);
+
+    return 0;
+  }
+
+
+  // Instruction: Stores A AND X AND (high-byte of addr. + 1) at addr.
+  // Function:    A AND X AND (H+1) -> M
+  // Flags Out:   -
+  // Note:        Unstable: Sometimes 'AND (H+1)' is dropped, page boundary
+  //              crossings may not work (with the high-byte of the value used
+  //              as the high-byte of the address).
+  uint8_t Executioner::SHA()
+  {
+    fetch();
+    //temp = ((uint16_t)a & (uint16_t)x) & (uint16_t)((addr_abs >> 8) + 1);
+    //cpu->writeMemory(addr_abs, temp & 0x00FF);
+
+    uint16_t value = ((uint16_t)cpu->getRegister(cpu->AC) & (uint16_t)cpu->getRegister(cpu->X));
+    value &= (uint16_t)((addr_abs >> 8) + 1);
+    cpu->writeMemory(addr_abs, (uint8_t)(temp & 0x00FF));
+
+    return 0;
+  }
+
+
+  // Instruction: Stores X AND (high-byte of addr. + 1) at addr.
+  // Function:    X AND (H+1) -> M
+  // Flags Out:   -
+  uint8_t Executioner::SHX()
+  {
+    fetch();
+    //temp = ((uint16_t)x) & (uint16_t)((addr_abs >> 8) + 1);
+    //cpu->writeMemory(addr_abs, temp & 0x00FF);
+
+    uint16_t value = ((uint16_t)cpu->getRegister(cpu->X) & (uint16_t)((addr_abs >> 8) + 1));
+    cpu->writeMemory(addr_abs, (uint8_t)(temp & 0x00FF));
+
+    return 0;
+  }
+
+
+  // Instruction: Stores Y AND (high-byte of addr. + 1) at addr.
+  // Function:    Y AND (H+1) -> M
+  // Flags Out:   -
+  uint8_t Executioner::SHY()
+  {
+    fetch();
+    //temp = ((uint16_t)y) & (uint16_t)((addr_abs >> 8) + 1);
+    //cpu->writeMemory(addr_abs, temp & 0x00FF);
+
+    uint16_t value = ((uint16_t)cpu->getRegister(cpu->Y) & (uint16_t)((addr_abs >> 8) + 1));
+    cpu->writeMemory(addr_abs, (uint8_t)(temp & 0x00FF));
+    return 0;
+  }
+
+
+  // Instruction: ASL oper + ORA oper
+  // Function:    M = C <- [76543210] <- 0, A OR M -> A
+  // Flags Out:   N, Z, C
+  uint8_t Executioner::SLO()
+  {
+    fetch();
+    temp = (uint16_t)fetched << 1;
+    cpu->SetFlag(cpu->C, (temp & 0xFF00) > 0);
+    cpu->writeMemory(addr_abs, temp & 0x00FF);
+
+    //a = a | fetched;
+    uint8_t value = cpu->getRegister(cpu->AC) | fetched;
+    cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
+    cpu->SetFlag(cpu->N, value & 0x80);
+    return 0;
+  }
+
+
+  // Instruction: LSR oper + EOR oper
+  // Function:    M = 0 -> [76543210] -> 0, A EOR M -> A
+  // Flags Out:   -
+  uint8_t Executioner::SRE()
+  {
+    fetch();
+
+    IN::AddressMode::AddressingModes addrMode;
+
+    cpu->SetFlag(cpu->C, fetched & 0x0001);
+    temp = fetched >> 1;
+    cpu->SetFlag(cpu->Z, (temp & 0xFF) == 0x0000);
+    cpu->SetFlag(cpu->N, temp & 0x80);
+
+    uint8_t value = (uint8_t)(temp & 0xFF);
+
+    if (getAddressMode() == addrMode.Implied)
+    {
+      cpu->setRegister(cpu->AC, value);
+    }
+    else
+    {
+      cpu->writeMemory(addr_abs, value);
     }
 
-
-    // Instruction: AND oper + set C as ASL
-    // Function:    A AND oper, bit(7) -> C
-    // Flags Out:   N, Z, C
-    // OpCode:      0x0B
-    uint8_t Executioner::ANC()
-    {
-        fetch();
-
-        uint8_t value = cpu->getRegister(cpu->AC) & fetched;
-        cpu->setRegister(cpu->AC, value);
-
-        cpu->SetFlag(cpu->Z, value == 0x00);
-        cpu->SetFlag(cpu->N, value & 0x80);
-        cpu->SetFlag(cpu->C, (value & 0xFF00) > 0);
-        return 0;
-    }
-
-    // Instruction: AND oper + set C as ROL
-    // Function:    A AND oper, bit(7) -> C
-    // Flags Out:   N, Z, C
-    // OpCode:      0x2B
-    // @see OPCode::ANC
-    uint8_t Executioner::ANC2()
-    {
-        fetch();
-
-        uint8_t value = cpu->getRegister(cpu->AC) & fetched;
-        cpu->setRegister(cpu->AC, value);
-
-        cpu->SetFlag(cpu->Z, value == 0x00);
-        cpu->SetFlag(cpu->N, value & 0x80);
-        cpu->SetFlag(cpu->C, value & 0xFF00);
-        return 0;
-    }
-
-
-    // Instruction: * AND X + AND oper
-    // Function:    (A OR CONST) AND X AND oper -> A
-    // Flags Out:   N, Z
-    // Note:        Highly unstable, involves a "magic" constant
-    //              A base value in A is determined based on the
-    //              contets of A and a constant, which may be
-    //              typically $00, $ff, $ee, etc. The value of
-    //              this constant depends on temerature, the chip
-    //              series, and maybe other factors, as well.
-    //              In order to eliminate these uncertaincies from
-    //              the equation, use either 0 as the operand or a
-    //              value of $FF in the accumulator.
-    uint8_t Executioner::ANE()
-    {
-        fetch();
-
-        uint8_t ac_value = cpu->getRegister(cpu->AC);
-        uint8_t x_value = cpu->getRegister(cpu->X);
-
-
-        ac_value = (ac_value ^ magic) & x_value & fetched;
-
-        cpu->setRegister(cpu->AC, ac_value);
-
-        cpu->SetFlag(cpu->Z, (ac_value & 0x00FF) == 0x00);
-        cpu->SetFlag(cpu->N, ac_value & 0x0080);
-
-        return 0;
-    }
-
-
-    // Instruction: AND oper + ROR
-    // Function:    A AND oper, C -> [76543210] -> C
-    // Flags Out:   N, Z, C, V
-    uint8_t Executioner::ARR()
-    {
-        fetch();
-
-        IN::AddressMode::AddressingModes addrMode;
-
-        uint8_t value = cpu->getRegister(cpu->AC);
-        temp = (cpu->GetFlag(cpu->C) << 7) | ((value & fetched) >> 1);
-        cpu->SetFlag(cpu->C, fetched & 0x01);
-        cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x00);
-        cpu->SetFlag(cpu->N, temp & 0x0080);
-        cpu->SetFlag(cpu->V, (temp & 0x40) ^ ((temp & 0x20) << 1));
-
-        if (getAddressMode() == addrMode.Implied)
-        {
-            cpu->setRegister(cpu->AC, (uint8_t) (temp & 0x00FF));
-        }
-        else
-        {
-            cpu->writeMemory(addr_abs, temp & 0x00FF);
-        }
-        return 0;
-    }
-
-
-    // Instruction: DEC oper + CMP oper
-    // Function:    M - 1 -> M, A - M
-    // Flags Out:   N, Z, C
-    uint8_t Executioner::DCP()
-    {
-        fetch();
-        uint8_t value = cpu->getRegister(cpu->AC);
-        temp = fetched - 1;
-        //cpu->writeMemory(addr_abs, temp);
-        cpu->writeMemory(addr_abs, temp & 0x00FF);
-        cpu->SetFlag(cpu->C, value >= fetched);
-        cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x00);
-        cpu->SetFlag(cpu->N, temp & 0x0080);
-        return 0;
-    }
-
-
-    // Instruction: INC oper + SBC oper
-    // Function:    M + 1 -> M, A - M - (C - 1) -> A
-    // Flags Out:   N, Z, C, V
-    uint8_t Executioner::ISC()
-    {
-        fetch();
-        temp = fetched + 1;
-        //cpu->writeMemory(addr_abs, temp);
-        cpu->writeMemory(addr_abs, temp & 0x00FF);
-        SBC();
-        return 0;
-    }
-
-
-    // Instruction: LDA/TSX oper
-    // Function:    M AND SP -> A, X, SP
-    // Flags Out:   N, Z
-    uint8_t Executioner::LAS()
-    {
-        fetch();
-        uint8_t value = cpu->getRegister(cpu->SP);
-        uint8_t result = value & fetched;
-        cpu->setRegister(cpu->SP, result);
-        cpu->setRegister(cpu->AC, result);
-        cpu->setRegister(cpu->X, result);
-
-        cpu->SetFlag(cpu->Z, (result & 0xFF) == 0x00);
-        cpu->SetFlag(cpu->N, result & 0x80);
-
-        return 1;
-    }
-
-
-    // Instruction: LDA oper + LDX oper
-    // Function:    M -> A -> X
-    // Flags Out:   N, Z
-    uint8_t Executioner::LAX()
-    {
-        fetch();
-
-        cpu->setRegister(cpu->AC, fetched);
-        cpu->setRegister(cpu->X, fetched);
-
-        cpu->SetFlag(cpu->Z, (fetched & 0xFF) == 0x00);
-        cpu->SetFlag(cpu->N, fetched & 0x80);
-
-        return 1;
-    }
-
-
-    // Instruction: Store * AND oper in A and X
-    // Function:    (A OR CONST) AND oper -> A -> X
-    // Flags Out:   N, Z
-    // Note:        Highly unstable, involves a "magic" constant
-    // See:         Processor::ANE
-    uint8_t Executioner::LXA()
-    {
-        fetch();
-
-        uint8_t value = (cpu->getRegister(cpu->AC) ^ magic) & fetched;
-
-        cpu->setRegister(cpu->AC, value);
-        cpu->setRegister(cpu->X, value);
-
-        cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x00);
-        cpu->SetFlag(cpu->N, value & 0x0080);
-
-        return 0;
-    }
-
-
-    // Instruction: ROL oper + AND oper
-    // Function:    M = C <- [76543210] <- C, A AND M -> A
-    // Flags Out:   N, Z, C
-    uint8_t Executioner::RLA()
-    {
-        fetch();
-        temp = (uint16_t)((fetched << 1) & 0xFF) | cpu->GetFlag(cpu->C);
-        cpu->writeMemory(addr_abs, temp & 0x00FF);
-        cpu->SetFlag(cpu->C, (fetched & 0xFF00) > 0);
-        Processor:AND();
-        return 0;
-    }
-
-
-    // Instruction: ROL oper + ADC oper
-    // Function:    M = C -> [76543210] -> C, A + M + C -> A, C
-    // Flags Out:   N, Z, C, V
-    uint8_t Executioner::RRA()
-    {
-        fetch();
-        temp = (uint16_t)(fetched << 1) | cpu->GetFlag(cpu->C);
-        cpu->writeMemory(addr_abs, temp & 0x00FF);
-        cpu->SetFlag(cpu->C, (fetched & 0xFF00) > 0);
-        Processor:ADC();
-        return 0;
-    }
-
-
-    // Instruction: A and X are put on the bus at the same
-    //              time (resulting effectively in an AND
-    //              operation) and stored in M
-    // Function:    A AND X -> M
-    // Flags Out:   -
-    uint8_t Executioner::SAX()
-    {
-        fetch();
-
-        uint8_t value = cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X);
-        cpu->writeMemory(addr_abs, value & 0x00FF);
-        cpu->SetFlag(cpu->Z, value == 0x00);
-        cpu->SetFlag(cpu->N, value & 0x80);
-        return 0;
-    }
-
-
-    // Instruction: CMP and DEX at once, sets flags like CMP
-    // Function:    (A AND X) - oper -> X
-    // Flags Out:   N, Z, C
-    uint8_t Executioner::SBX()
-    {
-        fetch();
-
-        uint8_t value = (cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X)) - fetched;
-        cpu->setRegister(cpu->X, value);
-        //x = ((uint16_t)a & (uint16_t)x) - (uint16_t)fetched;
-        cpu->SetFlag(cpu->C, value & 0xFF00);
-        cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
-        cpu->SetFlag(cpu->N, value & 0x0080);
-
-        return 0;
-    }
-
-
-    // Instruction: Stores A AND X AND (high-byte of addr. + 1) at addr.
-    // Function:    A AND X AND (H+1) -> M
-    // Flags Out:   -
-    // Note:        Unstable: Sometimes 'AND (H+1)' is dropped, page boundary
-    //              crossings may not work (with the high-byte of the value used
-    //              as the high-byte of the address).
-    uint8_t Executioner::SHA()
-    {
-        fetch();
-        //temp = ((uint16_t)a & (uint16_t)x) & (uint16_t)((addr_abs >> 8) + 1);
-        //cpu->writeMemory(addr_abs, temp & 0x00FF);
-
-        uint16_t value = ((uint16_t) cpu->getRegister(cpu->AC) & (uint16_t) cpu->getRegister(cpu->X));
-        value &= (uint16_t) ((addr_abs >> 8) + 1);
-        cpu->writeMemory(addr_abs, (uint8_t) (temp & 0x00FF));
-
-        return 0;
-    }
-
-
-    // Instruction: Stores X AND (high-byte of addr. + 1) at addr.
-    // Function:    X AND (H+1) -> M
-    // Flags Out:   -
-    uint8_t Executioner::SHX()
-    {
-        fetch();
-        //temp = ((uint16_t)x) & (uint16_t)((addr_abs >> 8) + 1);
-        //cpu->writeMemory(addr_abs, temp & 0x00FF);
-
-        uint16_t value = ((uint16_t) cpu->getRegister(cpu->X) & (uint16_t) ((addr_abs >> 8) + 1));
-        cpu->writeMemory(addr_abs, (uint8_t) (temp & 0x00FF));
-
-        return 0;
-    }
-
-
-    // Instruction: Stores Y AND (high-byte of addr. + 1) at addr.
-    // Function:    Y AND (H+1) -> M
-    // Flags Out:   -
-    uint8_t Executioner::SHY()
-    {
-        fetch();
-        //temp = ((uint16_t)y) & (uint16_t)((addr_abs >> 8) + 1);
-        //cpu->writeMemory(addr_abs, temp & 0x00FF);
-
-        uint16_t value = ((uint16_t) cpu->getRegister(cpu->Y) & (uint16_t) ((addr_abs >> 8) + 1));
-        cpu->writeMemory(addr_abs, (uint8_t) (temp & 0x00FF));
-        return 0;
-    }
-
-
-    // Instruction: ASL oper + ORA oper
-    // Function:    M = C <- [76543210] <- 0, A OR M -> A
-    // Flags Out:   N, Z, C
-    uint8_t Executioner::SLO()
-    {
-        fetch();
-        temp = (uint16_t)fetched << 1;
-        cpu->SetFlag(cpu->C, (temp & 0xFF00) > 0);
-        cpu->writeMemory(addr_abs, temp & 0x00FF);
-
-        //a = a | fetched;
-        uint8_t value = cpu->getRegister(cpu->AC) | fetched;
-        cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
-        cpu->SetFlag(cpu->N, value & 0x80);
-        return 0;
-    }
-
-
-    // Instruction: LSR oper + EOR oper
-    // Function:    M = 0 -> [76543210] -> 0, A EOR M -> A
-    // Flags Out:   -
-    uint8_t Executioner::SRE()
-    {
-        fetch();
-
-        IN::AddressMode::AddressingModes addrMode;
-
-        cpu->SetFlag(cpu->C, fetched & 0x0001);
-        temp = fetched >> 1;    
-        cpu->SetFlag(cpu->Z, (temp & 0xFF) == 0x0000);
-        cpu->SetFlag(cpu->N, temp & 0x80);
-
-        uint8_t value = (uint8_t) (temp & 0xFF);
-
-        if (getAddressMode() == addrMode.Implied)
-        {
-            cpu->setRegister(cpu->AC, value);
-        }
-        else
-        {
-            cpu->writeMemory(addr_abs, value);
-        }
-
-        cpu->setRegister(cpu->AC, value ^ fetched);
-
-        return 0;
-    }
-
-
-    // Instruction: Puts A AND X in SP and stores A AND X AND (high-byte of addr. + 1) at addr.
-    // Function:    A AND X -> SP, A AND X AND (H + 1) -> M
-    // Flags Out:   -
-    uint8_t Executioner::TAS()
-    {
-        fetch();
-        uint8_t value = cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X);
-        cpu->setRegister(cpu->SP, value);
-        value &= (uint8_t) ((addr_abs >> 8) + 1) & 0xFF;
-
-        cpu->writeMemory(addr_abs, value);
-        return 0;
-    }
-
-
-    // Alias for SBC
-    uint8_t Executioner::USBC()
-    {
-        return SBC();
-    }
-
-
-    // Instruction: No Operation (Skip Byte)
-    // Function:    -
-    // Flags Out:   -
-    // Note:        -
-    uint8_t Executioner::DOP()
-    {
-        // Sadly not all NOPs are equal, Ive added a few here
-        // based on https://wiki.nesdev.com/w/index.php/CPU_unofficial_opcodes
-        // and will add more based on game compatibility, and ultimately
-        // I'd like to cover all illegal opcodes too
-        cpu->incrementCycleCount();
-        cpu->incrementCycleCount();
-        return 0;
-    }
-
-
-    // Instruction: No Operation (Ignore)
-    // Function:    -
-    // Flags Out:   -
-    // Note:        -
-    uint8_t Executioner::TOP()
-    {
-        cpu->incrementCycleCount();
-        return 0;
-    }
-
-
-    // This instruction freezes the CPU.
-    // The processor will be trapped infinitely in
-    // T1 phase with $FF on the data bus.
-    // — Reset required.
-    uint8_t Executioner::JAM()
-    {
-        while(true);
-        //throw std::exception();
-        //return 0;
-    }
+    cpu->setRegister(cpu->AC, value ^ fetched);
+
+    return 0;
+  }
+
+
+  // Instruction: Puts A AND X in SP and stores A AND X AND (high-byte of addr. + 1) at addr.
+  // Function:    A AND X -> SP, A AND X AND (H + 1) -> M
+  // Flags Out:   -
+  uint8_t Executioner::TAS()
+  {
+    fetch();
+    uint8_t value = cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X);
+    cpu->setRegister(cpu->SP, value);
+    value &= (uint8_t)((addr_abs >> 8) + 1) & 0xFF;
+
+    cpu->writeMemory(addr_abs, value);
+    return 0;
+  }
+
+
+  // Alias for SBC
+  uint8_t Executioner::USBC()
+  {
+    return SBC();
+  }
+
+
+  // Instruction: No Operation (Skip Byte)
+  // Function:    -
+  // Flags Out:   -
+  // Note:        -
+  uint8_t Executioner::DOP()
+  {
+    // Sadly not all NOPs are equal, Ive added a few here
+    // based on https://wiki.nesdev.com/w/index.php/CPU_unofficial_opcodes
+    // and will add more based on game compatibility, and ultimately
+    // I'd like to cover all illegal opcodes too
+    cpu->incrementCycleCount();
+    cpu->incrementCycleCount();
+    return 0;
+  }
+
+
+  // Instruction: No Operation (Ignore)
+  // Function:    -
+  // Flags Out:   -
+  // Note:        -
+  uint8_t Executioner::TOP()
+  {
+    cpu->incrementCycleCount();
+    return 0;
+  }
+
+
+  // This instruction freezes the CPU.
+  // The processor will be trapped infinitely in
+  // T1 phase with $FF on the data bus.
+  // — Reset required.
+  uint8_t Executioner::JAM()
+  {
+    while (true);
+    //throw std::exception();
+    //return 0;
+  }
 #else
-    // This function captures illegal opcodes
-    // Only needed when ILLEGAL macro is not set
-    uint8_t Executioner::XXX()
-    {
-        return 0;
-    }
+  // This function captures illegal opcodes
+  // Only needed when ILLEGAL macro is not set
+  uint8_t Executioner::XXX()
+  {
+    return 0;
+  }
 #endif
 
 #pragma endregion INSTRUCTION IMPLEMENTATIONS

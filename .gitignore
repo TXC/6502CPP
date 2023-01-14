@@ -3,6 +3,7 @@
 nbproject
 .idea
 .vscode
+.vs
 .buildpath
 .project
 .settings/
@@ -10,19 +11,9 @@ backup
 _cache
 atlassian*
 
-# Other generated files#
-########################
-node_modules
-
 # Logs and databases #
 ######################
 *.log
-*.sql
-*.sqlite
-
-# This file will be deleted if you run the system on localhost
-# ! DON'T COMMIT THE DELETION !
-sitedirect/source/sitedirect_install.php
 
 # OS generated files #
 ######################
@@ -34,5 +25,10 @@ sitedirect/source/sitedirect_install.php
 ehthumbs.db
 Thumbs.db
 
-build
+# Project generated files #
+###########################
+build/*
+*/build/*
+out/*
 
+*/out/*

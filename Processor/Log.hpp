@@ -4,9 +4,9 @@
 namespace CPU
 {
 #ifdef LOGMODE
-    static FILE* logfile = nullptr;
+  static FILE* logfile = nullptr;
 #endif
 
-    void log(std::string text);
+  void log(std::string text);
 
 };
