@@ -1,0 +1,38 @@
+# IDE generated files #
+######################
+nbproject
+.idea
+.vscode
+.buildpath
+.project
+.settings/
+backup
+_cache
+atlassian*
+
+# Other generated files#
+########################
+node_modules
+
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+
+# This file will be deleted if you run the system on localhost
+# ! DON'T COMMIT THE DELETION !
+sitedirect/source/sitedirect_install.php
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+build
+
