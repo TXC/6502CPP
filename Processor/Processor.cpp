@@ -9,8 +9,10 @@
 #include <spdlog/spdlog.h>
 #ifdef SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #else
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/ranges.h>
 #endif
 
 namespace CPU
@@ -83,19 +85,19 @@ namespace CPU
       ));
     }
 
-    /*
-    if (noMemoryReset == false)
-    {
-        bus->reset();
-    }
-    */
+    fmt::memory_buffer buffer;
+
     bus->reset();
     uint16_t pos;
     for (uint16_t i = 0; i < programSize; i++)
     {
+      fmt::format_to(std::back_inserter(buffer), "{:02X} ", program[i]);
       pos = (offset + i);
       bus->ram[pos] = program[i];
     }
+
+    Logger::log()->info("** Loading Program: {}", fmt::to_string(buffer));
+
     reset();
     reg.SP = 0xFF;
   }

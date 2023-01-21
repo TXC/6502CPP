@@ -18,6 +18,7 @@ OPTION(VERBOSE "Enable verbosity" OFF)
 OPTION(USE_TEST "Enable Tests" OFF)
 OPTION(WITH_LOGGING "Enable logging" ${DEBUG})
 OPTION(WITH_ILLEGAL "Enable illegal instructions" ON)
+OPTION(EMULATE65C02 "Emulate 65C02 (clears decimal flag on interrupt)" ON)
 SET(LOGFILE "Processor.log" CACHE STRING "Filename to log to")
 
 IF(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")

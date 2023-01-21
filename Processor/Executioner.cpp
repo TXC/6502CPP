@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <filesystem>
+
 #include <spdlog/spdlog.h>
 #ifdef SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
@@ -39,10 +40,6 @@ namespace CPU
 
     uint16_t newPc = (cpu->readMemory(addr_abs + 1) << 8) | cpu->readMemory(addr_abs + 0);
 
-//#ifdef DEBUG
-//    Logger::log()->debug("RESET - NEW PC: {:04X} {: >69}", newPc, cpu->reg);
-//#endif
-
     // Set it
     cpu->setProgramCounter(newPc);
 
@@ -67,13 +64,13 @@ namespace CPU
             operationCycles = 0;
     try
     {
-#ifdef LOGMODE
+#ifdef DEBUG
       Logger::log()->info("ADDR MODE START    - OP {} {: >53}", getOperation(), cpu->reg);
 #endif
 
       addressModeCycles = (this->*lookup[op].addrmode.op)();
 
-#ifdef LOGMODE
+#ifdef DEBUG
       Logger::log()->info("ADDR MODE FINISHED - OP {} {: >53}", getOperation(), cpu->reg);
 #endif
 
@@ -99,13 +96,13 @@ namespace CPU
 
     try
     {
-#ifdef LOGMODE
+#ifdef DEBUG
       Logger::log()->info("OPERATION START    - OP {} {: >53}", getOperation(), cpu->reg);
 #endif
 
       operationCycles = (this->*lookup[op].operate.op)();
 
-#ifdef LOGMODE
+#ifdef DEBUG
       Logger::log()->info("OPERATION FINISHED - OP {} {: >53}", getOperation(), cpu->reg);
 #endif
 
@@ -222,8 +219,6 @@ namespace CPU
 // Operand is always AC
   uint8_t Executioner::ACC()
   {
-    //cpu->readMemory(pc);
-    //cpu->incrementCycleCount();
     fetched = cpu->getRegister(cpu->AC);
 
 #ifdef DEBUG
@@ -241,15 +236,7 @@ namespace CPU
   // target the accumulator, for instructions like PHA
   uint8_t Executioner::IMP()
   {
-    //fetched = a;
-    //cpu->incrementCycleCount();
     fetched = 0x0;
-//#ifdef DEBUG
-//    Logger::log()->debug(
-//      "OP {} {: >75}",
-//      getOperation(), fetched, cpu->reg
-//    );
-//#endif
     return 0;
   }
 
@@ -260,7 +247,6 @@ namespace CPU
   {
     addr_abs = cpu->getProgramCounter();
     cpu->incrementProgramCounter();
-    //cpu->incrementCycleCount();
 #ifdef DEBUG
     Logger::log()->debug(
       "OP {} - addr_abs: {:04X} {: >57}",
@@ -311,7 +297,6 @@ namespace CPU
 #endif
 
     addr_abs = cpu->readMemory(cpu->getProgramCounter());
-    //cpu->readMemory(addr_abs);
     cpu->incrementCycleCount();
 
     addr_abs += cpu->getRegister(cpu->X);
@@ -339,7 +324,6 @@ namespace CPU
     );
 #endif
     addr_abs = cpu->readMemory(cpu->getProgramCounter());
-    //cpu->readMemory(addr_abs);
     cpu->incrementCycleCount();
 
     addr_abs += cpu->getRegister(cpu->Y);
@@ -372,7 +356,7 @@ namespace CPU
 #endif
 
     uint16_t a2 = (addr_rel + 1) & 0xFFFF;
-#ifdef LOGMODE
+#ifdef DEBUG
     cpu->dumpRam(cpu->getProgramCounter());
 #endif
     //cpu->incrementProgramCounter();
@@ -387,7 +371,6 @@ namespace CPU
       //addr_rel = a2 - ((addr_rel ^ 0xFF) + 1);
       //addr_rel |= 0xFF00;
       addr_rel = (a2 | 0xFF00);
-      //cpu->incrementCycleCount();
     }
     else
     {
@@ -470,7 +453,6 @@ namespace CPU
 
     if ((addr_abs & 0xFF00) != (hi << 8) && !in_array<uint8_t>(cpu->opcode, ignoredOpCodes))
     {
-      //cpu->incrementCycleCount();
       cpu->addExtraCycle();
 #ifdef DEBUG
       Logger::log()->debug(
@@ -521,7 +503,6 @@ namespace CPU
     ignoredOpCodes.push_back(0x99);
     if ((addr_abs & 0xFF00) != (hi << 8) && !in_array<uint8_t>(cpu->opcode, ignoredOpCodes))
     {
-      //cpu->incrementCycleCount();
       cpu->addExtraCycle();
 #ifdef DEBUG
       Logger::log()->debug(
@@ -610,7 +591,6 @@ namespace CPU
 #endif
 
     cpu->incrementProgramCounter();
-    //cpu->readMemory(t);
     cpu->incrementCycleCount();
 
     uint8_t x = cpu->getRegister(cpu->X);
@@ -645,7 +625,6 @@ namespace CPU
 #endif
 
     cpu->incrementProgramCounter();
-    //cpu->incrementCycleCount();
 
     uint16_t lo = cpu->readMemory(t & 0x00FF);
     uint16_t hi = cpu->readMemory((t + 1) & 0x00FF);
@@ -664,7 +643,6 @@ namespace CPU
     ignoredOpCodes.push_back(0x91);
     if ((addr_abs & 0xFF00) != (hi << 8) && !in_array<uint8_t>(cpu->opcode, ignoredOpCodes))
     {
-      //cpu->incrementCycleCount();
       cpu->addExtraCycle();
 #ifdef DEBUG
       Logger::log()->debug(
@@ -740,7 +718,7 @@ namespace CPU
     cpu->incrementCycleCount();
 
     uint16_t pc = cpu->getProgramCounter();
-#ifdef LOGMODE
+#ifdef DEBUG
     cpu->dumpRam(cpu->getProgramCounter()-1);
 #endif
 
@@ -776,7 +754,7 @@ namespace CPU
 //    Logger::log()->debug("OP {} - NEW PC: {:04X} {: >59}", getOperation(), newPc, cpu->reg);
 //#endif
 
-#ifdef LOGMODE
+#ifdef DEBUG
     cpu->DumpStackAtPointer();
 #endif
 
@@ -882,8 +860,6 @@ namespace CPU
       // The signed Overflow flag is set based on all that up there! :D
       cpu->SetFlag(cpu->V, (~((uint16_t)fetched ^ (uint16_t)current) & ((uint16_t)temp ^ (uint16_t)current)) & 0x80);
 
-      //Logger::log->info("A: 0x{:04X} - Fetched: 0x{:04X} - TEMP: 0x{:04X}", a, fetched, temp);
-
       cpu->SetFlag(cpu->C, temp > 255);
       temp = temp & 0x00FF;
 #ifdef DECIMAL_MODE
@@ -935,9 +911,6 @@ namespace CPU
 
     uint8_t current = cpu->getRegister(cpu->AC);
     uint16_t value = 0x00;
-#ifdef LOGMODE
-    Logger::log()->info("OP {} - REGISTERS: {: >61}", getOperation(), cpu->reg);
-#endif
 
 #ifdef DECIMAL_MODE
     if (cpu->GetFlag(cpu->D))
@@ -1022,7 +995,6 @@ namespace CPU
 
     if (getAddressModeName() == "ACC")
     {
-      //a = (uint8_t) (value & 0x00FF);
       cpu->setRegister(cpu->AC, (uint8_t)(value & 0x00FF));
     }
     else
@@ -1071,7 +1043,7 @@ namespace CPU
   uint8_t Executioner::BIT()
   {
     fetch();
-    //uint8_t value = a & fetched;
+
     uint8_t value = (cpu->getRegister(cpu->AC) & fetched);
 
     cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
@@ -1180,7 +1152,7 @@ namespace CPU
   uint8_t Executioner::CMP()
   {
     fetch();
-    //uint8_t value = (uint16_t)a - (uint16_t)fetched;
+
     uint8_t value = (cpu->getRegister(cpu->AC) - fetched);
     cpu->SetFlag(cpu->C, cpu->getRegister(cpu->AC) >= fetched);
     cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
@@ -1195,7 +1167,7 @@ namespace CPU
   uint8_t Executioner::CPX()
   {
     fetch();
-    //uint8_t value = (uint16_t)x - (uint16_t)fetched;
+
     uint8_t value = (cpu->getRegister(cpu->X) - fetched);
     cpu->SetFlag(cpu->C, cpu->getRegister(cpu->X) >= fetched);
     cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
@@ -1210,7 +1182,7 @@ namespace CPU
   uint8_t Executioner::CPY()
   {
     fetch();
-    //uint16_t value = (uint16_t)y - (uint16_t)fetched;
+
     uint8_t value = (cpu->getRegister(cpu->Y) - fetched);
     cpu->SetFlag(cpu->C, cpu->getRegister(cpu->Y) >= fetched);
     cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
@@ -1247,11 +1219,6 @@ namespace CPU
   // Flags Out:   N, Z
   uint8_t Executioner::DEX()
   {
-    //temp = x - 1;
-    //x = temp & 0x00FF;
-    //cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
-    //cpu->SetFlag(cpu->N, temp & 0x0080);
-
     uint8_t value = cpu->getRegister(cpu->X);
     --value;
     cpu->setRegister(cpu->X, value);
@@ -1268,11 +1235,6 @@ namespace CPU
   // Flags Out:   N, Z
   uint8_t Executioner::DEY()
   {
-    //temp = y - 1;
-    //y = temp & 0x00FF;
-    //cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
-    //cpu->SetFlag(cpu->N, temp & 0x0080);
-
     uint8_t value = cpu->getRegister(cpu->Y);
     --value;
     cpu->setRegister(cpu->Y, value);
@@ -1290,9 +1252,6 @@ namespace CPU
   uint8_t Executioner::EOR()
   {
     fetch();
-    //a = a ^ fetched;
-    //cpu->SetFlag(cpu->Z, a == 0x00);
-    //cpu->SetFlag(cpu->N, a & 0x80);
 
     uint8_t value = cpu->getRegister(cpu->AC) ^ fetched;
     cpu->setRegister(cpu->AC, value);
@@ -1332,11 +1291,6 @@ namespace CPU
   // Flags Out:   N, Z
   uint8_t Executioner::INX()
   {
-    //temp = x + 1;
-    //x = temp & 0x00FF;
-    //cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
-    //cpu->SetFlag(cpu->N, temp & 0x0080);
-
     uint8_t value = cpu->getRegister(cpu->X);
     ++value;
     cpu->setRegister(cpu->X, value);
@@ -1353,11 +1307,6 @@ namespace CPU
   // Flags Out:   N, Z
   uint8_t Executioner::INY()
   {
-    //temp = y + 1;
-    //y = temp & 0x00FF;
-    //cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
-    //cpu->SetFlag(cpu->N, temp & 0x0080);
-
     uint8_t value = cpu->getRegister(cpu->Y);
     ++value;
     cpu->setRegister(cpu->Y, value);
@@ -1373,7 +1322,6 @@ namespace CPU
   // Function:    pc = address
   uint8_t Executioner::JMP()
   {
-    //pc = addr_abs;
     cpu->setProgramCounter(addr_abs);
     return 0;
   }
@@ -1406,10 +1354,6 @@ namespace CPU
   {
     fetch();
 
-    //a = fetched;
-    //cpu->SetFlag(cpu->Z, a == 0x00);
-    //cpu->SetFlag(cpu->N, a & 0x80);
-
     cpu->setRegister(cpu->AC, fetched);
     cpu->SetFlag(cpu->Z, fetched == 0x00);
     cpu->SetFlag(cpu->N, fetched & 0x80);
@@ -1423,9 +1367,6 @@ namespace CPU
   uint8_t Executioner::LDX()
   {
     fetch();
-    //x = fetched;
-    //cpu->SetFlag(cpu->Z, x == 0x00);
-    //cpu->SetFlag(cpu->N, x & 0x80);
 
     cpu->setRegister(cpu->X, fetched);
     cpu->SetFlag(cpu->Z, fetched == 0x00);
@@ -1440,10 +1381,6 @@ namespace CPU
   uint8_t Executioner::LDY()
   {
     fetch();
-
-    //y = fetched;
-    //cpu->SetFlag(cpu->Z, y == 0x00);
-    //cpu->SetFlag(cpu->N, y & 0x80);
 
     cpu->setRegister(cpu->Y, fetched);
     cpu->SetFlag(cpu->Z, fetched == 0x00);
@@ -1508,9 +1445,6 @@ namespace CPU
   uint8_t Executioner::ORA()
   {
     fetch();
-    //a = a | fetched;
-    //cpu->SetFlag(cpu->Z, a == 0x00);
-    //cpu->SetFlag(cpu->N, a & 0x80);
 
     uint8_t value = cpu->getRegister(cpu->AC) | fetched;
     cpu->setRegister(cpu->AC, value);
@@ -1524,7 +1458,6 @@ namespace CPU
   // Function:    A -> stack
   uint8_t Executioner::PHA()
   {
-    //cpu->PushStack(a);
     uint8_t ac = cpu->getRegister(cpu->AC);
     cpu->PushStack(ac);
     cpu->incrementCycleCount();
@@ -1540,14 +1473,9 @@ namespace CPU
   {
     uint8_t status = cpu->getRegister(cpu->SR) | cpu->B | cpu->U;
 
-#ifdef DEBUG
-    Logger::log()->debug("OP {} - GOT SR: {} {: >64}", getOperation(), cpu->DecodeFlag(status), cpu->getRegister(cpu->SR));
-#endif
     cpu->PushStack(status);
     cpu->incrementCycleCount();
-#ifdef DEBUG
-    cpu->DumpStackAtPointer();
-#endif
+
     return 0;
   }
 
@@ -1557,9 +1485,6 @@ namespace CPU
   // Flags Out:   N, Z
   uint8_t Executioner::PLA()
   {
-    //stkp++;
-    //cpu->incrementCycleCount();
-    //a = cpu->PopStack();
     uint8_t value = cpu->PopStack();
     cpu->incrementCycleCount();
     cpu->setRegister(cpu->AC, value);
@@ -1574,16 +1499,9 @@ namespace CPU
   // Function:    Status <- stack
   uint8_t Executioner::PLP()
   {
-    //stkp++;
-    //cpu->incrementStackPointer();
-    //cpu->incrementCycleCount();
-    //status = cpu->PeekStack();
-
-    //cpu->setRegister(cpu->SR, cpu->PeekStack());
     cpu->setRegister(cpu->SR, cpu->PopStack());
     cpu->incrementCycleCount();
 
-    //cpu->incrementCycleCount();
     cpu->SetFlag(cpu->U, 1);
     cpu->incrementCycleCount();
 
@@ -1674,35 +1592,15 @@ namespace CPU
   // Flags Out:    From Stack
   uint8_t Executioner::RTI()
   {
-#ifdef DEBUG
-    cpu->DumpStack();
-    Logger::log()->debug("OP {} - {: >50}", getOperation(), cpu->reg);
-#endif
-
     cpu->incrementCycleCount();
 
     cpu->incrementStackPointer();
     cpu->incrementCycleCount();
 
-#ifdef DEBUG
-    cpu->DumpStackAtPointer();
-    Logger::log()->debug("OP {} - {: >50}", getOperation(), cpu->reg);
-#endif
-
     uint8_t newSR = cpu->PeekStack();
-#ifdef DEBUG
-    cpu->DumpStackAtPointer();
-    Logger::log()->debug("OP {} - newSR: 0x{:02X} {} {: >50}", getOperation(), newSR, cpu->DecodeFlag(newSR), cpu->reg);
-#endif
-    //cpu->incrementStackPointer();
     cpu->incrementCycleCount();
 
     cpu->setRegister(cpu->SR, newSR & ~cpu->B & ~cpu->U);
-
-#ifdef DEBUG
-    cpu->DumpStackAtPointer();
-    Logger::log()->debug("OP {} - SR SET {: >74}", getOperation(), cpu->getRegister(cpu->SR));
-#endif
 
     uint16_t pcLo = cpu->PopStack();
 
@@ -1712,16 +1610,7 @@ namespace CPU
     uint16_t newPc = (pcHi | pcLo);
     cpu->incrementCycleCount();
 
-#ifdef DEBUG
-    Logger::log()->info("RTI - Old PC {:04X} - New PC {:04X}", cpu->getProgramCounter(), newPc);
-#endif
-
     cpu->setProgramCounter(newPc);
-
-#ifdef DEBUG
-    cpu->DumpStackAtPointer();
-    Logger::log()->debug("OP {} - SR SET {: >74}", getOperation(), cpu->getRegister(cpu->SR));
-#endif
 
     return 0;
   }

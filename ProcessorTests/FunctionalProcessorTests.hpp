@@ -165,6 +165,13 @@ namespace CPUTest
         std::fstream fp = loadFile(filename, std::ios::in);
         if(fp.is_open())
         {
+          std::streampos fsize = 0;
+          fsize = fp.tellg();
+          fp.seekg( 0, std::ios::end );
+          fsize = fp.tellg() - fsize;
+          fp.seekg( 0, std::ios::beg );
+
+          std::cout << "Loaded file: \"" << filename << "\" - Size: " << fsize << " bytes.\n";
 
           std::string line;
           std::string word;
@@ -202,6 +209,7 @@ namespace CPUTest
             results.push_back(data);
             lineNumber++;
           }
+          std::cout << "Finished file: \"" << filename << "\" - Read " << results.size() << " rows of data.\n";
         }
         fp.close();
       } catch (const std::exception& e) {
