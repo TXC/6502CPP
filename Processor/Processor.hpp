@@ -35,12 +35,14 @@ namespace CPU
   private:
     // Linkage to the communications bus
     Bus* bus = nullptr;
+    bool jammed = 0x00;
 
   public:
     // Linkage to the instructions
     Executioner executioner;
 
     uint8_t  opcode = 0x00;     // Is the instruction byte
+    uint8_t  extra_cycles = 0;  // Number of extra cycles that has been added
     uint8_t  cycle_count = 0;   // Counts how many cycles the instruction has remaining
     uint32_t clock_count = 0;   // A global accumulation of the number of clocks
 
@@ -64,6 +66,8 @@ namespace CPU
     void nmi();
     // Performs the next step on the processor
     void tick();
+    // Set flag that CPU is in a "jammed" state, and requires reset.
+    void setJammed();
 
     // Indicates the current instruction has completed by returning true. This is
     // a utility function to enable "step-by-step" execution, without manually 
@@ -147,13 +151,14 @@ namespace CPU
 
       void reset()
       {
+        // A RESET pushes SR & PC (3 bytes) to SP 0x100, therefore SP initializes to 0xFD
         *this = {
           .AC = 0x00,
           .X = 0x00,
           .Y = 0x00,
           .SP = 0xFD,
           .PC = 0x0000,
-          .SR = 0x00 | FLAGS6502::U
+          .SR = 0x00 | FLAGS6502::U | FLAGS6502::B
         };
       }
 
@@ -248,6 +253,7 @@ namespace CPU
     void    writeMemoryWithoutCycle(uint16_t a, uint8_t d);
 
   public:
+    void     addExtraCycle(bool incCycleCount = true);
     void     incrementCycleCount();
     uint16_t incrementProgramCounter();
     uint16_t decrementProgramCounter();

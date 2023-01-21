@@ -67,13 +67,15 @@ namespace CPU
             operationCycles = 0;
     try
     {
+#ifdef LOGMODE
+      Logger::log()->info("ADDR MODE START    - OP {} {: >53}", getOperation(), cpu->reg);
+#endif
+
       addressModeCycles = (this->*lookup[op].addrmode.op)();
 
-      //Logger::log()->info(
-      //  "{:>10d}:{:02X} OP: 0x{:02X} / {}:{} PC:{:04X} {:<9s} A:{:02X} X:{:02X} Y:{:02X} {} STKP:{:02X}",
-      //  cpu->clock_count, cpu->cycle_count, cpu->opcode, getInstructionName(cpu->opcode), getAddressModeName(cpu->opcode),
-      //  cpu->getProgramCounter(), "XXX", cpu->a, cpu->x, cpu->y, cpu->GetFlagString(), cpu->stkp
-      //);
+#ifdef LOGMODE
+      Logger::log()->info("ADDR MODE FINISHED - OP {} {: >53}", getOperation(), cpu->reg);
+#endif
 
     }
     catch (const std::exception& e)
@@ -97,13 +99,16 @@ namespace CPU
 
     try
     {
+#ifdef LOGMODE
+      Logger::log()->info("OPERATION START    - OP {} {: >53}", getOperation(), cpu->reg);
+#endif
+
       operationCycles = (this->*lookup[op].operate.op)();
 
-      //Logger::log()->info(
-      //  "{:>10d}:{:02X} OP: 0x{:02X} / {}:{} PC:{:04X} {:<9s} A:{:02X} X:{:02X} Y:{:02X} {} STKP:{:02X}",
-      //  cpu->clock_count, cpu->cycle_count, cpu->opcode, getInstructionName(cpu->opcode), getAddressModeName(cpu->opcode),
-      //  cpu->getProgramCounter(), "XXX", cpu->a, cpu->x, cpu->y, cpu->GetFlagString(), cpu->stkp
-      //);
+#ifdef LOGMODE
+      Logger::log()->info("OPERATION FINISHED - OP {} {: >53}", getOperation(), cpu->reg);
+#endif
+
     }
     catch (const std::exception& e)
     {
@@ -357,6 +362,8 @@ namespace CPU
   // you cant directly branch to any address in the addressable range.
   uint8_t Executioner::REL()
   {
+    addr_rel = cpu->readMemory(cpu->getProgramCounter());
+
 #ifdef DEBUG
     Logger::log()->debug(
       "OP {} - addr_rel: {:04X} {: >57}",
@@ -364,30 +371,27 @@ namespace CPU
     );
 #endif
 
-    addr_rel = cpu->readMemory(cpu->getProgramCounter());
-    //cpu->incrementProgramCounter();
-
+    uint16_t a2 = (addr_rel + 1) & 0xFFFF;
 #ifdef LOGMODE
     cpu->dumpRam(cpu->getProgramCounter());
 #endif
-
+    //cpu->incrementProgramCounter();
     if (addr_rel & 0x80)
     {
 #ifdef DEBUG
       Logger::log()->debug(
-        "OP {} - addr_rel (Page Boundary): {:04X} -> {:04X} {: >40}",
+        "OP {} - addr_rel [PB]: {:04X} -> {:04X} {: >40}",
         getOperation(), addr_rel, addr_rel | 0xFF00, cpu->reg
       );
 #endif
-      addr_rel |= 0xFF00;
-      cpu->incrementProgramCounter();
-
-#ifdef DEBUG
-      Logger::log()->debug(
-        "OP {} - addr_rel (Page Boundary): {:04X} {: >40}",
-        getOperation(), addr_rel, cpu->reg
-      );
-#endif
+      //addr_rel = a2 - ((addr_rel ^ 0xFF) + 1);
+      //addr_rel |= 0xFF00;
+      addr_rel = (a2 | 0xFF00);
+      //cpu->incrementCycleCount();
+    }
+    else
+    {
+      addr_rel = a2;
     }
 #ifdef DEBUG
     Logger::log()->debug(
@@ -466,7 +470,8 @@ namespace CPU
 
     if ((addr_abs & 0xFF00) != (hi << 8) && !in_array<uint8_t>(cpu->opcode, ignoredOpCodes))
     {
-      cpu->incrementCycleCount();
+      //cpu->incrementCycleCount();
+      cpu->addExtraCycle();
 #ifdef DEBUG
       Logger::log()->debug(
         "OP {} - addr_abs (Page Boundary): {:04X} HI:{:02X} LO:{:02X} {: >40}",
@@ -516,7 +521,8 @@ namespace CPU
     ignoredOpCodes.push_back(0x99);
     if ((addr_abs & 0xFF00) != (hi << 8) && !in_array<uint8_t>(cpu->opcode, ignoredOpCodes))
     {
-      cpu->incrementCycleCount();
+      //cpu->incrementCycleCount();
+      cpu->addExtraCycle();
 #ifdef DEBUG
       Logger::log()->debug(
         "OP {} - addr_abs (Page Boundary): {:04X} HI:{:02X} LO:{:02X} {: >40}",
@@ -556,7 +562,8 @@ namespace CPU
 
     uint16_t ptr = (ptr_hi << 8) | ptr_lo;
 
-    // Simulate page boundary hardware bug
+#ifndef EMULATE65C02
+    // Simulate page boundary hardware bug in 6502 (fixed in 65C02)
     // The indirect jump instruction does not increment the
     // page address when the indirect pointer crosses a
     // page boundary. JMP ($xxFF) will fetch the address
@@ -573,6 +580,7 @@ namespace CPU
     }
     else // Behave normally
     {
+#endif
       addr_abs = (cpu->readMemory(ptr + 1) << 8) | cpu->readMemory(ptr + 0);
 #ifdef DEBUG
       Logger::log()->debug(
@@ -580,7 +588,9 @@ namespace CPU
         getOperation(), addr_abs, ptr, ptr_hi, ptr_lo, cpu->reg
       );
 #endif
+#ifndef EMULATE65C02
     }
+#endif
     return 0;
   }
 
@@ -654,8 +664,8 @@ namespace CPU
     ignoredOpCodes.push_back(0x91);
     if ((addr_abs & 0xFF00) != (hi << 8) && !in_array<uint8_t>(cpu->opcode, ignoredOpCodes))
     {
-      cpu->incrementCycleCount();
-
+      //cpu->incrementCycleCount();
+      cpu->addExtraCycle();
 #ifdef DEBUG
       Logger::log()->debug(
         "OP {} - addr_abs (Page Boundary): {:04X} HI:{:02X} LO:{:02X} {: >40}",
@@ -699,8 +709,8 @@ namespace CPU
 
 #ifdef DEBUG
     Logger::log()->debug(
-      "OP {} - {:02X} - addr_abs: {:04X} - addr_rel: {:04X} - PC: {:04X}",
-      getOperation(), cpu->opcode, addr_abs, addr_rel, pc
+      "OP {} - addr_abs: {:04X} - addr_rel: {:04X} - PC: {:04X} - REL + PC: {:06X}",
+      getOperation(), addr_abs, addr_rel, pc, (pc + addr_rel)
     );
 #endif
 
@@ -709,8 +719,8 @@ namespace CPU
       cpu->incrementCycleCount();
 #ifdef DEBUG
       Logger::log()->debug(
-        "OP {} - {:02X} (Page Boundary) - addr_abs: {:04X} - addr_rel: {:04X} - PC: {:04X}",
-        getOperation(), cpu->opcode, addr_abs, addr_rel, pc
+        "OP {} [PB] - addr_abs: {:04X} - addr_rel: {:04X} - PC: {:04X}",
+        getOperation(), addr_abs, addr_rel, pc
       );
 #endif
     }
@@ -730,6 +740,9 @@ namespace CPU
     cpu->incrementCycleCount();
 
     uint16_t pc = cpu->getProgramCounter();
+#ifdef LOGMODE
+    cpu->dumpRam(cpu->getProgramCounter()-1);
+#endif
 
     cpu->PokeStack((pc >> 8) & 0x00FF);
     cpu->decrementStackPointer();
@@ -753,12 +766,19 @@ namespace CPU
     cpu->incrementCycleCount();
 
     cpu->SetFlag(cpu->I, true);
+#ifdef EMULATE65C02
+    cpu->SetFlag(cpu->D, true);
+#endif
 
     uint16_t newPc = (cpu->readMemory(vector + 1) << 8) | cpu->readMemory(vector);
 
 //#ifdef DEBUG
 //    Logger::log()->debug("OP {} - NEW PC: {:04X} {: >59}", getOperation(), newPc, cpu->reg);
 //#endif
+
+#ifdef LOGMODE
+    cpu->DumpStackAtPointer();
+#endif
 
     cpu->setProgramCounter(newPc);
 
@@ -2252,9 +2272,23 @@ namespace CPU
     fetch();
     uint8_t value = cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X);
     cpu->setRegister(cpu->SP, value);
-    value &= (uint8_t)((addr_abs >> 8) + 1) & 0xFF;
 
-    cpu->writeMemory(addr_abs, value);
+    uint8_t h = (addr_abs >> 8);
+    uint8_t h1 = cpu->readMemoryWithoutCycle(cpu->getProgramCounter() - 1);
+    uint8_t r = (value & h1);
+
+    if (cpu->extra_cycles > 0)
+    {
+      // We assume no DMA
+      r &= h;
+      uint16_t tasAddr = (r << 8) | (addr_abs & 0xFF);
+      cpu->writeMemory(tasAddr, r);
+    }
+    else
+    {
+      cpu->writeMemory(addr_abs, (r & (h + 1)));
+    }
+
     return 0;
   }
 
@@ -2299,9 +2333,10 @@ namespace CPU
   // — Reset required.
   uint8_t Executioner::JAM()
   {
-    while (true);
+    cpu->setJammed();
+    breakOperation(false, cpu->getProgramCounter());
     //throw std::exception();
-    //return 0;
+    return 0;
   }
 #else
   // This function captures illegal opcodes

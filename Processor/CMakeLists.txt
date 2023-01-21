@@ -21,6 +21,7 @@ ADD_LIBRARY(${APP_NAME}::${APP_NAME} ALIAS ${APP_NAME})
 TARGET_SOURCES(${APP_NAME} INTERFACE
   FILE_SET HEADERS
   FILES Bus.hpp
+        Exceptions.hpp
         Executioner.hpp
         Formatters.hpp
         Instructions.hpp

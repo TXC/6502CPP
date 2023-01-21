@@ -32,7 +32,7 @@ namespace CPU
   void Processor::LoadProgram(uint16_t offset, std::string program)
   {
     uint8_t converted[] = {};
-    uint16_t pos = 0;
+    uint16_t pos = offset;
 
     Logger::log()->info("** Loading Program: {}", program);
 
@@ -53,14 +53,13 @@ namespace CPU
   {
     LoadProgram(offset, program);
 
+    setProgramCounter(initialProgramCounter);
+
     uint8_t lo = initialProgramCounter & 0xFF;
     uint8_t hi = (initialProgramCounter >> 8) & 0xFF;
 
     writeMemoryWithoutCycle(0xFFFC, lo);
     writeMemoryWithoutCycle(0xFFFD, hi);
-
-    reset();
-    reg.SP = 0xFF;
   }
 
   void Processor::LoadProgram(uint16_t offset, uint8_t program[], size_t programSize)
@@ -105,16 +104,12 @@ namespace CPU
   {
     LoadProgram(offset, program, programSize);
 
+    setProgramCounter(initialProgramCounter);
     uint8_t lo = initialProgramCounter & 0xFF;
     uint8_t hi = (initialProgramCounter >> 8) & 0xFF;
 
     writeMemoryWithoutCycle(0xFFFC, lo);
     writeMemoryWithoutCycle(0xFFFD, hi);
-
-    reset();
-
-    //stkp = 0xFF;
-    reg.SP = 0xFF;
   }
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -191,23 +186,16 @@ namespace CPU
   {
     //UpdateMemoryMap();
 
-#ifdef DEBUG
-    Logger::log()->debug("RESET BEFORE REG: {}", reg);
-#endif
-
     // Reset internal registers
     reg.reset();
-
-#ifdef DEBUG
-    Logger::log()->debug("RESET AFTER REG: {}", reg);
-#endif
-
 
     executioner.reset();
 
     // Reset takes time
+    extra_cycles = 0;
     cycle_count = 0;
     clock_count = 0;
+    jammed = false;
 
     _previousInterrupt = false;
     TriggerNmi = false;
@@ -256,6 +244,17 @@ namespace CPU
   // Perform one clock cycles worth of emulation
   void Processor::tick()
   {
+    if (jammed)
+    {
+#ifdef LOGMODE
+      Logger::log()->error("JAMMED");
+#endif
+      return;
+    }
+
+    // This is per operation
+    extra_cycles = 0;
+
     // Read next instruction byte. This 8-bit value is used to index
     // the translation table to get the relevant information about
     // how to implement the instruction
@@ -331,6 +330,11 @@ namespace CPU
         TriggerIRQ = false;
       }
     }
+  }
+
+  void Processor::setJammed()
+  {
+    jammed = true;
   }
 #pragma endregion EXTERNAL INPUTS
 
@@ -415,6 +419,11 @@ namespace CPU
 
   uint8_t Processor::getRegister(REGISTER6502 f)
   {
+    if (jammed)
+    {
+      return 0xFF;
+    }
+
     switch (f)
     {
     case REGISTER6502::AC:
@@ -496,6 +505,11 @@ namespace CPU
   // Get Program Counter
   uint16_t Processor::getProgramCounter()
   {
+    if (jammed)
+    {
+      return 0xFFFF;
+    }
+
     return reg.PC;
     //return pc;
   }
@@ -657,6 +671,17 @@ namespace CPU
       return 5;
     default:
       return 5;
+    }
+  }
+
+
+  // Add Extra Cycle (and depending on parameter, increase cycle_count)
+  void Processor::addExtraCycle(bool incCycleCount)
+  {
+    extra_cycles = (extra_cycles + 1);
+    if (incCycleCount)
+    {
+      incrementCycleCount();
     }
   }
 

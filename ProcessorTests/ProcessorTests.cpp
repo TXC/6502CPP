@@ -37,14 +37,14 @@ TEST_CASE("Initialization Tests", "[init]")
       V = Overflow
       N = Negative
     */
-    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::C), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::Z), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::I), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::D), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::B), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::U), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::V), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::N), 2) == hex(0x00, 2));
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::C) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::Z) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::I) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::D) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::B) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::U) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::V) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::N) == 0);
   }
 
   SECTION("Processor Registers Initialized Correctly")
@@ -53,7 +53,12 @@ TEST_CASE("Initialization Tests", "[init]")
     REQUIRE(hex(bus.cpu.getRegister(bus.cpu.X), 2) == hex(0x00, 2));
     REQUIRE(hex(bus.cpu.getRegister(bus.cpu.Y), 2) == hex(0x00, 2));
     REQUIRE(hex(bus.cpu.opcode, 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0000, 4));
+  }
+
+  SECTION("Stack Pointer Initialized Correctly")
+  {
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(0x00, 2));
   }
 
   SECTION("ProgramCounter Correct When Program Loaded")
@@ -80,8 +85,23 @@ TEST_CASE("Initialization Tests", "[init]")
 
     REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(0xFD, 2));
   }
+
+  SECTION("Processor Status Flags Initializes To Default Value After Reset")
+  {
+    bus.cpu.reset();
+
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::C) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::Z) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::I) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::D) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::B) == 1);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::U) == 1); // Always set
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::V) == 0);
+    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::N) == 0);
+  }
 }
 
+#pragma region OPCode
 TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
@@ -187,12 +207,12 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
     auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
-      GENERATE( table<uint8_t, uint8_t, bool, bool>({
-        {0xFE, 0x01, false, false},
-        {0xFE, 0x01, true, true},
-        {0xFD, 0x01, true, false},
-        {0xFF, 0x01, false, true},
-        {0xFF, 0x01, true, true}
+      GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
+        {0xFE, 0x01, false, 0},
+        {0xFE, 0x01, true, 1},
+        {0xFD, 0x01, true, 0},
+        {0xFF, 0x01, false, 1},
+        {0xFF, 0x01, true, 1}
       }));
 
     SECTION(
@@ -221,7 +241,7 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
     }
   }
 
@@ -229,11 +249,11 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
   SECTION("ADC Carry Correct When In BDC Mode")
   {
     auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
-      GENERATE( table<uint8_t, uint8_t, bool, bool>({
-        {0x62, 0x01, false, false},
-        {0x62, 0x01, true, false},
-        {0x63, 0x01, false, false},
-        {0x63, 0x01, true, false}
+      GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
+        {0x62, 0x01, false, 0},
+        {0x62, 0x01, true, 0},
+        {0x63, 0x01, false, 0},
+        {0x63, 0x01, true, 0}
       }));
 
     SECTION(
@@ -254,7 +274,7 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
     }
   }
 #endif
@@ -262,11 +282,11 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
   SECTION("ADC Zero Flag Correct When Not In BDC Mode")
   {
     auto [accumulatorInitialValue, amountToAdd, expectedValue] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x00, 0x00, true},
-        {0xFF, 0x01, true},
-        {0x00, 0x01, false},
-        {0x01, 0x00, false}
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 1},
+        {0xFF, 0x01, 1},
+        {0x00, 0x01, 0},
+        {0x01, 0x00, 0}
       }));
 
     SECTION(
@@ -285,22 +305,22 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("ADC Negative Flag Correct")
   {
     auto [accumulatorInitialValue, amountToAdd, expectedValue] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x7E, 0x01, false},
-        {0x01, 0x7E, false},
-        {0x01, 0x7F, true},
-        {0x7F, 0x01, true},
-        {0x01, 0xFE, true},
-        {0xFE, 0x01, true},
-        {0x01, 0xFF, false},
-        {0xFF, 0x01, false},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x7E, 0x01, 0},
+        {0x01, 0x7E, 0},
+        {0x01, 0x7F, 1},
+        {0x7F, 0x01, 1},
+        {0x01, 0xFE, 1},
+        {0xFE, 0x01, 1},
+        {0x01, 0xFF, 0},
+        {0xFF, 0x01, 0},
       }));
 
     SECTION(
@@ -319,43 +339,43 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 
   SECTION("ADC Overflow Flag Correct")
   {
-    auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = GENERATE( table<uint8_t, uint8_t, bool, bool>({
-      {0x00, 0x7F, false, false},
-      {0x00, 0x80, false, false},
-      {0x01, 0x7F, false, true},
-      {0x01, 0x80, false, false},
-      {0x7F, 0x01, false, true},
-      {0x7F, 0x7F, false, true},
-      {0x80, 0x7F, false, false},
-      {0x80, 0x80, false, true},
-      {0x80, 0x81, false, true},
-      {0x80, 0xFF, false, true},
-      {0xFF, 0x00, false, false},
-      {0xFF, 0x01, false, false},
-      {0xFF, 0x7F, false, false},
-      {0xFF, 0x80, false, true},
-      {0xFF, 0xFF, false, false},
-      {0x00, 0x7F, true, true},
-      {0x00, 0x80, true, false},
-      {0x01, 0x7F, true, true},
-      {0x01, 0x80, true, false},
-      {0x7F, 0x01, true, true},
-      {0x7F, 0x7F, true, true},
-      {0x80, 0x7F, true, false},
-      {0x80, 0x80, true, true},
-      {0x80, 0x81, true, true},
-      {0x80, 0xFF, true, false},
-      {0xFF, 0x00, true, false},
-      {0xFF, 0x01, true, false},
-      {0xFF, 0x7F, true, false},
-      {0xFF, 0x80, true, false},
-      {0xFF, 0xFF, true, false}
+    auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
+      {0x00, 0x7F, false, 0},
+      {0x00, 0x80, false, 0},
+      {0x01, 0x7F, false, 1},
+      {0x01, 0x80, false, 0},
+      {0x7F, 0x01, false, 1},
+      {0x7F, 0x7F, false, 1},
+      {0x80, 0x7F, false, 0},
+      {0x80, 0x80, false, 1},
+      {0x80, 0x81, false, 1},
+      {0x80, 0xFF, false, 1},
+      {0xFF, 0x00, false, 0},
+      {0xFF, 0x01, false, 0},
+      {0xFF, 0x7F, false, 0},
+      {0xFF, 0x80, false, 1},
+      {0xFF, 0xFF, false, 0},
+      {0x00, 0x7F, true, 1},
+      {0x00, 0x80, true, 0},
+      {0x01, 0x7F, true, 1},
+      {0x01, 0x80, true, 0},
+      {0x7F, 0x01, true, 1},
+      {0x7F, 0x7F, true, 1},
+      {0x80, 0x7F, true, 0},
+      {0x80, 0x80, true, 1},
+      {0x80, 0x81, true, 1},
+      {0x80, 0xFF, true, 0},
+      {0xFF, 0x00, true, 0},
+      {0xFF, 0x01, true, 0},
+      {0xFF, 0x7F, true, 0},
+      {0xFF, 0x80, true, 0},
+      {0xFF, 0xFF, true, 0}
     }));
 
     SECTION(
@@ -384,7 +404,7 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == expectedValue);
     }
   }
 }
@@ -475,11 +495,11 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
   SECTION("ASL Carry Set Correctly")
   {
     auto [valueToShift, expectedValue] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x7F, false},
-        {0x80, true},
-        {0xFF, true},
-        {0x00, false},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x7F, 0},
+        {0x80, 1},
+        {0xFF, 1},
+        {0x00, 0},
       })
     );
 
@@ -497,19 +517,19 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
     }
   }
 
   SECTION("ASL Negative Set Correctly")
   {
     auto [valueToShift, expectedValue] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x3F, false},
-        {0x40, true},
-        {0x7F, true},
-        {0x80, false},
-        {0x00, false},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x3F, 0},
+        {0x40, 1},
+        {0x7F, 1},
+        {0x80, 0},
+        {0x00, 0},
       })
     );
 
@@ -527,17 +547,17 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 
   SECTION("ASL Zero Set Correctly")
   {
     auto [valueToShift, expectedValue] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x7F, false},
-        {0x80, true},
-        {0x00, true},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x7F, 0},
+        {0x80, 1},
+        {0x00, 1},
       })
     );
 
@@ -556,7 +576,7 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 }
@@ -685,17 +705,17 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
   SECTION("BIT Negative Set When Comparison Is Negative Number")
   {
     auto [operation, accumulatorValue, valueToTest, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
-        {0x24, 0x7f, 0x7F, false}, // BIT Zero Page
-        {0x24, 0x80, 0x7F, false}, // BIT Zero Page
-        {0x24, 0x7F, 0x80, true}, // BIT Zero Page
-        {0x24, 0x80, 0xFF, true}, // BIT Zero Page
-        {0x24, 0xFF, 0x80, true}, // BIT Zero Page
-        {0x2C, 0x7F, 0x7F, false}, // BIT Absolute
-        {0x2C, 0x80, 0x7F, false}, // BIT Absolute
-        {0x2C, 0x7F, 0x80, true}, // BIT Absolute
-        {0x2C, 0x80, 0xFF, true}, // BIT Absolute
-        {0x2C, 0xFF, 0x80, true}, // BIT Absolute
+      GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+        {0x24, 0x7f, 0x7F, 0}, // BIT Zero Page
+        {0x24, 0x80, 0x7F, 0}, // BIT Zero Page
+        {0x24, 0x7F, 0x80, 1}, // BIT Zero Page
+        {0x24, 0x80, 0xFF, 1}, // BIT Zero Page
+        {0x24, 0xFF, 0x80, 1}, // BIT Zero Page
+        {0x2C, 0x7F, 0x7F, 0}, // BIT Absolute
+        {0x2C, 0x80, 0x7F, 0}, // BIT Absolute
+        {0x2C, 0x7F, 0x80, 1}, // BIT Absolute
+        {0x2C, 0x80, 0xFF, 1}, // BIT Absolute
+        {0x2C, 0xFF, 0x80, 1}, // BIT Absolute
       })
     );
 
@@ -712,46 +732,46 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
     }
   }
 
   SECTION("BIT Overflow Set By Bit Six")
   {
     auto [operation, accumulatorValue, valueToTest, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
-        {0x24, 0x3F, 0x3F, false}, // BIT Zero Page
-        {0x24, 0x3F, 0x40, true}, // BIT Zero Page
-        {0x24, 0x40, 0x3F, false}, // BIT Zero Page
-        {0x24, 0x40, 0x7F, true}, // BIT Zero Page
-        {0x24, 0x7F, 0x40, true}, // BIT Zero Page
-        {0x24, 0x7F, 0x80, false}, // BIT Zero Page
-        {0x24, 0x80, 0x7F, true}, // BIT Zero Page
-        {0x24, 0xC0, 0xDF, true}, // BIT Zero Page
-        {0x24, 0xDF, 0xC0, true}, // BIT Zero Page
-        {0x24, 0x3F, 0x3F, false}, // BIT Zero Page
-        {0x24, 0xC0, 0xFF, true}, // BIT Zero Page
-        {0x24, 0xFF, 0xC0, true}, // BIT Zero Page
-        {0x24, 0x40, 0xFF, true}, // BIT Zero Page
-        {0x24, 0xFF, 0x40, true}, // BIT Zero Page
-        {0x24, 0xC0, 0x7F, true}, // BIT Zero Page
-        {0x24, 0x7F, 0xC0, true}, // BIT Zero Page
-        {0x2C, 0x3F, 0x3F, false}, // BIT Absolute
-        {0x2C, 0x3F, 0x40, true}, // BIT Absolute
-        {0x2C, 0x40, 0x3F, false}, // BIT Absolute
-        {0x2C, 0x40, 0x7F, true}, // BIT Absolute
-        {0x2C, 0x7F, 0x40, true}, // BIT Absolute
-        {0x2C, 0x7F, 0x80, false}, // BIT Absolute
-        {0x2C, 0x80, 0x7F, true}, // BIT Absolute
-        {0x2C, 0xC0, 0xDF, true}, // BIT Absolute
-        {0x2C, 0xDF, 0xC0, true}, // BIT Absolute
-        {0x2C, 0x3F, 0x3F, false}, // BIT Absolute
-        {0x2C, 0xC0, 0xFF, true}, // BIT Absolute
-        {0x2C, 0xFF, 0xC0, true}, // BIT Absolute
-        {0x2C, 0x40, 0xFF, true}, // BIT Absolute
-        {0x2C, 0xFF, 0x40, true}, // BIT Absolute
-        {0x2C, 0xC0, 0x7F, true}, // BIT Absolute
-        {0x2C, 0x7F, 0xC0, true}, // BIT Absolute
+      GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+        {0x24, 0x3F, 0x3F, 0}, // BIT Zero Page
+        {0x24, 0x3F, 0x40, 1}, // BIT Zero Page
+        {0x24, 0x40, 0x3F, 0}, // BIT Zero Page
+        {0x24, 0x40, 0x7F, 1}, // BIT Zero Page
+        {0x24, 0x7F, 0x40, 1}, // BIT Zero Page
+        {0x24, 0x7F, 0x80, 0}, // BIT Zero Page
+        {0x24, 0x80, 0x7F, 1}, // BIT Zero Page
+        {0x24, 0xC0, 0xDF, 1}, // BIT Zero Page
+        {0x24, 0xDF, 0xC0, 1}, // BIT Zero Page
+        {0x24, 0x3F, 0x3F, 0}, // BIT Zero Page
+        {0x24, 0xC0, 0xFF, 1}, // BIT Zero Page
+        {0x24, 0xFF, 0xC0, 1}, // BIT Zero Page
+        {0x24, 0x40, 0xFF, 1}, // BIT Zero Page
+        {0x24, 0xFF, 0x40, 1}, // BIT Zero Page
+        {0x24, 0xC0, 0x7F, 1}, // BIT Zero Page
+        {0x24, 0x7F, 0xC0, 1}, // BIT Zero Page
+        {0x2C, 0x3F, 0x3F, 0}, // BIT Absolute
+        {0x2C, 0x3F, 0x40, 1}, // BIT Absolute
+        {0x2C, 0x40, 0x3F, 0}, // BIT Absolute
+        {0x2C, 0x40, 0x7F, 1}, // BIT Absolute
+        {0x2C, 0x7F, 0x40, 1}, // BIT Absolute
+        {0x2C, 0x7F, 0x80, 0}, // BIT Absolute
+        {0x2C, 0x80, 0x7F, 1}, // BIT Absolute
+        {0x2C, 0xC0, 0xDF, 1}, // BIT Absolute
+        {0x2C, 0xDF, 0xC0, 1}, // BIT Absolute
+        {0x2C, 0x3F, 0x3F, 0}, // BIT Absolute
+        {0x2C, 0xC0, 0xFF, 1}, // BIT Absolute
+        {0x2C, 0xFF, 0xC0, 1}, // BIT Absolute
+        {0x2C, 0x40, 0xFF, 1}, // BIT Absolute
+        {0x2C, 0xFF, 0x40, 1}, // BIT Absolute
+        {0x2C, 0xC0, 0x7F, 1}, // BIT Absolute
+        {0x2C, 0x7F, 0xC0, 1}, // BIT Absolute
       })
     );
 
@@ -769,22 +789,22 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == expectedResult);
     }
   }
 
   SECTION("BIT Zero Set When Comparison Is Zero")
   {
     auto [operation, accumulatorValue, valueToTest, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
-        {0x24, 0x00, 0x00, true}, // BIT Zero Page
-        {0x24, 0xFF, 0xFF, false}, // BIT Zero Page
-        {0x24, 0xAA, 0x55, true}, // BIT Zero Page
-        {0x24, 0x55, 0xAA, true}, // BIT Zero Page
-        {0x2C, 0x00, 0x00, true}, // BIT Absolute
-        {0x2C, 0xFF, 0xFF, false}, // BIT Absolute
-        {0x2C, 0xAA, 0x55, true}, // BIT Absolute
-        {0x2C, 0x55, 0xAA, true}, // BIT Absolute
+      GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+        {0x24, 0x00, 0x00, 1}, // BIT Zero Page
+        {0x24, 0xFF, 0xFF, 0}, // BIT Zero Page
+        {0x24, 0xAA, 0x55, 1}, // BIT Zero Page
+        {0x24, 0x55, 0xAA, 1}, // BIT Zero Page
+        {0x2C, 0x00, 0x00, 1}, // BIT Absolute
+        {0x2C, 0xFF, 0xFF, 0}, // BIT Absolute
+        {0x2C, 0xAA, 0x55, 1}, // BIT Absolute
+        {0x2C, 0x55, 0xAA, 1}, // BIT Absolute
       })
     );
 
@@ -801,7 +821,7 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
     }
   }
 }
@@ -1098,10 +1118,14 @@ TEST_CASE("BVS - Branch if Overflow Set", "[opcode][bvs]")
     ) {
       bus.cpu.reset();
 
-      std::string program;
-      fmt::format_to(std::back_inserter(program), "A9 01 69 7F 70 {:02X}", programOffset);
+      //std::string program;
+      //fmt::format_to(std::back_inserter(program), "A9 01 69 7F 70 {:02X}", programOffset);
+      //bus.cpu.LoadProgram(programCounterInitalValue, program, programCounterInitalValue);
 
-      bus.cpu.LoadProgram(programCounterInitalValue, program, programCounterInitalValue);
+      uint8_t program[] = {0xA9, 0x01, 0x69, 0x7F, 0x70, programOffset};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+
       REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
       bus.cpu.tick();
@@ -1129,7 +1153,7 @@ TEST_CASE("CLC - Clear Carry Flag", "[opcode][clc]")
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == false);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 0);
   }
 }
 
@@ -1152,7 +1176,7 @@ TEST_CASE("CLD - Clear Decimal Flag", "[opcode][cld]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == false);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 0);
   }
 }
 
@@ -1173,7 +1197,7 @@ TEST_CASE("CLI - Clear Interrupt Flag", "[opcode][cli]")
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == false);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 0);
   }
 }
 
@@ -1194,7 +1218,7 @@ TEST_CASE("CLV - Clear Overflow Flag", "[opcode][clv]")
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == false);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == 0);
   }
 }
 
@@ -1209,11 +1233,11 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
   SECTION("CMP Zero Flag Set When Values Match")
   {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x00, 0x00, true},
-        {0xFF, 0x00, false},
-        {0x00, 0xFF, false},
-        {0xFF, 0xFF, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 1},
+        {0xFF, 0x00, 0},
+        {0x00, 0xFF, 0},
+        {0xFF, 0xFF, 1},
       })
     );
 
@@ -1238,12 +1262,12 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
   SECTION("CMP Carry Flag Set When Accumulator Is Greater Than Or Equal")
   {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x00, 0x00, true},
-        {0xFF, 0x00, true},
-        {0x00, 0xFF, false},
-        {0x00, 0x01, false},
-        {0xFF, 0xFF, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 1},
+        {0xFF, 0x00, 1},
+        {0x00, 0xFF, 0},
+        {0x00, 0x01, 0},
+        {0xFF, 0xFF, 1},
       })
     );
 
@@ -1268,12 +1292,12 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
   SECTION("CMP Negative Flag Set When Result Is Negative")
   {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0xFE, 0xFF, true},
-        {0x81, 0x1, true},
-        {0x81, 0x2, false},
-        {0x79, 0x1, false},
-        {0x00, 0x1, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0xFE, 0xFF, 1},
+        {0x81, 0x1, 1},
+        {0x81, 0x2, 0},
+        {0x79, 0x1, 0},
+        {0x00, 0x1, 1},
       })
     );
 
@@ -1307,11 +1331,11 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
   SECTION("CPX Zero Flag Set When Values Match")
   {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x00, 0x00, true},
-        {0xFF, 0x00, false},
-        {0x00, 0xFF, false},
-        {0xFF, 0xFF, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 1},
+        {0xFF, 0x00, 0},
+        {0x00, 0xFF, 0},
+        {0xFF, 0xFF, 1},
       })
     );
 
@@ -1336,12 +1360,12 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
   SECTION("CPX Carry Flag Set When Accumulator Is Greater Than Or Equal")
   {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x00, 0x00, true},
-        {0xFF, 0x00, true},
-        {0x00, 0xFF, false},
-        {0x00, 0x01, false},
-        {0xFF, 0xFF, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 1},
+        {0xFF, 0x00, 1},
+        {0x00, 0xFF, 0},
+        {0x00, 0x01, 0},
+        {0xFF, 0xFF, 1},
       })
     );
 
@@ -1366,12 +1390,12 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
   SECTION("CPX Negative Flag Set When Result Is Negative")
   {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0xFE, 0xFF, true},
-        {0x81, 0x1, true},
-        {0x81, 0x2, false},
-        {0x79, 0x1, false},
-        {0x00, 0x1, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0xFE, 0xFF, 1},
+        {0x81, 0x1, 1},
+        {0x81, 0x2, 0},
+        {0x79, 0x1, 0},
+        {0x00, 0x1, 1},
       })
     );
 
@@ -1405,11 +1429,11 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
   SECTION("CPY Zero Flag Set When Values Match")
   {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x00, 0x00, true},
-        {0xFF, 0x00, false},
-        {0x00, 0xFF, false},
-        {0xFF, 0xFF, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 1},
+        {0xFF, 0x00, 0},
+        {0x00, 0xFF, 0},
+        {0xFF, 0xFF, 1},
       })
     );
 
@@ -1434,12 +1458,12 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
   SECTION("CPY Carry Flag Set When Accumulator Is Greater Than Or Equal")
   {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x00, 0x00, true},
-        {0xFF, 0x00, true},
-        {0x00, 0xFF, false},
-        {0x00, 0x01, false},
-        {0xFF, 0xFF, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 1},
+        {0xFF, 0x00, 1},
+        {0x00, 0xFF, 0},
+        {0x00, 0x01, 0},
+        {0xFF, 0xFF, 1},
       })
     );
 
@@ -1464,12 +1488,12 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
   SECTION("CPY Negative Flag Set When Result Is Negative")
   {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0xFE, 0xFF, true},
-        {0x81, 0x1, true},
-        {0x81, 0x2, false},
-        {0x79, 0x1, false},
-        {0x00, 0x1, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0xFE, 0xFF, 1},
+        {0x81, 0x1, 1},
+        {0x81, 0x2, 0},
+        {0x79, 0x1, 0},
+        {0x00, 0x1, 1},
       })
     );
 
@@ -1524,10 +1548,10 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
 
   SECTION("DEC Zero Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, false},
-      {0x01, true},
-      {0x02, false},
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0},
+      {0x01, 1},
+      {0x02, 0},
     }));
 
     SECTION(
@@ -1541,16 +1565,16 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("DEC Negative Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x80, false},
-      {0x81, true},
-      {0x00, true}
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x80, 0},
+      {0x81, 1},
+      {0x00, 1}
     }));
 
     SECTION(
@@ -1565,7 +1589,7 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -1605,10 +1629,10 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
 
   SECTION("DEX Zero Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, false},
-      {0x01, true},
-      {0x02, false},
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0},
+      {0x01, 1},
+      {0x02, 0},
     }));
 
     SECTION(
@@ -1623,16 +1647,16 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
       
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("DEX Negative Set Correctly", "[opcode][dex]")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x80, false},
-      {0x81, true},
-      {0x00, true}
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x80, 0},
+      {0x81, 1},
+      {0x00, 1}
     }));
 
     SECTION(
@@ -1647,7 +1671,7 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -1687,10 +1711,10 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
 
   SECTION("DEY Zero Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, false},
-      {0x01, true},
-      {0x02, false},
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0},
+      {0x01, 1},
+      {0x02, 0},
     }));
 
     SECTION(
@@ -1705,16 +1729,16 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
       
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("DEY Negative Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x80, false},
-      {0x81, true},
-      {0x00, true}
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x80, 0},
+      {0x81, 1},
+      {0x00, 1}
     }));
 
     SECTION(
@@ -1729,7 +1753,7 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -1770,11 +1794,11 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
 
   SECTION("EOR Negative Flag Correct")
   {
-    auto [accumulatorValue, memoryValue, expectedResult] = GENERATE( table<uint8_t, uint8_t, bool>({
-      {0xFF, 0xFF, false},
-      {0x80, 0x7F, true},
-      {0x40, 0x3F, false},
-      {0xFF, 0x7F, true},
+    auto [accumulatorValue, memoryValue, expectedResult] = GENERATE( table<uint8_t, uint8_t, uint8_t>({
+      {0xFF, 0xFF, 0},
+      {0x80, 0x7F, 1},
+      {0x40, 0x3F, 0},
+      {0xFF, 0x7F, 1},
     }));
 
     SECTION(
@@ -1789,15 +1813,15 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
       
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
     }
   }
 
   SECTION("EOR Zero Flag Correct")
   {
-    auto [accumulatorValue, memoryValue, expectedResult] = GENERATE( table<uint8_t, uint8_t, bool>({
-      {0xFF, 0xFF, true},
-      {0x80, 0x7F, false},
+    auto [accumulatorValue, memoryValue, expectedResult] = GENERATE( table<uint8_t, uint8_t, uint8_t>({
+      {0xFF, 0xFF, 1},
+      {0x80, 0x7F, 0},
     }));
 
     SECTION(
@@ -1812,7 +1836,7 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
       
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
     }
   }
 }
@@ -1849,10 +1873,10 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
 
   SECTION("INC Zero Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, false},
-      {0xFF, true},
-      {0xFE, false},
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0},
+      {0xFF, 1},
+      {0xFE, 0},
     }));
 
     SECTION(
@@ -1866,16 +1890,16 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("INC Negative Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x78, false},
-      {0x80, true},
-      {0x00, false}
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x78, 0},
+      {0x80, 1},
+      {0x00, 0}
     }));
 
     SECTION(
@@ -1890,7 +1914,7 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -1930,10 +1954,10 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
 
   SECTION("INX Zero Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, false},
-      {0xFF, true},
-      {0xFE, false},
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0},
+      {0xFF, 1},
+      {0xFE, 0},
     }));
 
     SECTION(
@@ -1948,16 +1972,16 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
       
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("INX Negative Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x78, false},
-      {0x80, true},
-      {0x00, false}
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x78, 0},
+      {0x80, 1},
+      {0x00, 0}
     }));
 
     SECTION(
@@ -1972,7 +1996,7 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -2010,10 +2034,10 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
 
   SECTION("INY Zero Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, false},
-      {0xFF, true},
-      {0xFE, false},
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0},
+      {0xFF, 1},
+      {0xFE, 0},
     }));
 
     SECTION(
@@ -2028,16 +2052,16 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
       
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("INY Negative Set Correctly")
   {
-    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x78, false},
-      {0x80, true},
-      {0x00, false}
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x78, 0},
+      {0x80, 1},
+      {0x00, 0}
     }));
 
     SECTION(
@@ -2052,7 +2076,7 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
 
       bus.cpu.tick();
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -2177,9 +2201,9 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, true},
-      {0x03, false},
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 1},
+      {0x03, 0},
     }));
 
     SECTION(
@@ -2195,17 +2219,17 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("LDA Negative Set Correctly")
   {
-    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, false},
-      {0x79, false},
-      {0x80, true},
-      {0xFF, true}
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0},
+      {0x79, 0},
+      {0x80, 1},
+      {0xFF, 1}
     }));
 
     SECTION(
@@ -2221,7 +2245,7 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -2254,9 +2278,9 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
 
   SECTION("LDX Zero Set Correctly")
   {
-    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, true},
-      {0x03, false},
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 1},
+      {0x03, 0},
     }));
 
     SECTION(
@@ -2272,17 +2296,17 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("LDX Negative Set Correctly")
   {
-    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, false},
-      {0x79, false},
-      {0x80, true},
-      {0xFF, true}
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0},
+      {0x79, 0},
+      {0x80, 1},
+      {0xFF, 1}
     }));
 
     SECTION(
@@ -2298,7 +2322,7 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -2327,9 +2351,9 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
 
   SECTION("LDY Zero Set Correctly")
   {
-    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, true},
-      {0x03, false},
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 1},
+      {0x03, 0},
     }));
 
     DYNAMIC_SECTION(
@@ -2345,7 +2369,7 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
@@ -2353,11 +2377,11 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x00, false},
-      {0x79, false},
-      {0x80, true},
-      {0xFF, true}
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0},
+      {0x79, 0},
+      {0x80, 1},
+      {0xFF, 1}
     }));
 
     SECTION(
@@ -2373,7 +2397,7 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -2388,16 +2412,16 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
 
   SECTION("LSR Negative Set Correctly")
   {
-    auto [accumulatorValue, carryBitSet, expectedValue] = GENERATE( table<uint8_t, bool, bool>({
-      {0xFF, false, false},
-      {0xFE, false, false},
-      {0xFF, true, false},
-      {0x00, true, false},
+    auto [accumulatorValue, carryBitSet] = GENERATE( table<uint8_t, bool>({
+      {0xFF, false},
+      {0xFE, false},
+      {0xFF, true},
+      {0x00, true},
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(0x{:02X}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, carryBitSet, expectedValue)
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, carryBitSet)
     ) {
       bus.cpu.reset();
 
@@ -2412,15 +2436,15 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 0);
     }
   }
 
   SECTION("LSR Zero Set Correctly")
   {
-    auto [accumulatorValue, expectedValue] = GENERATE( table<uint8_t, bool>({
-      {0x01, true},
-      {0x02, false}
+    auto [accumulatorValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x01, 1},
+      {0x02, 0}
     }));
 
     SECTION(
@@ -2546,10 +2570,10 @@ TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
 
   SECTION("ORA Zero Set Correctly")
   {
-    auto [accumulatorValue, memoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t, bool>({
-      {0x00, 0x00, true},
-      {0xFF, 0xFF, false},
-      {0x00, 0x01, false}
+    auto [accumulatorValue, memoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t>({
+      {0x00, 0x00, 1},
+      {0xFF, 0xFF, 0},
+      {0x00, 0x01, 0}
     }));
 
     SECTION(
@@ -2573,10 +2597,10 @@ TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
   SECTION("ORA Negative Set Correctly")
   {
     auto [accumulatorValue, memoryValue, expectedValue] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x7F, 0x80, true},
-        {0x79, 0x00, false},
-        {0xFF, 0xFF, true},
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x7F, 0x80, 1},
+        {0x79, 0x00, 0},
+        {0xFF, 0xFF, 1},
       })
     );
 
@@ -2760,10 +2784,10 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
   SECTION("PLA Zero Flag Has Correct Value", "[opcode][pla]")
   {
     auto [valueToLoad, expectedResult] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x00, true},
-        {0x01, false},
-        {0xFF, false},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x00, 1},
+        {0x01, 0},
+        {0xFF, 0},
       })
     );
 
@@ -2782,17 +2806,17 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
     }
   }
 
   SECTION("PLA Negative Flag Has Correct Value", "[opcode][pla]")
   {
     auto [valueToLoad, expectedResult] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x7F, false},
-        {0x80, true},
-        {0xFF, true},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x7F, 0},
+        {0x80, 1},
+        {0xFF, 1},
       })
     );
 
@@ -2811,7 +2835,7 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
     }
   }
 }
@@ -2838,7 +2862,7 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
   }
 
   SECTION("Zero Flag Set Correctly")
@@ -2855,7 +2879,7 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 1);
   }
 
   SECTION("Decimal Flag Set Correctly")
@@ -2872,7 +2896,7 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.D) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 1);
   }
 
   SECTION("Interrupt Flag Set Correctly")
@@ -2889,7 +2913,7 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.I) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 1);
   }
 
   SECTION("Overflow Flag Set Correctly")
@@ -2906,7 +2930,7 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == 1);
   }
 
   SECTION("Negative Flag Set Correctly")
@@ -2923,7 +2947,7 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
   }
 }
 
@@ -2938,10 +2962,10 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
   SECTION("ROL Negative Set Correctly")
   {
     auto [accumulatorValue, expectedResult] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x40, true},
-        {0x3F, false},
-        {0x80, false},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x40, 1},
+        {0x3F, 0},
+        {0x80, 0},
       })
     );
 
@@ -2965,9 +2989,9 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
   SECTION("ROL Zero Set Correctly")
   {
     auto [carryFlagSet, expectedResult] = 
-      GENERATE( table<bool, bool>({
-        {true, false},
-        {false, true},
+      GENERATE( table<bool, uint8_t>({
+        {true, 0},
+        {false, 1},
       })
     );
 
@@ -2986,16 +3010,16 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
     }
   }
 
   SECTION("ROL Carry Flag Set Correctly")
   {
     auto [accumulatorValue, expectedResult] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x80, true},
-        {0x7F, false},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x80, 1},
+        {0x7F, 0},
       })
     );
 
@@ -3101,11 +3125,11 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
   SECTION("ROR Zero Set Correctly")
   {
     auto [accumulatorValue, carryBitSet, expectedResult] = 
-      GENERATE( table<uint8_t, bool, bool>({
-        {0x00, false, true},
-        {0x00, true, false},
-        {0x01, false, true},
-        {0x01, true, false},
+      GENERATE( table<uint8_t, bool, uint8_t>({
+        {0x00, false, 1},
+        {0x00, true, 0},
+        {0x01, false, 1},
+        {0x01, true, 0},
       })
     );
 
@@ -3132,9 +3156,9 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
   SECTION("ROR Carry Flag Set Correctly", "[opcode][ror]")
   {
     auto [accumulatorValue, expectedResult] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x01, true},
-        {0x02, false},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x01, 1},
+        {0x02, 0},
       })
     );
 
@@ -3234,7 +3258,7 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
   }
 
   SECTION("Zero Flag Set Correctly")
@@ -3250,7 +3274,7 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 1);
   }
 
   SECTION("Interrupt Flag Set Correctly")
@@ -3266,7 +3290,7 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.I) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 1);
   }
 
   SECTION("Decimal Flag Set Correctly")
@@ -3284,7 +3308,7 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.D) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 1);
   }
 
   SECTION("Overflow Flag Set Correctly")
@@ -3301,7 +3325,7 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == 1);
   }
 
   SECTION("Negative Flag Set Correctly")
@@ -3318,7 +3342,7 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
     }
 }
 
@@ -3469,16 +3493,16 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
   {
     auto [accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue] = 
       GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
-        {0xFF, 0x01, false, false},
-        {0xFF, 0x00, false, false},
-        {0x80, 0x00, false, true},
-        {0x80, 0x00, true, false},
-        {0x81, 0x01, false, true},
-        {0x81, 0x01, true, false},
-        {0x00, 0x80, false, false},
-        {0x00, 0x80, true, true},
-        {0x01, 0x80, true, true},
-        {0x01, 0x7F, false, false}
+        {0xFF, 0x01, false, 0},
+        {0xFF, 0x00, false, 0},
+        {0x80, 0x00, false, 1},
+        {0x80, 0x00, true, 0},
+        {0x81, 0x01, false, 1},
+        {0x81, 0x01, true, 0},
+        {0x00, 0x80, false, 0},
+        {0x00, 0x80, true, 1},
+        {0x01, 0x80, true, 1},
+        {0x01, 0x7F, false, 0}
       })
     );
 
@@ -3508,7 +3532,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == expectedValue);
     }
   }
 
@@ -3518,12 +3542,12 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
     /// @todo Fix so the commented tests work
     auto [accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue] = 
       GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
-        {0x63, 0x01, false, false},
-        {0x63, 0x00, false, false},
-        //{0, 1, false, true},
-        //{1, 1, true, true},
-        //{2, 1, true, false},
-        //{1, 1, false, false}
+        {0x63, 0x01, false, 0},
+        {0x63, 0x00, false, 0},
+        //{0, 1, false, 1},
+        //{1, 1, true, 1},
+        //{2, 1, true, 0},
+        //{1, 1, false, 0}
       })
     );
 
@@ -3553,7 +3577,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == expectedValue);
     }
   }
 #endif
@@ -3561,11 +3585,11 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
   SECTION("SBC Carry Correct")
   {
     auto [accumulatorInitialValue, amountToSubtract, expectedValue] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x00, 0x00, false},
-        {0x00, 0x01, false},
-        {0x01, 0x00, true},
-        {0x02, 0x01, true}
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 0},
+        {0x00, 0x01, 0},
+        {0x01, 0x00, 1},
+        {0x02, 0x01, 1}
       })
     );
 
@@ -3585,18 +3609,18 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
     }
   }
 
   SECTION("SBC Zero Correct")
   {
     auto [accumulatorInitialValue, amountToSubtract, expectedValue] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x00, 0x00, false},
-        {0x00, 0x01, false},
-        {0x01, 0x00, true},
-        {0x01, 0x01, false}
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 0},
+        {0x00, 0x01, 0},
+        {0x01, 0x00, 1},
+        {0x01, 0x01, 0}
       })
     );
 
@@ -3616,18 +3640,18 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
   }
 
   SECTION("SBC Negative Correct")
   {
     auto [accumulatorInitialValue, amountToSubtract, expectedValue] = 
-      GENERATE( table<uint8_t, uint8_t, bool>({
-        {0x80, 0x01, false},
-        {0x81, 0x01, false},
-        {0x00, 0x01, true},
-        {0x01, 0x01, true}
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x80, 0x01, 0},
+        {0x81, 0x01, 0},
+        {0x00, 0x01, 1},
+        {0x01, 0x01, 1}
       })
     );
 
@@ -3647,7 +3671,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
       
       bus.cpu.tick();
-      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
   }
 }
@@ -3669,7 +3693,7 @@ TEST_CASE("SEC - Set Carry Flag", "[opcode][sec]")
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
   }
 }
 
@@ -3690,7 +3714,7 @@ TEST_CASE("Set Decimal Mode", "[opcode][sed]")
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 1);
   }
 }
 
@@ -3711,7 +3735,7 @@ TEST_CASE("SEI - Set Interrupt Flag", "[opcode][sei]")
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == true);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 1);
   }
 }
 
@@ -3849,23 +3873,23 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    auto [operation, value, transferFrom, expectedResult] = GENERATE( table<uint8_t, uint8_t, ProcessorTests::RegisterMode, bool>({
-      {0xAA, 0x80, ProcessorTests::Accumulator, true},
-      {0xA8, 0x80, ProcessorTests::Accumulator, true},
-      {0x8A, 0x80, ProcessorTests::XRegister, true},
-      {0x98, 0x80, ProcessorTests::YRegister, true},
-      {0xAA, 0xFF, ProcessorTests::Accumulator, true},
-      {0xA8, 0xFF, ProcessorTests::Accumulator, true},
-      {0x8A, 0xFF, ProcessorTests::XRegister, true},
-      {0x98, 0xFF, ProcessorTests::YRegister, true},
-      {0xAA, 0x7F, ProcessorTests::Accumulator, false},
-      {0xA8, 0x7F, ProcessorTests::Accumulator, false},
-      {0x8A, 0x7F, ProcessorTests::XRegister, false},
-      {0x98, 0x7F, ProcessorTests::YRegister, false},
-      {0xAA, 0x00, ProcessorTests::Accumulator, false},
-      {0xA8, 0x00, ProcessorTests::Accumulator, false},
-      {0x8A, 0x00, ProcessorTests::XRegister, false},
-      {0x98, 0x00, ProcessorTests::YRegister, false},
+    auto [operation, value, transferFrom, expectedResult] = GENERATE( table<uint8_t, uint8_t, ProcessorTests::RegisterMode, uint8_t>({
+      {0xAA, 0x80, ProcessorTests::Accumulator, 1},
+      {0xA8, 0x80, ProcessorTests::Accumulator, 1},
+      {0x8A, 0x80, ProcessorTests::XRegister, 1},
+      {0x98, 0x80, ProcessorTests::YRegister, 1},
+      {0xAA, 0xFF, ProcessorTests::Accumulator, 1},
+      {0xA8, 0xFF, ProcessorTests::Accumulator, 1},
+      {0x8A, 0xFF, ProcessorTests::XRegister, 1},
+      {0x98, 0xFF, ProcessorTests::YRegister, 1},
+      {0xAA, 0x7F, ProcessorTests::Accumulator, 0},
+      {0xA8, 0x7F, ProcessorTests::Accumulator, 0},
+      {0x8A, 0x7F, ProcessorTests::XRegister, 0},
+      {0x98, 0x7F, ProcessorTests::YRegister, 0},
+      {0xAA, 0x00, ProcessorTests::Accumulator, 0},
+      {0xA8, 0x00, ProcessorTests::Accumulator, 0},
+      {0x8A, 0x00, ProcessorTests::XRegister, 0},
+      {0x98, 0x00, ProcessorTests::YRegister, 0},
     }));
 
     Bus bus;
@@ -3905,15 +3929,15 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    auto [operation, value, transferFrom, expectedResult] = GENERATE( table<uint8_t, uint8_t, ProcessorTests::RegisterMode, bool>({
-      {0xAA, 0xFF, ProcessorTests::Accumulator, false},
-      {0xA8, 0xFF, ProcessorTests::Accumulator, false},
-      {0x8A, 0xFF, ProcessorTests::XRegister, false},
-      {0x98, 0xFF, ProcessorTests::YRegister, false},
-      {0xAA, 0x00, ProcessorTests::Accumulator, true},
-      {0xA8, 0x00, ProcessorTests::Accumulator, true},
-      {0x8A, 0x00, ProcessorTests::XRegister, true},
-      {0x98, 0x00, ProcessorTests::YRegister, true},
+    auto [operation, value, transferFrom, expectedResult] = GENERATE( table<uint8_t, uint8_t, ProcessorTests::RegisterMode, uint8_t>({
+      {0xAA, 0xFF, ProcessorTests::Accumulator, 0},
+      {0xA8, 0xFF, ProcessorTests::Accumulator, 0},
+      {0x8A, 0xFF, ProcessorTests::XRegister, 0},
+      {0x98, 0xFF, ProcessorTests::YRegister, 0},
+      {0xAA, 0x00, ProcessorTests::Accumulator, 1},
+      {0xA8, 0x00, ProcessorTests::Accumulator, 1},
+      {0x8A, 0x00, ProcessorTests::XRegister, 1},
+      {0x98, 0x00, ProcessorTests::YRegister, 1},
     }));
 
     Bus bus;
@@ -3977,11 +4001,11 @@ TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
   SECTION("TSX Negative Set Correctly")
   {
     auto [valueToLoad, expectedValue] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x00, false},
-        {0x7F, false},
-        {0x80, true},
-        {0xFF, true},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x00, 0},
+        {0x7F, 0},
+        {0x80, 1},
+        {0xFF, 1},
       })
     );
 
@@ -4007,10 +4031,10 @@ TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
   SECTION("TSX Zero Set Correctly")
   {
     auto [valueToLoad, expectedValue] = 
-      GENERATE( table<uint8_t, bool>({
-        {0x00, true},
-        {0x01, false},
-        {0xFF, false},
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x00, 1},
+        {0x01, 0},
+        {0xFF, 0},
       })
     );
 
@@ -4057,7 +4081,9 @@ TEST_CASE("TXS - Transfer X Register to Stack Pointer", "[opcode][txs]")
   }
 }
 
-TEST_CASE("Accumulator Address Tests", "[index][acc]")
+#pragma endregion OPCode
+
+TEST_CASE("Accumulator Address Tests", "[address][acc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
@@ -4423,7 +4449,7 @@ TEST_CASE("Accumulator Address Tests", "[index][acc]")
   }
 }
 
-TEST_CASE("Index Address Tests", "[index][addressmode]")
+TEST_CASE("Index Address Tests", "[address][index]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
@@ -4530,7 +4556,7 @@ TEST_CASE("Index Address Tests", "[index][addressmode]")
   }
 }
 
-TEST_CASE("Compare Address Tests", "[compare][address]")
+TEST_CASE("Compare Address Tests", "[address][compare]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
@@ -4540,15 +4566,15 @@ TEST_CASE("Compare Address Tests", "[compare][address]")
 
   SECTION("Immediate Mode Compare Operation Has Correct Result")
   {
-    auto [operation, accumulatorValue, memoryValue, mode] = GENERATE( table<uint8_t, uint8_t, uint8_t, ProcessorTests::RegisterMode>({
-      {0xC9, 0xFF, 0x00, ProcessorTests::Accumulator}, //CMP Immediate
-      {0xE0, 0xFF, 0x00, ProcessorTests::XRegister}, //CPX Immediate
-      {0xC0, 0xFF, 0x00, ProcessorTests::YRegister} //CPY Immediate
+    auto [operation, mode] = GENERATE( table<uint8_t, ProcessorTests::RegisterMode>({
+      {0xC9, ProcessorTests::Accumulator}, //CMP Immediate
+      {0xE0, ProcessorTests::XRegister}, //CPX Immediate
+      {0xC0, ProcessorTests::YRegister} //CPY Immediate
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, mode)
+      fmt::format("Check if {:s}(0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), mode)
     ) {
       bus.cpu.reset();
 
@@ -4566,16 +4592,16 @@ TEST_CASE("Compare Address Tests", "[compare][address]")
           break;
       }
 
-      uint8_t program[]= {loadOperation, accumulatorValue, operation, memoryValue};
+      uint8_t program[]= {loadOperation, 0xFF, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == false);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == false);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
     }
   }
 
@@ -4615,9 +4641,9 @@ TEST_CASE("Compare Address Tests", "[compare][address]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == true);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
     }
   }
 
@@ -4657,9 +4683,9 @@ TEST_CASE("Compare Address Tests", "[compare][address]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == true);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
     }
   }
 
@@ -4690,9 +4716,9 @@ TEST_CASE("Compare Address Tests", "[compare][address]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == true);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
     }
   }
 
@@ -4723,14 +4749,14 @@ TEST_CASE("Compare Address Tests", "[compare][address]")
       bus.cpu.tick();
       bus.cpu.tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == true);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
     }
   }
 }
 
-TEST_CASE("Decrement/Increment Address Tests", "[inc][dec][address]")
+TEST_CASE("Decrement/Increment Address Tests", "[address][inc][dec]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
@@ -4778,7 +4804,7 @@ TEST_CASE("Decrement/Increment Address Tests", "[inc][dec][address]")
     ) {
       bus.cpu.reset();
 
-      uint8_t program[]= {operation, 0x02, memoryValue};
+      uint8_t program[]= {operation, 0x03, 0x00, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
@@ -4881,7 +4907,7 @@ TEST_CASE("Store In Memory Address Tests", "[storage][address]")
   }
 }
 
-TEST_CASE("Cycle Tests")
+TEST_CASE("Cycle Tests", "[cycle]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
@@ -4889,7 +4915,7 @@ TEST_CASE("Cycle Tests")
 
   //uint8_t operation = 0x0A;
 
-  SECTION("NumberOfCyclesRemaining Correct After Operations That Do Not Wrap", "[counter][cycles]")
+  SECTION("NumberOfCyclesRemaining Correct After Operations That Do Not Wrap")
   {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
       {0x69, 2}, // ADC Immediate
@@ -5576,7 +5602,7 @@ TEST_CASE("Cycle Tests")
   }
 }
 
-TEST_CASE("Program Counter Tests", "[counter][pc]")
+TEST_CASE("Program Counter Tests", "[programcounter][pc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
