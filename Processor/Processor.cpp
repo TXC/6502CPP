@@ -1,11 +1,17 @@
 #include "Processor.hpp"
+//#include "Instructions.hpp"
+#include "Types.hpp"
 #include "Executioner.hpp"
 #include "Bus.hpp"
-#include "Log.hpp"
+#include "Logger.hpp"
 #include <stdexcept>
-
-
-namespace IN = CPU::Instructions;
+#include <sstream>
+#include <spdlog/spdlog.h>
+#ifdef SPDLOG_FMT_EXTERNAL
+#include <fmt/format.h>
+#else
+#include <spdlog/fmt/fmt.h>
+#endif
 
 namespace CPU
 {
@@ -23,6 +29,40 @@ namespace CPU
     // Destructor - has nothing to do
   }
 
+  void Processor::LoadProgram(uint16_t offset, std::string program)
+  {
+    uint8_t converted[] = {};
+    uint16_t pos = 0;
+
+    Logger::log()->info("** Loading Program: {}", program);
+
+    std::stringstream ss;
+    ss << program;
+    while (!ss.eof())
+    {
+      std::string b;
+      ss >> b;
+      converted[pos] = (uint8_t)std::stoul(b, nullptr, 16);
+      pos++;
+    }
+    size_t n = sizeof(converted) / sizeof(converted[0]);
+    LoadProgram(offset, converted, n);
+  }
+
+  void Processor::LoadProgram(uint16_t offset, std::string program, uint16_t initialProgramCounter)
+  {
+    LoadProgram(offset, program);
+
+    uint8_t lo = initialProgramCounter & 0xFF;
+    uint8_t hi = (initialProgramCounter >> 8) & 0xFF;
+
+    writeMemoryWithoutCycle(0xFFFC, lo);
+    writeMemoryWithoutCycle(0xFFFD, hi);
+
+    reset();
+    reg.SP = 0xFF;
+  }
+
   void Processor::LoadProgram(uint16_t offset, uint8_t program[], size_t programSize)
   {
     char errorMessage[100];
@@ -30,27 +70,18 @@ namespace CPU
 
     if (offset > ramSize)
     {
-      snprintf(
-        errorMessage,
-        100,
-        "Offset '%04X' is larger than memory size '%0zX'",
-        offset,
-        ramSize
-      );
-      throw std::runtime_error(errorMessage);
+      throw std::runtime_error(fmt::format(
+        "Offset '{:04X}' is larger than memory size '{:d}'",
+        offset, ramSize
+      ));
     }
 
     if (programSize > (ramSize + offset))
     {
-      snprintf(
-        errorMessage,
-        100,
-        "Program Size '%0zX' Cannot be larger than Memory Size '%0zX' plus offset '%04X'",
-        programSize,
-        ramSize,
-        offset
-      );
-      throw std::runtime_error(errorMessage);
+      throw std::runtime_error(fmt::format(
+        "Program size is {:d} bytes, that cannot be larger than memory size {:d} bytes plus offset ${:04X}",
+        programSize, ramSize, offset
+      ));
     }
 
     /*
@@ -67,6 +98,7 @@ namespace CPU
       bus->ram[pos] = program[i];
     }
     reset();
+    reg.SP = 0xFF;
   }
 
   void Processor::LoadProgram(uint16_t offset, uint8_t program[], size_t programSize, uint16_t initialProgramCounter)
@@ -80,6 +112,9 @@ namespace CPU
     writeMemoryWithoutCycle(0xFFFD, hi);
 
     reset();
+
+    //stkp = 0xFF;
+    reg.SP = 0xFF;
   }
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -145,47 +180,38 @@ namespace CPU
 #pragma region EXTERNAL INPUTS
 // EXTERNAL INPUTS
 
-// Forces the 6502 into a known state. This is hard-wired inside the CPU. The
-// registers are set to 0x00, the status register is cleared except for unused
-// bit which remains at 1. An absolute address is read from location 0xFFFC
-// which contains a second address that the program counter is set to. This 
-// allows the programmer to jump to a known and programmable location in the
-// memory to start executing from. Typically the programmer would set the value
-// at location 0xFFFC at compile time.
+  // Forces the 6502 into a known state. This is hard-wired inside the CPU. The
+  // registers are set to 0x00, the status register is cleared except for unused
+  // bit which remains at 1. An absolute address is read from location 0xFFFC
+  // which contains a second address that the program counter is set to. This 
+  // allows the programmer to jump to a known and programmable location in the
+  // memory to start executing from. Typically the programmer would set the value
+  // at location 0xFFFC at compile time.
   void Processor::reset()
   {
     //UpdateMemoryMap();
 
-    // Get address to set program counter to
-
-    /*
-    addr_abs = 0xFFFC;
-    uint16_t lo = readMemory(addr_abs + 0);
-    uint16_t hi = readMemory(addr_abs + 1);
-
-    // Set it
-    pc = (hi << 8) | lo;
-    */
+#ifdef DEBUG
+    Logger::log()->debug("RESET BEFORE REG: {}", reg);
+#endif
 
     // Reset internal registers
-    a = 0;
-    x = 0;
-    y = 0;
-    stkp = 0xFD;
-    status = 0x00 | U;
+    reg.reset();
 
-    // Clear internal helper variables
-    /*
-    addr_rel = 0x0000;
-    addr_abs = 0x0000;
-    fetched = 0x00;
-    */
+#ifdef DEBUG
+    Logger::log()->debug("RESET AFTER REG: {}", reg);
+#endif
+
 
     executioner.reset();
 
     // Reset takes time
     cycle_count = 0;
     clock_count = 0;
+
+    _previousInterrupt = false;
+    TriggerNmi = false;
+    TriggerIRQ = false;
   }
 
   // Interrupt requests are a complex operation and only happen if the
@@ -209,9 +235,11 @@ namespace CPU
       return;
     }
 
-    pc--;
+    //pc--;
+    decrementProgramCounter();
     executioner.breakOperation(false, 0xFFFE);
-    opcode = readMemory(pc);
+    //opcode = readMemory(pc);
+    opcode = readMemory(getProgramCounter());
   }
 
   // A Non-Maskable Interrupt cannot be ignored. It behaves in exactly the
@@ -219,9 +247,10 @@ namespace CPU
   // form location 0xFFFA.
   void Processor::nmi()
   {
-    pc--;
+    //pc--;
+    decrementProgramCounter();
     executioner.breakOperation(false, 0xFFFA);
-    opcode = readMemory(pc);
+    opcode = readMemory(getProgramCounter());
   }
 
   // Perform one clock cycles worth of emulation
@@ -230,11 +259,18 @@ namespace CPU
     // Read next instruction byte. This 8-bit value is used to index
     // the translation table to get the relevant information about
     // how to implement the instruction
-    opcode = readMemory(pc & 0xFFFF);
+
+    opcode = readMemory(reg.PC);
+//    Logger::log()->info("Processor::tick() PC: 0x{:04X} - OP: 0x{:02X}", reg.PC, opcode);
 
     //UpdateMemoryMap();
 #ifdef LOGMODE
-    uint16_t log_pc = pc;
+    disassemble(reg.PC);
+    Logger::log()->info(
+      "{:>10d}:{:02X} OP: 0x{:02X} / {}:{} {: <17s} {}",
+      clock_count, cycle_count, opcode, executioner.getInstructionName(opcode), executioner.getAddressModeName(opcode),
+      "XXX", reg
+    );
 #endif
 
     // Always set the unused status flag bit to 1
@@ -248,8 +284,17 @@ namespace CPU
 
     // Perform operation incl. fetch of intermmediate
     // data using the required addressing mode
-    uint8_t opcycle = executioner.execute(opcode);
-
+    try
+    {
+      uint8_t opcycle = executioner.execute(opcode);
+    }
+    catch (const std::runtime_error& e)
+    {
+      std::cout << "std::runtime_error : Executioner::execute() reported an exception:" << std::endl << e.what() << std::endl;
+#ifdef DEBUG
+      print_exception(e);
+#endif
+    }
     // The addressmode and opcode may have altered the number
     // of cycles this instruction requires before its completed
     //cycles += (additional_cycle1 & additional_cycle2);
@@ -257,24 +302,21 @@ namespace CPU
     // Always set the unused status flag bit to 1
     SetFlag(U, true);
 
-#ifdef LOGMODE
-    // This logger dumps every cycle the entire processor state for analysis.
-    // This can be used for debugging the emulation, but has little utility
-    // during emulation. Its also very slow, so only use if you have to.
-    if (logfile != nullptr)
-    {
-      //disassemble(log_pc);
-      fprintf(logfile,
-        "%10d:%02d OP: 0x%02X / %s:%s PC:%04X %-13s A:%02X X:%02X Y:%02X %s STKP:%02X\n",
-        clock_count, cycle_count, opcode, executioner.getInstructionName(opcode), executioner.getAddressModeName(opcode),
-        log_pc, "XXX", a, x, y, GetFlagString().c_str(), stkp);
-      fflush(logfile);
-    }
-#endif
 
     // Increment global clock count - This is actually unused unless logging is enabled
     // but I've kept it in because its a handy watch variable for debugging
     clock_count++;
+
+#ifdef LOGMODE
+    // This logger dumps every cycle the entire processor state for analysis.
+    // This can be used for debugging the emulation, but has little utility
+    // during emulation. Its also very slow, so only use if you have to.
+    Logger::log()->info(
+      "{:>10d}:{:02X} OP: 0x{:02X} / {}:{} {: <17s} {}",
+      clock_count, cycle_count, opcode, executioner.getInstructionName(opcode), executioner.getAddressModeName(opcode),
+      "XXX", reg
+    );
+#endif
 
     if (_previousInterrupt)
     {
@@ -296,31 +338,262 @@ namespace CPU
 #pragma region FLAG FUNCTIONS
 // FLAG FUNCTIONS
 
-// Returns the value of a specific bit of the status register
+  // Returns the value of a specific bit of the status register
   uint8_t Processor::GetFlag(FLAGS6502 f)
   {
-    return ((status & f) > 0) ? 1 : 0;
+//#ifdef DEBUG
+//    Logger::log()->debug("GetFlag - Current: 0x{:02X} {} ", reg.SR, DecodeFlag(reg.SR));
+//#endif
+    //return ((status & f) > 0) ? 1 : 0;
+    return ((reg.SR & f) > 0) ? 1 : 0;
   }
 
   // Sets or clears a specific bit of the status register
   void Processor::SetFlag(FLAGS6502 f, bool v)
   {
     if (v)
-      status |= f;
+    {
+      //status |= f;
+      reg.SR |= f;
+    }
     else
-      status &= ~f;
+    {
+      //status &= ~f;
+      reg.SR &= ~f;
+    }
   }
 
   // Get status register as string
-  std::string Processor::GetFlagString()
+  std::string Processor::DecodeFlag(uint8_t flag)
   {
-    return string_format("%s%s%s%s%s%s%s%s",
-      GetFlag(N) ? "N" : ".", GetFlag(V) ? "V" : ".", GetFlag(U) ? "U" : ".",
-      GetFlag(B) ? "B" : ".", GetFlag(D) ? "D" : ".", GetFlag(I) ? "I" : ".",
-      GetFlag(Z) ? "Z" : ".", GetFlag(C) ? "C" : "."
+    return fmt::format("{}{}{}{}{}{}{}{}",
+      ((flag & N) > 0) ? "N" : ".",
+      ((flag & V) > 0) ? "V" : ".",
+      ((flag & U) > 0) ? "U" : ".",
+      ((flag & B) > 0) ? "B" : ".",
+      ((flag & D) > 0) ? "D" : ".",
+      ((flag & I) > 0) ? "I" : ".",
+      ((flag & Z) > 0) ? "Z" : ".",
+      ((flag & C) > 0) ? "C" : "."
     );
   }
+  uint8_t Processor::DecodeFlag(uint8_t flag, FLAGS6502 f)
+  {
+    return ((reg.SR & Z) > 0) ? 1 : 0;
+  }
+
 #pragma endregion FLAG FUNCTIONS
+
+  ///////////////////////////////////////////////////////////////////////////////
+#pragma region REGISTERS
+
+  void Processor::setRegister(REGISTER6502 f, uint8_t v)
+  {
+    switch (f)
+    {
+    case REGISTER6502::AC:
+      reg.AC = v;
+      break;
+    case REGISTER6502::X:
+      reg.X = v;
+      break;
+    case REGISTER6502::Y:
+      reg.Y = v;
+      break;
+    case REGISTER6502::SR:
+      reg.SR = v;
+      break;
+    case REGISTER6502::SP:
+      reg.SP = v;
+      break;
+    case REGISTER6502::PC:
+      throw std::invalid_argument("Unable to set Register \"PC\"");
+      break;
+    }
+  }
+
+
+  uint8_t Processor::getRegister(REGISTER6502 f)
+  {
+    switch (f)
+    {
+    case REGISTER6502::AC:
+      return reg.AC;
+      break;
+    case REGISTER6502::X:
+      return reg.X;
+      break;
+    case REGISTER6502::Y:
+      return reg.Y;
+      break;
+    case REGISTER6502::SR:
+      return reg.SR;
+      break;
+    case REGISTER6502::SP:
+      return reg.SP;
+      break;
+    case REGISTER6502::PC:
+      throw std::invalid_argument("Unable to get Register \"PC\"");
+      break;
+    default:
+      throw std::runtime_error(fmt::format("Invalid register ({:02X})", f));
+    }
+  }
+
+
+  /*
+  void Processor::setRegister(REGISTER6502 f, uint16_t *v)
+  {
+      switch (f)
+      {
+          case REGISTER6502::PC:
+              setRegister(f, (uint16_t) v);
+
+              break;
+          default:
+              setRegister(f, (uint8_t) v);
+      }
+  }
+  void Processor::setRegister(REGISTER6502 f, uint16_t v)
+  {
+      switch (f)
+      {
+          case REGISTER6502::AC:
+              setProgramCounter(v);
+              break;
+          default:
+              setRegister(f, (uint8_t) v);
+      }
+
+  }
+  */
+
+
+  // Increment Program Counter
+  uint16_t Processor::incrementProgramCounter()
+  {
+    //Logger::log()->debug("PC++ {: >59}", reg);
+    reg.PC = (reg.PC + 1) & 0xFFFF;
+    return reg.PC;
+  }
+
+
+  // Decrement Program Counter
+  uint16_t Processor::decrementProgramCounter()
+  {
+    reg.PC = (reg.PC - 1) & 0xFFFF;
+    return reg.PC;
+  }
+
+
+  // Set Program Counter
+  void Processor::setProgramCounter(uint16_t value)
+  {
+    reg.PC = value & 0xFFFF;
+  }
+
+
+  // Get Program Counter
+  uint16_t Processor::getProgramCounter()
+  {
+    return reg.PC;
+    //return pc;
+  }
+
+
+  // Increment Stack Pointer
+  uint8_t Processor::incrementStackPointer()
+  {
+    reg.SP = (reg.SP + 1) & 0xFF;
+    return reg.SP;
+  }
+
+
+  // Decrement Stack Pointer
+  uint8_t Processor::decrementStackPointer()
+  {
+    reg.SP = (reg.SP - 1) & 0xFF;
+    //--stkp;
+    //return stkp;
+    return reg.SP;
+  }
+
+
+  // Peek Stack Pointer (No change on cycle)
+  uint8_t Processor::PeekStack()
+  {
+    //return readMemoryWithoutCycle(stkp + 0x100);
+    return readMemoryWithoutCycle(reg.SP + 0x100);
+  }
+
+
+  // Poke Stack Pointer (No change on cycle)
+  void Processor::PokeStack(uint8_t value)
+  {
+    //Logger::log()->info("PokeStack: {:02X} -> ${:04X}", value, (reg.SP + 0x100));
+    //writeMemoryWithoutCycle(stkp + 0x100, value);
+    writeMemoryWithoutCycle(reg.SP + 0x100, value);
+  }
+
+
+  // Pop Stack (Change on cycle (+2 cycles) & stackpointer)
+  uint8_t Processor::PopStack()
+  {
+    incrementStackPointer();
+    //incrementCycleCount();
+    return readMemory(reg.SP + 0x100);
+  }
+
+
+  // Pop Stack (Change on cycle & stackpointer)
+  void Processor::PushStack(uint8_t value)
+  {
+    //Logger::log()->info("PushStack: {:02X} -> ${:04X}", value, (reg.SP + 0x100));
+    writeMemory(reg.SP + 0x100, value);
+    //incrementCycleCount();
+    decrementStackPointer();
+  }
+
+
+  // Dump the Nth row from the bottom of the Stack
+  void Processor::DumpStack(uint8_t nRows)
+  {
+    uint16_t offsetStart = (0x200 - (nRows * 0xF)) | 0x100;
+    uint16_t offsetStop = 0x01FF;
+
+    bus->dump(offsetStart, offsetStop);
+  }
+
+  // Dump the whole Stack region
+  void Processor::DumpStack()
+  {
+    Logger::log()->info("StackPointer is at 0x{:04X}", reg.SP);
+    bus->dump(0x100, 0x1FF);
+  }
+
+
+  // Dump the row that StackPointer is located at
+  void Processor::DumpStackAtPointer()
+  {
+    uint16_t stackStart = (reg.SP + 0x100) & 0xFFF0;
+    uint16_t stackStop  = (reg.SP + 0x100) | 0x000F;
+
+    if ((stackStart & 0xFF00) != 0x100) {
+      stackStart = (stackStart & 0x00FF) + 0x100;
+    }
+    if ((stackStop & 0xFF00) != 0x100) {
+      stackStop = (stackStop & 0x00FF) + 0x100;
+    }
+    if (stackStop < stackStart) {
+      throw std::range_error(fmt::format("Start 0x{:04X} can not be larger than Stop 0x{:04X}", stackStart, stackStop));
+    }
+    Logger::log()->info("StackPointer @ 0x{:04X} (0x{:04X} - 0x{:04X})", reg.SP, stackStart, stackStop);
+
+
+    bus->dump(stackStart, stackStop);
+  }
+
+#pragma endregion REGISTERS
 
   ///////////////////////////////////////////////////////////////////////////////
 #pragma region INTERNALS
@@ -354,6 +627,7 @@ namespace CPU
     }
   }
 
+
   // Clock down Processor a bit, sleep every GetSleepValue() millisecond
   uint16_t Processor::GetSleepValue()
   {
@@ -386,42 +660,6 @@ namespace CPU
     }
   }
 
-  // Update Memory Map
-  void Processor::UpdateMemoryMap(uint16_t offset, uint8_t rows, bool clear)
-  {
-    if (clear)
-    {
-      memorymap.clear();
-    }
-
-    uint16_t multiplier = 0;
-    for (uint16_t i = offset; i < rows * (offset + 1); i++)
-    {
-      uint32_t offsetPos = (16 * (uint32_t)multiplier) + (uint32_t)offset;
-      memorymap[offsetPos] = {
-        //(16 * multiplier) + offset,     // Offset $
-        offsetPos,     // Offset $
-        readMemoryWithoutCycle(i++), // 0x00
-        readMemoryWithoutCycle(i++), // 0x01
-        readMemoryWithoutCycle(i++), // 0x02
-        readMemoryWithoutCycle(i++), // 0x03
-        readMemoryWithoutCycle(i++), // 0x04
-        readMemoryWithoutCycle(i++), // 0x05
-        readMemoryWithoutCycle(i++), // 0x06
-        readMemoryWithoutCycle(i++), // 0x07
-        readMemoryWithoutCycle(i++), // 0x08
-        readMemoryWithoutCycle(i++), // 0x09
-        readMemoryWithoutCycle(i++), // 0x0A
-        readMemoryWithoutCycle(i++), // 0x0B
-        readMemoryWithoutCycle(i++), // 0x0C
-        readMemoryWithoutCycle(i++), // 0x0D
-        readMemoryWithoutCycle(i++), // 0x0E
-        readMemoryWithoutCycle(i)    // 0x0F
-      };
-      multiplier++;
-    }
-  }
-
 
   // Increment Cycle Count
   void Processor::incrementCycleCount()
@@ -433,200 +671,31 @@ namespace CPU
     _interrupt = TriggerNmi || (TriggerIRQ && GetFlag(I) == 0);
   }
 
-
-  /*
-  void Processor::setRegister(REGISTER6502 f, uint16_t *v)
-  {
-      switch (f)
-      {
-          case REGISTER6502::PC:
-              setRegister(f, (uint16_t) v);
-
-              break;
-          default:
-              setRegister(f, (uint8_t) v);
-      }
-  }
-  void Processor::setRegister(REGISTER6502 f, uint16_t v)
-  {
-      switch (f)
-      {
-          case REGISTER6502::AC:
-              setProgramCounter(v);
-              break;
-          default:
-              setRegister(f, (uint8_t) v);
-      }
-
-  }
-  */
-
-
-  void Processor::setRegister(REGISTER6502 f, uint8_t v)
-  {
-    switch (f)
-    {
-    case REGISTER6502::PC:
-      setProgramCounter((uint16_t)v);
-      break;
-    case REGISTER6502::AC:
-      a = v;
-      break;
-    case REGISTER6502::X:
-      x = v;
-      break;
-    case REGISTER6502::Y:
-      y = v;
-      break;
-    case REGISTER6502::SR:
-      status = v;
-      break;
-    case REGISTER6502::SP:
-      stkp = v;
-      break;
-    }
-  }
-
-
-  uint8_t Processor::getRegister(REGISTER6502 f)
-  {
-    switch (f)
-    {
-      //case REGISTER6502::PC:
-      //    return pc;
-      //    break;
-    case REGISTER6502::AC:
-      return a;
-      break;
-    case REGISTER6502::X:
-      return x;
-      break;
-    case REGISTER6502::Y:
-      return y;
-      break;
-    case REGISTER6502::SR:
-      return status;
-      break;
-    case REGISTER6502::SP:
-      return stkp;
-      break;
-    case REGISTER6502::PC:
-      return (uint8_t)getProgramCounter() & 0x00FF;
-      break;
-    default:
-      throw std::runtime_error("Invalid register");
-    }
-  }
-
-
-  // Increment Program Counter
-  uint16_t Processor::incrementProgramCounter()
-  {
-    pc = ++pc & 0xFFFF;
-    return pc;
-  }
-
-
-  // Decrement Program Counter
-  uint16_t Processor::decrementProgramCounter()
-  {
-    pc = --pc & 0xFFFF;
-    return pc;
-  }
-
-
-  // Set Program Counter
-  void Processor::setProgramCounter(uint16_t value)
-  {
-    pc = value & 0xFFFF;
-  }
-
-
-  // Get Program Counter
-  uint16_t Processor::getProgramCounter()
-  {
-    return pc;
-  }
-
-  //
-  // Increment Stack Pointer
-  uint8_t Processor::incrementStackPointer()
-  {
-    ++stkp;
-    return stkp;
-  }
-
-
-  // Decrement Stack Pointer
-  uint8_t Processor::decrementStackPointer()
-  {
-    --stkp;
-    return stkp;
-  }
-
-
-  // Peek Stack Pointer (No change on cycle)
-  uint8_t Processor::PeekStack()
-  {
-    return readMemoryWithoutCycle(stkp + 0x100);
-  }
-
-
-  // Poke Stack Pointer (No change on cycle)
-  void Processor::PokeStack(uint8_t value)
-  {
-    writeMemoryWithoutCycle(stkp + 0x100, value);
-  }
-
-
-  // Pop Stack (Change on cycle & stackpointer)
-  uint8_t Processor::PopStack()
-  {
-    incrementStackPointer();
-    incrementCycleCount();
-    return readMemory(stkp + 0x100);
-  }
-
-
-  // Pop Stack (Change on cycle & stackpointer)
-  void Processor::PushStack(uint8_t value)
-  {
-    writeMemory(stkp + 0x100, value);
-    incrementCycleCount();
-    decrementStackPointer();
-  }
-
 #pragma endregion INTERNALS
 
   ///////////////////////////////////////////////////////////////////////////////
-#pragma region HELPER FUNCTIONS
-// HELPER FUNCTIONS
+#pragma region DISASSEMBLER FUNCTIONS
+// DISASSEMBLER FUNCTIONS
 
-// This is the disassembly function. Its workings are not required for emulation.
-// It is merely a convenience function to turn the binary instruction code into
-// human readable form. Its included as part of the emulator because it can take
-// advantage of many of the CPUs internal operations to do 
-  Processor::DISASSEMBLY Processor::setDisassembly(uint16_t& addr)
+  // This is the disassembly function. Its workings are not required for emulation.
+  // It is merely a convenience function to turn the binary instruction code into
+  // human readable form. Its included as part of the emulator because it can take
+  // advantage of many of the CPUs internal operations to do 
+  Processor::DISASSEMBLY Processor::setDisassembly(uint16_t &addr)
   {
     uint8_t value = 0x00,
       lo = 0x00,
       hi = 0x00;
 
+    Processor::DISASSEMBLY CurrentDisassembly;
     // Read instruction, and get its readable name
     uint8_t opcode = bus->read(addr, true);
+    std::string opName = executioner.getInstructionName(opcode);
+    std::string addrMode = executioner.getAddressModeName(opcode);
 
     // Prefix line with instruction address
-    std::string sInst = string_format(
-      "$%04X: %s ",
-      addr, executioner.getInstructionName(opcode)
-    );
-    addr++;
-
-    Processor::DISASSEMBLY CurrentDisassembly;
-    CurrentDisassembly.OpCode = opcode;
-    CurrentDisassembly.OpCodeString = executioner.getInstructionName(opcode);
-    CurrentDisassembly.HighAddress = hi;
-    CurrentDisassembly.LowAddress = lo;
+    std::string sInst;
+    ++addr;
 
     // Get operands from desired locations, and form the
     // instruction based upon its addressing mode. These
@@ -634,176 +703,164 @@ namespace CPU
     // 6502 in order to get accurate data as part of the
     // instruction
 
-    Executioner::AddressingModes addrModes;
-
-    switch (executioner.getAddressMode(opcode))
+    if (addrMode == "ACC")
     {
-    case addrModes.Accumulator:
-      sInst += "AC {ACC}";
-      break;
-    case addrModes.Implied:
-      sInst += "{IMP}";
-      break;
-    case addrModes.Immediate:
-      value = bus->read(addr, true);
-      addr++;
-      sInst += "#$" + hex(value, 2) + " {IMM}";
-      CurrentDisassembly.LowAddress = value;
-      break;
-    case addrModes.ZeroPage:
+      sInst = fmt::format(
+        "${:04X}: {} AC {{{}}}",
+        addr, opName, addrMode
+      );
+      //sInst += "AC {ACC}";
+    }
+    else if (addrMode == "IMP")
+    {
+      sInst = fmt::format(
+        "${:04X}: {} {{{}}}",
+        addr, opName, addrMode
+      );
+      //sInst += "{IMP}";
+    }
+    else if (addrMode == "IMM")
+    {
       lo = bus->read(addr, true);
-      addr++;
+      ++addr;
       hi = 0x00;
-      sInst += "$" + hex(lo, 2) + " {ZP0}";
-
-      CurrentDisassembly.HighAddress = hi;
-      CurrentDisassembly.LowAddress = lo;
-      break;
-    case addrModes.ZeroPageX:
+      sInst = fmt::format(
+        "${:04X}: {} #${:02X} {{{}}}",
+        addr, opName, lo, addrMode
+      );
+      //sInst += "#$" + hex(value, 2) + " {IMM}";
+    }
+    else if (addrMode == "ZP0")
+    {
       lo = bus->read(addr, true);
-      addr++;
+      ++addr;
       hi = 0x00;
-      sInst += "$" + hex(lo, 2) + ", X {ZPX}";
-
-      CurrentDisassembly.HighAddress = hi;
-      CurrentDisassembly.LowAddress = lo;
-      break;
-    case addrModes.ZeroPageY:
+      sInst = fmt::format(
+        "${:04X}: {} ${:02X} {{{}}}",
+        addr, opName, lo, addrMode
+      );
+      //sInst += "$" + hex(lo, 2) + " {ZP0}";
+    }
+    else if (addrMode == "ZPX")
+    {
       lo = bus->read(addr, true);
-      addr++;
+      ++addr;
       hi = 0x00;
-      sInst += "$" + hex(lo, 2) + ", Y {ZPY}";
-
-      CurrentDisassembly.HighAddress = hi;
-      CurrentDisassembly.LowAddress = lo;
-      break;
-    case addrModes.IndirectX:
+      sInst = fmt::format(
+        "${:04X}: {} ${:02X}, X {{{}}}",
+        addr, opName, lo, addrMode
+      );
+      //sInst += "$" + hex(lo, 2) + ", X {ZPX}";
+    }
+    else if (addrMode == "ZPY")
+    {
       lo = bus->read(addr, true);
-      addr++;
+      ++addr;
       hi = 0x00;
-      sInst += "($" + hex(lo, 2) + ", X) {IZX}";
-
-      CurrentDisassembly.HighAddress = hi;
-      CurrentDisassembly.LowAddress = lo;
-      break;
-    case addrModes.IndirectY:
+      sInst = fmt::format(
+        "${:04X}: {} ${:02X}, Y {{{}}}",
+        addr, opName, lo, addrMode
+      );
+      //sInst += "$" + hex(lo, 2) + ", Y {ZPY}";
+    }
+    else if (addrMode == "IZX")
+    {
       lo = bus->read(addr, true);
-      addr++;
+      ++addr;
       hi = 0x00;
-      sInst += "($" + hex(lo, 2) + "), Y {IZY}";
-
-      CurrentDisassembly.HighAddress = hi;
-      CurrentDisassembly.LowAddress = lo;
-      break;
-    case addrModes.Absolute:
+      sInst = fmt::format(
+        "${:04X}: {} (${:02X}, X) {{{}}}",
+        addr, opName, lo, addrMode
+      );
+      //sInst += "($" + hex(lo, 2) + ", X) {IZX}";
+    }
+    else if (addrMode == "IZY")
+    {
       lo = bus->read(addr, true);
-      addr++;
+      ++addr;
+      hi = 0x00;
+      sInst = fmt::format(
+        "${:04X}: {} (${:02X}), Y {{{}}}",
+        addr, opName, lo, addrMode
+      );
+      //sInst += "($" + hex(lo, 2) + "), Y {IZY}";
+    }
+    else if (addrMode == "ABS")
+    {
+      lo = bus->read(addr, true);
+      ++addr;
       hi = bus->read(addr, true);
-      addr++;
-      sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + " {ABS}";
-
-      CurrentDisassembly.HighAddress = hi;
-      CurrentDisassembly.LowAddress = lo;
-      break;
-    case addrModes.AbsoluteX:
+      ++addr;
+      sInst = fmt::format(
+        "${:04X}: {} ${:04X} {{{}}}",
+        addr, opName, (hi << 8) | lo, addrMode
+      );
+      //sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + " {ABS}";
+    }
+    else if (addrMode == "ABX")
+    {
       lo = bus->read(addr, true);
-      addr++;
+      ++addr;
       hi = bus->read(addr, true);
-      addr++;
-      sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + ", X {ABX}";
-
-      CurrentDisassembly.HighAddress = hi;
-      CurrentDisassembly.LowAddress = lo;
-      break;
-    case addrModes.AbsoluteY:
+      ++addr;
+      sInst = fmt::format(
+        "${:04X}: {} ${:04X}, X {{{}}}",
+        addr, opName, (hi << 8) | lo, addrMode
+      );
+      //sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + ", X {ABX}";
+    }
+    else if (addrMode == "ABY")
+    {
       lo = bus->read(addr, true);
-      addr++;
+      ++addr;
       hi = bus->read(addr, true);
-      addr++;
-      sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + ", Y {ABY}";
-
-      CurrentDisassembly.HighAddress = hi;
-      CurrentDisassembly.LowAddress = lo;
-      break;
-    case addrModes.Indirect:
+      ++addr;
+      sInst = fmt::format(
+        "${:04X}: {} ${:04X}, Y {{{}}}",
+        addr, opName, (hi << 8) | lo, addrMode
+      );
+      //sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + ", Y {ABY}";
+    }
+    else if (addrMode == "IND")
+    {
       lo = bus->read(addr, true);
-      addr++;
+      ++addr;
       hi = bus->read(addr, true);
-      addr++;
-      sInst += "($" + hex((uint16_t)(hi << 8) | lo, 4) + ") {IND}";
-
-      CurrentDisassembly.HighAddress = hi;
-      CurrentDisassembly.LowAddress = lo;
-      break;
-    case addrModes.Relative:
-      value = bus->read(addr, true);
-      addr++;
-      sInst += "$" + hex(value, 2) + " [$" + hex(addr + value, 4) + "] {REL}";
-
-      CurrentDisassembly.LowAddress = (addr + value) & 0xFF;
-      CurrentDisassembly.HighAddress = ((addr + value) >> 8) & 0xFF;
-      break;
+      ++addr;
+      sInst = fmt::format(
+        "${:04X}: {} (${:04X}) {{{}}}",
+        addr, opName, (hi << 8) | lo, addrMode
+      );
+      //sInst += "($" + hex((uint16_t)(hi << 8) | lo, 4) + ") {IND}";
+    }
+    else if (addrMode == "REL")
+    {
+      uint8_t value = bus->read(addr, true);
+      ++addr;
+      lo = (addr + value) & 0xFF;
+      hi = ((addr + value) >> 8) & 0xFF;
+      sInst = fmt::format(
+        "${:04X}: {} ${:02X} [${:04X}] {{{}}}",
+        addr, opName, value, (addr + value), addrMode
+      );
+      //sInst += "$" + hex(value, 2) + " [$" + hex(addr + value, 4) + "] {REL}";
     }
 
-    CurrentDisassembly.DisassemblyOutput = sInst;
+    CurrentDisassembly = {
+      .LowAddress         = lo,
+      .HighAddress        = hi,
+      .OpCode             = opcode,
+      .OpCodeString       = opName,
+      .AddressMode        = addrMode,
+      .DisassemblyOutput  = sInst
+    };
 
     return CurrentDisassembly;
   }
 
-  void Processor::disassemble(uint16_t addr)
-  {
-#ifdef LOGMODE
-    if (CPU::logfile == nullptr)
-    {
-      return;
-    }
-    disassemble(addr, CPU::logfile);
-#endif
-  }
-
-  void Processor::disassemble(uint16_t& addr, FILE* fp)
-  {
-#ifdef LOGMODE
-    Processor::DISASSEMBLY CurrentDisassembly = setDisassembly(addr);
-    if (fp == nullptr)
-    {
-      return;
-    }
-    if (pc > 0x00)
-    {
-      fprintf(fp,
-        "%04X : %02X %02X %02X %s %-30s A:%02X X:%02X Y:%02X %s STKP:%02X\n",
-        pc,
-        CurrentDisassembly.OpCode,
-        CurrentDisassembly.LowAddress,
-        CurrentDisassembly.HighAddress,
-        CurrentDisassembly.OpCodeString.c_str(),
-        CurrentDisassembly.DisassemblyOutput.c_str(),
-        a,
-        x,
-        y,
-        GetFlagString().c_str(),
-        stkp
-      );
-    }
-    else
-    {
-      fprintf(fp,
-        "%02X %02X %02X %s %-30s\n",
-        CurrentDisassembly.OpCode,
-        CurrentDisassembly.LowAddress,
-        CurrentDisassembly.HighAddress,
-        CurrentDisassembly.OpCodeString.c_str(),
-        CurrentDisassembly.DisassemblyOutput.c_str()
-      );
-    }
-    fflush(fp);
-#endif
-  }
-
   // This disassembly function will turn a chunk of binary code into human readable form.
   // See the above function for a more descriptive text
-  std::map<uint16_t, Processor::DISASSEMBLY> Processor::disassemble(uint16_t nStart, uint16_t nStop)
+  std::map<uint16_t, Processor::DISASSEMBLY> Processor::getDisassembly(uint16_t nStart, uint16_t nStop)
   {
     uint16_t addr = nStart & 0xFFFF;
     std::map<uint16_t, Processor::DISASSEMBLY> mapLines;
@@ -822,10 +879,39 @@ namespace CPU
       // address as the key. This makes it convenient to look for later
       // as the instructions are variable in length, so a straight up
       // incremental index is not sufficient.
-      mapLines[addr] = setDisassembly(addr);
+      mapLines[addr] = setDisassembly(++addr);
     }
 
     return mapLines;
   }
-#pragma endregion HELPER FUNCTIONS
+
+  void Processor::disassemble(uint16_t addr)
+  {
+#ifdef LOGMODE
+    Processor::DISASSEMBLY CD = setDisassembly(addr);
+    Logger::log()->info("{} {}", CD, reg);
+#endif
+  }
+
+  void Processor::disassemble(uint16_t nStart, uint16_t nStop)
+  {
+#ifdef LOGMODE
+    uint16_t addr = nStart;
+  //Logger::log()->info("disassemble: nStart: ${:04X} nStop: ${:04X}", nStart, nStop);
+
+    Logger::log()->info("\n");
+    Logger::log()->info("DISASSEMBLE: ${:04X} - ${:04X}", nStart, nStop);
+    Logger::log()->info("OP LO HI OPS DISASSEMBLY");
+
+    while (addr < (uint32_t)nStop)
+    {
+      Processor::DISASSEMBLY CD = setDisassembly(addr);
+      Logger::log()->info("{} {}", CD, reg);
+    }
+    Logger::log()->info("OP LO HI OPS DISASSEMBLY\n");
+
+#endif
+  }
+
+#pragma endregion DISASSEMBLER FUNCTIONS
 }

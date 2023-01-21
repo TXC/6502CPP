@@ -1,0 +1,250 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
+
+PROJECT(@IMGUI_NAME@ VERSION @IMGUI_VERSION@ LANGUAGES CXX)
+
+OPTION(WITH_ALLEGRO5 "With Allegro5 support" OFF)
+OPTION(WITH_ANDROID "With Android support" OFF)
+OPTION(WITH_DIRECTX9 "With DirectX 9 support" OFF)
+OPTION(WITH_DIRECTX10 "With DirectX 10 support" OFF)
+OPTION(WITH_DIRECTX11 "With DirectX 11 support" OFF)
+OPTION(WITH_DIRECTX12 "With DirectX 12 support" OFF)
+OPTION(WITH_GLFW "With GLFW support" OFF)
+OPTION(WITH_GLUT "With GLUT support" OFF)
+OPTION(WITH_METAL "With MacOS Metal support" OFF)
+OPTION(WITH_OPENGL2 "With OpenGL 2 support" OFF)
+OPTION(WITH_OPENGL3 "With OpenGL 3 support" OFF)
+OPTION(WITH_SDL "With SDL support" OFF)
+OPTION(WITH_SDLRENDERER "With SDL Renderer support" OFF)
+OPTION(WITH_VULKAN "With Vulkan support" OFF)
+OPTION(WITH_WGPU "With WGPU support" OFF)
+OPTION(WITH_WIN32 "With Win32 support" OFF)
+
+INCLUDE(GNUInstallDirs)
+INCLUDE(Common)
+
+ADD_LIBRARY(@IMGUI_TARGET@ INTERFACE)
+ADD_LIBRARY(@IMGUI_NAME@::@IMGUI_TARGET@ ALIAS @IMGUI_TARGET@)
+
+TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+  FILE_SET HEADERS
+  FILES imgui.h
+        imgui.h
+        imstb_rectpack.h
+        imstb_textedit.h
+        imstb_truetype.h
+        imgui_internal.h
+)
+
+TARGET_SOURCES(@IMGUI_TARGET@
+  PRIVATE imgui.cpp
+          imgui_demo.cpp
+          imgui_draw.cpp
+          imgui_tables.cpp
+          imgui_widgets.cpp
+)
+
+TARGET_COMPILE_FEATURES(@IMGUI_TARGET@ INTERFACE cxx_std_11)
+TARGET_INCLUDE_DIRECTORIES(@IMGUI_TARGET@ INTERFACE
+  "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
+IF(WITH_ALLEGRO5)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_allegro5.h
+    PRIVATE  backends/imgui_impl_allegro5.cpp
+  )
+ENDIF()
+
+IF(WITH_ANDROID AND ANDROID)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_android.h
+    PRIVATE  backends/imgui_impl_android.cpp
+  )
+ENDIF()
+
+IF(WITH_DIRECTX9 AND WIN32)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_dx9.h
+    PRIVATE  backends/imgui_impl_dx9.cpp
+  )
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC d3d9 dxgi d3dcompiler)
+ENDIF()
+
+IF(WITH_DIRECTX10 AND WIN32)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_dx10.h
+    PRIVATE  backends/imgui_impl_dx10.cpp
+  )
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC d3d10 d3dcompiler)
+ENDIF()
+
+IF(WITH_DIRECTX11 AND WIN32)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_dx11.h
+    PRIVATE  backends/imgui_impl_dx11.cpp
+  )
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC d3d11 d3dcompiler)
+ENDIF()
+
+IF(WITH_DIRECTX12 AND WIN32)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_dx12.h
+    PRIVATE  backends/imgui_impl_dx12.cpp
+  )
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC d3d12 dxgi d3dcompiler)
+ENDIF()
+
+IF(WITH_GLFW)
+  FIND_PACKAGE(GLFW3 REQUIRED)
+  IF(GLFW3_FOUND)
+    TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+      FILE_SET HEADERS
+      FILES    backends/imgui_impl_glfw.h
+      PRIVATE  backends/imgui_impl_glfw.cpp
+    )
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC glfw)
+  ENDIF()  
+ENDIF()
+
+IF(WITH_GLUT)
+  FIND_PACKAGE(GLUT REQUIRED)
+  IF (GLUT_FOUND)
+    TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+      FILE_SET HEADERS
+      FILES    backends/imgui_impl_glut.h
+      PRIVATE  backends/imgui_impl_glut.cpp
+    )
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC ${GLUT_INCLUDE_DIRS})
+    TARGET_INCLUDE_DIRECTORIES(@IMGUI_TARGET@ PUBLIC ${GLUT_LIBRARIES})
+  ENDIF()
+ENDIF()
+
+IF(WITH_METAL AND APPLE)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_metal.h
+    PRIVATE  backends/imgui_impl_metal.mm
+  )
+
+  SET(_CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK})
+  SET(CMAKE_FIND_FRAMEWORK ONLY)
+
+  FIND_LIBRARY(COCOA_LIBRARY Cocoa)
+  FIND_LIBRARY(OPENGL_LIBRARY OpenGL)
+  FIND_LIBRARY(IOKIT_LIBRARY IOKit)
+  FIND_LIBRARY(COREVIDEO_LIBRARY CoreVideo)
+  FIND_LIBRARY(METAL_LIBRARY Metal)
+  FIND_LIBRARY(METALKIT_LIBRARY MetalKit)
+  FIND_LIBRARY(QUARTZCORE_LIBRARY QuartzCore)
+
+  SET(CMAKE_FIND_FRAMEWORK ${_CMAKE_FIND_FRAMEWORK})
+  UNSET(_CMAKE_FIND_FRAMEWORK)
+
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC
+    "-framework Metal"
+    "-framework MetalKit"
+    "-framework Cocoa"
+    "-framework IOKit"
+    "-framework CoreVideo"
+    "-framework QuartzCore"
+    "-framework OpenGL"
+  )
+ENDIF()
+
+IF(WITH_OPENGL2)
+  SET(OpenGL_GL_PREFERENCE "LEGACY")
+  FIND_PACKAGE(OpenGL 2 REQUIRED)
+  IF(OPENGL_FOUND)
+    TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+      FILE_SET HEADERS
+      FILES    backends/imgui_impl_opengl2.h
+      PRIVATE  backends/imgui_impl_opengl2.cpp
+    )
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC OpenGL::GL)
+  ENDIF()  
+ENDIF()
+
+IF(WITH_OPENGL3)
+  FIND_PACKAGE(OpenGL REQUIRED)
+  IF(OPENGL_FOUND)
+    TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+      FILE_SET HEADERS
+      FILES    backends/imgui_impl_opengl3.h
+      PRIVATE  backends/imgui_impl_opengl3.cpp
+    )
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC OpenGL::GL)
+  ENDIF()  
+ENDIF()
+
+IF(WITH_SDL)
+  FIND_PACKAGE(SDL2 REQUIRED)
+  IF(SDL2_FOUND AND SDL_VERSION VERSION_GREATER_EQUAL 2.0.4)
+    TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+      FILE_SET HEADERS
+      FILES    backends/imgui_impl_sdl.h
+      PRIVATE  backends/imgui_impl_sdl.cpp
+    )
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC SDL:SDL)
+  ENDIF()
+ENDIF()
+
+IF(WITH_SDLRENDERER)
+  FIND_PACKAGE(SDL2 REQUIRED)
+  IF(SDL2_FOUND AND SDL_VERSION VERSION_GREATER_EQUAL 2.0.17)
+    TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+      FILE_SET HEADERS
+      FILES    backends/imgui_impl_sdlrenderer.h
+      PRIVATE  backends/imgui_impl_sdlrenderer.cpp
+    )
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC SDL:SDL)
+  ENDIF()
+ENDIF()
+
+IF(WITH_VULKAN)
+  FIND_PACKAGE(Vulkan REQUIRED)
+  IF(VULKAN_FOUND)
+    TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+      FILE_SET HEADERS
+      FILES    backends/imgui_impl_vulkan.h
+      PRIVATE  backends/imgui_impl_vulkan.cpp
+    )
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC Vulkan::Vulkan)
+  ENDIF()
+ENDIF()
+
+IF(WITH_WGPU)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_wgpu.h
+    PRIVATE  backends/imgui_impl_wgpu.cpp
+  )
+ENDIF()
+
+IF(WITH_WIN32 AND WIN32)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_win32.h
+    PRIVATE  backends/imgui_impl_win32.cpp
+  )
+  #TARGET_INCLUDE_DIRECTORIES(@IMGUI_TARGET@ INTERFACE ${WinSDK})
+ENDIF()
+
+SET_TARGET_PROPERTIES(@IMGUI_TARGET@ PROPERTIES
+                               VERSION  "${${PROJECT_NAME}_VERSION}"
+                       LINKER_LANGUAGE  "CXX"
+                          CXX_STANDARD  "11"
+                 CXX_STANDARD_REQUIRED  "ON"
+                  CMAKE_CXX_EXTENSIONS  "ON"
+)
+
+COMMON_CREATE_INSTALL(NAME @IMGUI_NAME@
+  TARGETS @IMGUI_TARGET@
+  INSTALL
+)

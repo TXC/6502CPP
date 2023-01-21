@@ -1,1013 +1,1127 @@
-#include <catch2/catch_all.hpp>
-#include <iostream>
-
-#include "Bus.hpp"
-#include "Processor.hpp"
-#include "Common.hpp"
 #include "ProcessorTests.hpp"
+#include <Types.hpp>
 
-using namespace CPU;
-using namespace CPUTest;
+#include <catch2/catch_all.hpp>
+#include <string>
 
-Bus bus;
-
-#pragma region Initialization Tests
-TEST_CASE("Processor Status Flags Initialized Correctly", "[init]")
+#include <fmt/format.h>
+/*
+//#include <spdlog/spdlog.h>
+#ifdef SPDLOG_FMT_EXTERNAL
+//#include <fmt/ostream.h>
+#else
+#include <spdlog/fmt/fmt.h>
+//#include <spdlog/fmt/ostr.h>
+#endif
+*/
+//using namespace CPU;
+//using namespace CPUTest;
+namespace CPUTest
 {
+  using namespace CPU;
+TEST_CASE("Initialization Tests", "[init]")
+{
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  SECTION("Processor Status Flags Initialized Correctly")
+  {
     /*
-        C = Carry Bit
-        Z = Zero
-        I = Disable Interrupts
-        D = Decimal Mode (unused in this implementation)
-        B = Break
-        U = Unused
-        V = Overflow
-        N = Negative
+      C = Carry Bit
+      Z = Zero
+      I = Disable Interrupts
+      D = Decimal Mode (unused in this implementation)
+      B = Break
+      U = Unused
+      V = Overflow
+      N = Negative
     */
-    //Bus bus;
+    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::C), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::Z), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::I), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::D), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::B), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::U), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::V), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.GetFlag(Processor::FLAGS6502::N), 2) == hex(0x00, 2));
+  }
 
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::C) == 0x00);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::Z) == 0x00);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::I) == 0x00);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::D) == 0x00);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::B) == 0x00);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::U) == 0x00);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::V) == 0x00);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::N) == 0x00);
-}
+  SECTION("Processor Registers Initialized Correctly")
+  {
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.X), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.Y), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.opcode, 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 2) == hex(0x00, 2));
+  }
 
-TEST_CASE("Processor Registers Initialized Correctly", "[init]")
-{
-    //Bus bus;
-
-    REQUIRE(bus.cpu.a == 0x00);
-    REQUIRE(bus.cpu.x == 0x00);
-    REQUIRE(bus.cpu.y == 0x00);
-    REQUIRE(bus.cpu.opcode == 0x00);
-    REQUIRE(bus.cpu.pc == 0x00);
-}
-
-TEST_CASE("ProgramCounter Correct When Program Loaded", "[init]")
-{
-    //Bus bus;
-
+  SECTION("ProgramCounter Correct When Program Loaded")
+  {
     uint8_t program[] = {0x01};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x01);
-    REQUIRE(bus.cpu.pc == 0x01);
-}
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 2) == hex(0x01, 2));
+  }
 
-TEST_CASE("Throws Exception When OpCode Is Invalid", "[init][ILLEGAL]")
-{
-    //Bus bus;
-
+#ifndef ILLEGAL
+  SECTION("Throws Exception When OpCode Is Invalid")
+  {
     uint8_t program[] = {0xFF};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    //REQUIRE(bus.cpu.tick() == 0x00);
-}
+    REQUIRE_THROWS(bus.cpu.tick());
+  }
+#endif
 
-TEST_CASE("Stack Pointer Initializes To Default Value After Reset", "[init]")
-{
-    //Bus bus;
-
+  SECTION("Stack Pointer Initializes To Default Value After Reset")
+  {
     bus.cpu.reset();
 
-    REQUIRE(bus.cpu.stkp == 0xFD);
-}
-#pragma endregion Initialization Tests
-
-#pragma region ADC - Add with Carry Tests
-TEST_CASE("ADC Accumulator Correct When Not In BDC Mode", "[opcode][adc]")
-{
-    auto [accumlatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
-            {0x00, 0x00, false, 0x00},
-            {0x00, 0x01, false, 0x01},
-            {0x01, 0x02, false, 0x03},
-            {0xFF, 0x01, false, 0x00},
-            {0xFE, 0x01, false, 0xFF},
-            {0xFF, 0x00, false, 0xFF},
-            {0x00, 0x00, true, 0x01},
-            {0x00, 0x01, true, 0x02},
-            {0x01, 0x02, true, 0x04},
-            {0xFE, 0x01, true, 0x00},
-            {0xFD, 0x01, true, 0xFF},
-            {0xFE, 0x00, true, 0xFF},
-            {0xFF, 0xFF, true, 0xFF}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToAdd << ", " << CarryFlagSet << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        if (CarryFlagSet)
-        { 
-            uint8_t program[] = {0x38, 0xA9, accumlatorInitialValue, 0x69, amountToAdd};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-            bus.cpu.tick();
-        }
-        else
-        {
-            uint8_t program[] = {0xA9, accumlatorInitialValue, 0x69, amountToAdd};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        }
-
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(expectedValue, 2));
-    }
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(0xFD, 2));
+  }
 }
 
-TEST_CASE("ADC Accumulator Correct When In BDC Mode", "[opcode][adc]")
+TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 {
-    auto [accumlatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
-            {0x99, 0x99, false, 0x98},
-            {0x99, 0x99, true, 0x99},
-            {0x90, 0x99, false, 0x89}
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
+  uint8_t operation = 0x69;
 
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToAdd << ", " << CarryFlagSet << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
+  SECTION("ADC Accumulator Correct When Not In BDC Mode")
+  {
 
-        REQUIRE(bus.cpu.a == 0x00);
+    auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
+        {0x00, 0x00, false, 0x00},
+        {0x00, 0x01, false, 0x01},
+        {0x01, 0x02, false, 0x03},
+        {0xFF, 0x01, false, 0x00},
+        {0xFE, 0x01, false, 0xFF},
+        {0xFF, 0x00, false, 0xFF},
+        {0x00, 0x00, true, 0x01},
+        {0x00, 0x01, true, 0x02},
+        {0x01, 0x02, true, 0x04},
+        {0xFE, 0x01, true, 0x00},
+        {0xFD, 0x01, true, 0xFF},
+        {0xFE, 0x00, true, 0xFF},
+        {0xFF, 0xFF, true, 0xFF}
+      }));
 
-        if (CarryFlagSet)
-        { 
-            uint8_t program[] = {0x38, 0xF8, 0xA9, accumlatorInitialValue, 0x69, amountToAdd};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-            bus.cpu.tick();
-        }
-        else
-        {
-            uint8_t program[] = {0xF8, 0xA9, accumlatorInitialValue, 0x69, amountToAdd};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        }
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(expectedValue, 2));
-    }
-}
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-TEST_CASE("ADC Carry Correct When Not In BDC Mode", "[opcode][adc]")
-{
-    auto [accumlatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool, bool>({
-            {0xFE, 0x01, false, false},
-            {0xFE, 0x01, true, true},
-            {0xFD, 0x01, true, false},
-            {0xFF, 0x01, false, true},
-            {0xFF, 0x01, true, true}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToAdd << ", " << CarryFlagSet << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        if (CarryFlagSet)
-        { 
-            uint8_t program[] = {0x38, 0xA9, accumlatorInitialValue, 0x69, amountToAdd};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-            bus.cpu.tick();
-        }
-        else
-        {
-            uint8_t program[] = {0xA9, accumlatorInitialValue, 0x69, amountToAdd};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        }
-
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
-    }
-}
-
-TEST_CASE("ADC Carry Correct When In BDC Mode", "[opcode][adc]")
-{
-    auto [accumlatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool, bool>({
-            {0x62, 0x01, false, false},
-            {0x62, 0x01, true, false},
-            {0x63, 0x01, false, false},
-            {0x63, 0x01, true, false}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToAdd << ", " << CarryFlagSet << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        uint8_t program[] = {0xF8, 0xA9, accumlatorInitialValue, 0x69, amountToAdd};
+      if (CarryFlagSet)
+      { 
+        uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
         bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
-    }
-}
-
-TEST_CASE("ADC Zero Flag Correct When Not In BDC Mode", "[opcode][adc]")
-{
-    auto [accumlatorInitialValue, amountToAdd, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, true},
-            {0xFF, 0x01, true},
-            {0x00, 0x01, false},
-            {0x01, 0x00, false}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToAdd << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        uint8_t program[] = {0xA9, accumlatorInitialValue, 0x69, amountToAdd};
+      }
+      else
+      {
+        uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      }
 
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("ADC Negative Flag Correct", "[opcode][adc]")
-{
-    auto [accumlatorInitialValue, amountToAdd, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x7E, 0x01, false},
-            {0x01, 0x7E, false},
-            {0x01, 0x7F, true},
-            {0x7F, 0x01, true},
-            {0x01, 0xFE, true},
-            {0xFE, 0x01, true},
-            {0x01, 0xFF, false},
-            {0xFF, 0x01, false},
-        }));
+#ifdef DECIMAL_MODE
+  SECTION("ADC Accumulator Correct When In BDC Mode")
+  {
+    auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
+        {0x99, 0x99, false, 0x98},
+        {0x99, 0x99, true, 0x99},
+        {0x90, 0x99, false, 0x89}
+      }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+    ) {
 
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToAdd << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
+      bus.cpu.reset();
 
-        REQUIRE(bus.cpu.a == 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumlatorInitialValue, 0x69, amountToAdd};
+      if (CarryFlagSet)
+      { 
+        uint8_t program[] = {0x38, 0xF8, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
         bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
-    }
-}
-
-TEST_CASE("ADC Overflow Flag Correct", "[opcode][adc]")
-{
-    auto [accumlatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool, bool>({
-            {0x00, 0x7F, false, false},
-            {0x00, 0x80, false, false},
-            {0x01, 0x7F, false, true},
-            {0x01, 0x80, false, false},
-            {0x7F, 0x01, false, true},
-            {0x7F, 0x7F, false, true},
-            {0x80, 0x7F, false, false},
-            {0x80, 0x80, false, true},
-            {0x80, 0x81, false, true},
-            {0x80, 0xFF, false, true},
-            {0xFF, 0x00, false, false},
-            {0xFF, 0x01, false, false},
-            {0xFF, 0x7F, false, false},
-            {0xFF, 0x80, false, true},
-            {0xFF, 0xFF, false, false},
-            {0x00, 0x7F, true, true},
-            {0x00, 0x80, true, false},
-            {0x01, 0x7F, true, true},
-            {0x01, 0x80, true, false},
-            {0x7F, 0x01, true, true},
-            {0x7F, 0x7F, true, true},
-            {0x80, 0x7F, true, false},
-            {0x80, 0x80, true, true},
-            {0x80, 0x81, true, true},
-            {0x80, 0xFF, true, false},
-            {0xFF, 0x00, true, false},
-            {0xFF, 0x01, true, false},
-            {0xFF, 0x7F, true, false},
-            {0xFF, 0x80, true, false},
-            {0xFF, 0xFF, true, false}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToAdd << ", " << CarryFlagSet << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        if (CarryFlagSet)
-        { 
-            uint8_t program[] = {0x38, 0xA9, accumlatorInitialValue, 0x69, amountToAdd};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-            bus.cpu.tick();
-        }
-        else
-        {
-            uint8_t program[] = {0xA9, accumlatorInitialValue, 0x69, amountToAdd};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        }
-
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedValue);
-    }
-}
-#pragma endregion ADC - Add with Carry Tests
-
-#pragma region AND - Compare Memory with Accumulator
-TEST_CASE("AND Accumulator Correct", "[opcode][and]")
-{
-    auto [accumlatorInitialValue, amountToAdd, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t>({
-            {0x00, 0x00, 0x00},
-            {0xFF, 0xFF, 0xFF},
-            {0xFF, 0xFE, 0xFE},
-            {0xAA, 0x55, 0x00}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToAdd << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        uint8_t program[] = {0xA9, accumlatorInitialValue, 0x29, amountToAdd};
+      }
+      else
+      {
+        uint8_t program[] = {0xF8, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      }
 
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(expectedValue, 2));
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
-}
-#pragma endregion AND - Compare Memory with Accumulator
+  }
+#endif
 
-#pragma region ASL - Arithmetic Shift Left
+  SECTION("ADC Carry Correct When Not In BDC Mode")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+    auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool, bool>({
+        {0xFE, 0x01, false, false},
+        {0xFE, 0x01, true, true},
+        {0xFD, 0x01, true, false},
+        {0xFF, 0x01, false, true},
+        {0xFF, 0x01, true, true}
+      }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      if (CarryFlagSet)
+      { 
+        uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
+        size_t n = sizeof(program) / sizeof(program[0]);
+        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu.tick();
+      }
+      else
+      {
+        uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
+        size_t n = sizeof(program) / sizeof(program[0]);
+        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      }
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
+    }
+  }
+
+#ifdef DECIMAL_MODE
+  SECTION("ADC Carry Correct When In BDC Mode")
+  {
+    auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool, bool>({
+        {0x62, 0x01, false, false},
+        {0x62, 0x01, true, false},
+        {0x63, 0x01, false, false},
+        {0x63, 0x01, true, false}
+      }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+    ) {
+
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      uint8_t program[] = {0xF8, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
+    }
+  }
+#endif
+
+  SECTION("ADC Zero Flag Correct When Not In BDC Mode")
+  {
+    auto [accumulatorInitialValue, amountToAdd, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x00, 0x00, true},
+        {0xFF, 0x01, true},
+        {0x00, 0x01, false},
+        {0x01, 0x00, false}
+      }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+    }
+  }
+
+  SECTION("ADC Negative Flag Correct")
+  {
+    auto [accumulatorInitialValue, amountToAdd, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x7E, 0x01, false},
+        {0x01, 0x7E, false},
+        {0x01, 0x7F, true},
+        {0x7F, 0x01, true},
+        {0x01, 0xFE, true},
+        {0xFE, 0x01, true},
+        {0x01, 0xFF, false},
+        {0xFF, 0x01, false},
+      }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+    }
+  }
+
+  SECTION("ADC Overflow Flag Correct")
+  {
+    auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = GENERATE( table<uint8_t, uint8_t, bool, bool>({
+      {0x00, 0x7F, false, false},
+      {0x00, 0x80, false, false},
+      {0x01, 0x7F, false, true},
+      {0x01, 0x80, false, false},
+      {0x7F, 0x01, false, true},
+      {0x7F, 0x7F, false, true},
+      {0x80, 0x7F, false, false},
+      {0x80, 0x80, false, true},
+      {0x80, 0x81, false, true},
+      {0x80, 0xFF, false, true},
+      {0xFF, 0x00, false, false},
+      {0xFF, 0x01, false, false},
+      {0xFF, 0x7F, false, false},
+      {0xFF, 0x80, false, true},
+      {0xFF, 0xFF, false, false},
+      {0x00, 0x7F, true, true},
+      {0x00, 0x80, true, false},
+      {0x01, 0x7F, true, true},
+      {0x01, 0x80, true, false},
+      {0x7F, 0x01, true, true},
+      {0x7F, 0x7F, true, true},
+      {0x80, 0x7F, true, false},
+      {0x80, 0x80, true, true},
+      {0x80, 0x81, true, true},
+      {0x80, 0xFF, true, false},
+      {0xFF, 0x00, true, false},
+      {0xFF, 0x01, true, false},
+      {0xFF, 0x7F, true, false},
+      {0xFF, 0x80, true, false},
+      {0xFF, 0xFF, true, false}
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      if (CarryFlagSet)
+      { 
+        uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
+        size_t n = sizeof(program) / sizeof(program[0]);
+        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu.tick();
+      }
+      else
+      {
+        uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
+        size_t n = sizeof(program) / sizeof(program[0]);
+        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      }
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedValue);
+    }
+  }
+}
+
+TEST_CASE("AND - Compare Memory with Accumulator", "[opcode][and]")
+{
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x29;
+
+  SECTION("AND Accumulator Correct")
+  {
+    auto [accumulatorInitialValue, amountToAdd, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t>({
+      {0x00, 0x00, 0x00},
+      {0xFF, 0xFF, 0xFF},
+      {0xFF, 0xFE, 0xFE},
+      {0xAA, 0x55, 0x00}
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0x29, amountToAdd};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+    }
+  }
+}
+
 TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
 {
-    auto [operation, valueToShift, expectedValue, expectedLocation] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-            {0x0A, 0x6D, 0xDA, 0x0000},
-            {0x0A, 0x6C, 0xD8, 0x0000},
-            {0x06, 0x6D, 0xDA, 0x0001},
-            {0x16, 0x6D, 0xDA, 0x0001},
-            {0x0E, 0x6D, 0xDA, 0x0001},
-            {0x1E, 0x6D, 0xDA, 0x0001},
-        })
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+  uint8_t operation = 0x0A;
+
+  SECTION("ASL - Arithmetic Shift Left")
+  {
+    auto [sectionOperation, valueToShift, expectedValue, expectedLocation] = 
+      GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+        {0x0A, 0x6D, 0xDA, 0x0000},
+        {0x0A, 0x6C, 0xD8, 0x0000},
+        {0x06, 0x6D, 0xDA, 0x0001},
+        {0x16, 0x6D, 0xDA, 0x0001},
+        {0x0E, 0x6D, 0xDA, 0x0001},
+        {0x1E, 0x6D, 0xDA, 0x0001},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), valueToShift, expectedValue, expectedLocation)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(valueToShift, 2) << ", 0x" << hex(expectedValue, 2) << ", 0x" << hex(expectedLocation, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        REQUIRE(bus.cpu.a == 0x00);
+      uint8_t program[] = {0xA9, valueToShift, sectionOperation, expectedLocation};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToShift, operation, expectedLocation};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        if (operation == 0x0A)
-        {
-            REQUIRE(hex(bus.cpu.a, 2) == hex(expectedValue, 2));
-        }
-        else
-        {
-            REQUIRE(bus.read(expectedLocation, false) == expectedValue);
-        }
+      bus.cpu.tick();
+      bus.cpu.tick();
+      if (sectionOperation == 0x0A)
+      {
+        REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      }
+      else
+      {
+        REQUIRE(hex(bus.read(expectedLocation, false), 2) == hex(expectedValue, 2));
+      }
     }
-}
+  }
 
-TEST_CASE("ASL Carry Set Correctly", "[opcode][asl]")
-{
+  SECTION("ASL Carry Set Correctly")
+  {
     auto [valueToShift, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x7F, false},
-            {0x80, true},
-            {0xFF, true},
-            {0x00, false},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x7F, false},
+        {0x80, true},
+        {0xFF, true},
+        {0x00, false},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToShift, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToShift, 2) << ", " << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        REQUIRE(bus.cpu.a == 0x00);
+      uint8_t program[] = {0xA9, valueToShift, 0x0A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToShift, 0x0A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("ASL Negative Set Correctly", "[opcode][asl]")
-{
+  SECTION("ASL Negative Set Correctly")
+  {
     auto [valueToShift, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x3F, false},
-            {0x40, true},
-            {0x7F, true},
-            {0x80, false},
-            {0x00, false},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x3F, false},
+        {0x40, true},
+        {0x7F, true},
+        {0x80, false},
+        {0x00, false},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToShift, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToShift, 2) << ", " << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        REQUIRE(bus.cpu.a == 0x00);
+      uint8_t program[] = {0xA9, valueToShift, 0x0A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToShift, 0x0A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("ASL Zero Set Correctly", "[opcode][asl]")
-{
+  SECTION("ASL Zero Set Correctly")
+  {
     auto [valueToShift, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x7F, false},
-            {0x80, true},
-            {0x00, true},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x7F, false},
+        {0x80, true},
+        {0x00, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToShift, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToShift, 2) << ", " << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        REQUIRE(bus.cpu.a == 0x00);
+      uint8_t program[] = {0xA9, valueToShift, 0x0A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToShift, 0x0A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
     }
+  }
 }
-#pragma endregion ASL - Arithmetic Shift Left
 
-#pragma region BCC - Branch On Carry Clear
-TEST_CASE("BCC Program Counter Correct", "[opcode][bcc]")
+TEST_CASE("BCC - Branch On Carry Clear", "[opcode][bcc]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x90;
+
+  SECTION("BCC Program Counter Correct")
+  {
     auto [programCounterInitalValue, programOffset, expectedValue] = 
-        GENERATE( table<uint16_t, uint8_t, uint16_t>({
-            {0x00, 0x01, 0x03},
-            {0x80, 0x80, 0x02},
-            {0x00, 0x03, 0x05},
-            {0x00, 0xFD, 0xFFFF},
-            {0x7D, 0x80, 0xFFFF},
-        })
+      GENERATE( table<uint16_t, uint8_t, uint16_t>({
+        {0x00, 0x01, 0x03},
+        {0x80, 0x80, 0x02},
+        {0x00, 0x03, 0x05},
+        {0x00, 0xFD, 0xFFFF},
+        {0x7D, 0x80, 0xFFFF},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:04X}, 0x{:02X}, 0x{:04X}) works",
+      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(programCounterInitalValue, 4) << ", 0x" << hex(programOffset, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0x90, programOffset};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
+      bus.cpu.dumpRam(0x0000);
 
-        uint8_t program[] = {0x90, programOffset};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-        REQUIRE(bus.cpu.pc == programCounterInitalValue);
-        bus.cpu.dumpRam(0x0000);
-
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.pc, 4) == hex(expectedValue, 4));
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
+  }
 }
-#pragma endregion BCC - Branch On Carry Clear
 
-#pragma region BCS - Branch on Carry Set
-TEST_CASE("BCS Program Counter Correct", "[opcode][bcs]")
+TEST_CASE("BCS - Branch on Carry Set", "[opcode][bcs]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xB0;
+
+  SECTION("BCS Program Counter Correct")
+  {
     auto [programCounterInitalValue, programOffset, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint16_t>({
-            {0x00, 0x01, 0x04},
-            {0x80, 0x80, 0x03},
-            {0x00, 0xFC, 0xFFFF},
-            {0x7C, 0x80, 0xFFFF},
-        })
+      GENERATE( table<uint8_t, uint8_t, uint16_t>({
+        {0x00, 0x01, 0x04},
+        {0x80, 0x80, 0x03},
+        {0x00, 0xFC, 0xFFFF},
+        {0x7C, 0x80, 0xFFFF},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
+      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(programCounterInitalValue, 2) << ", 0x" << hex(programOffset, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0x38, 0xB0, programOffset};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-        uint8_t program[] = {0x38, 0xB0, programOffset};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-        REQUIRE(bus.cpu.pc == programCounterInitalValue);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.pc, 4) == hex(expectedValue, 4));
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
+  }
 }
-#pragma endregion BCS - Branch on Carry Set
 
-#pragma region BEQ - Branch on Zero Set
-TEST_CASE("BEQ Program Counter Correct", "[opcode][beq]")
+TEST_CASE("BEQ - Branch on Zero Set", "[opcode][beq]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xF0;
+
+  SECTION("BEQ Program Counter Correct")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     auto [programCounterInitalValue, programOffset, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint16_t>({
-            {0x00, 0x01, 0x05},
-            {0x80, 0x80, 0x04},
-            {0x00, 0xFB, 0xFFFF},
-            {0x7B, 0x80, 0xFFFF},
-            {0x02, 0xFE, 0x04},
-        })
+      GENERATE( table<uint8_t, uint8_t, uint16_t>({
+        {0x00, 0x01, 0x05},
+        {0x80, 0x80, 0x04},
+        {0x00, 0xFB, 0xFFFF},
+        {0x7B, 0x80, 0xFFFF},
+        {0x02, 0xFE, 0x04},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(programCounterInitalValue, 2) << ", 0x" << hex(programOffset, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, 0x00, 0xF0, programOffset};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-        uint8_t program[] = {0xA9, 0x00, 0xF0, programOffset};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-        REQUIRE(bus.cpu.pc == programCounterInitalValue);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.pc, 4) == hex(expectedValue, 4));
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
+  }
 }
-#pragma endregion BEQ - Branch on Zero Set
 
-#pragma region BIT - Compare Memory with Accumulator
-TEST_CASE("BIT Negative Set When Comparison Is Negative Number", "[opcode][bit]")
+TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  SECTION("BIT Negative Set When Comparison Is Negative Number")
+  {
     auto [operation, accumulatorValue, valueToTest, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
-            {0x24, 0x7f, 0x7F, false}, // BIT Zero Page
-            {0x24, 0x80, 0x7F, false}, // BIT Zero Page
-            {0x24, 0x7F, 0x80, true}, // BIT Zero Page
-            {0x24, 0x80, 0xFF, true}, // BIT Zero Page
-            {0x24, 0xFF, 0x80, true}, // BIT Zero Page
-            {0x2C, 0x7F, 0x7F, false}, // BIT Absolute
-            {0x2C, 0x80, 0x7F, false}, // BIT Absolute
-            {0x2C, 0x7F, 0x80, true}, // BIT Absolute
-            {0x2C, 0x80, 0xFF, true}, // BIT Absolute
-            {0x2C, 0xFF, 0x80, true}, // BIT Absolute
-        })
+      GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
+        {0x24, 0x7f, 0x7F, false}, // BIT Zero Page
+        {0x24, 0x80, 0x7F, false}, // BIT Zero Page
+        {0x24, 0x7F, 0x80, true}, // BIT Zero Page
+        {0x24, 0x80, 0xFF, true}, // BIT Zero Page
+        {0x24, 0xFF, 0x80, true}, // BIT Zero Page
+        {0x2C, 0x7F, 0x7F, false}, // BIT Absolute
+        {0x2C, 0x80, 0x7F, false}, // BIT Absolute
+        {0x2C, 0x7F, 0x80, true}, // BIT Absolute
+        {0x2C, 0x80, 0xFF, true}, // BIT Absolute
+        {0x2C, 0xFF, 0x80, true}, // BIT Absolute
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, valueToTest, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorValue, 2) << ", 0x" << hex(valueToTest, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, operation, 0x06, 0x00, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, operation, 0x06, 0x00, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedResult);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("BIT Overflow Set By Bit Six", "[opcode][bit]")
-{
+  SECTION("BIT Overflow Set By Bit Six")
+  {
     auto [operation, accumulatorValue, valueToTest, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
-		    {0x24, 0x3F, 0x3F, false}, // BIT Zero Page
-		    {0x24, 0x3F, 0x40, true}, // BIT Zero Page
-		    {0x24, 0x40, 0x3F, false}, // BIT Zero Page
-		    {0x24, 0x40, 0x7F, true}, // BIT Zero Page
-		    {0x24, 0x7F, 0x40, true}, // BIT Zero Page
-		    {0x24, 0x7F, 0x80, false}, // BIT Zero Page
-		    {0x24, 0x80, 0x7F, true}, // BIT Zero Page
-		    {0x24, 0xC0, 0xDF, true}, // BIT Zero Page
-		    {0x24, 0xDF, 0xC0, true}, // BIT Zero Page
-		    {0x24, 0x3F, 0x3F, false}, // BIT Zero Page
-		    {0x24, 0xC0, 0xFF, true}, // BIT Zero Page
-		    {0x24, 0xFF, 0xC0, true}, // BIT Zero Page
-		    {0x24, 0x40, 0xFF, true}, // BIT Zero Page
-		    {0x24, 0xFF, 0x40, true}, // BIT Zero Page
-		    {0x24, 0xC0, 0x7F, true}, // BIT Zero Page
-		    {0x24, 0x7F, 0xC0, true}, // BIT Zero Page
-		    {0x2C, 0x3F, 0x3F, false}, // BIT Absolute
-		    {0x2C, 0x3F, 0x40, true}, // BIT Absolute
-		    {0x2C, 0x40, 0x3F, false}, // BIT Absolute
-		    {0x2C, 0x40, 0x7F, true}, // BIT Absolute
-		    {0x2C, 0x7F, 0x40, true}, // BIT Absolute
-		    {0x2C, 0x7F, 0x80, false}, // BIT Absolute
-		    {0x2C, 0x80, 0x7F, true}, // BIT Absolute
-		    {0x2C, 0xC0, 0xDF, true}, // BIT Absolute
-		    {0x2C, 0xDF, 0xC0, true}, // BIT Absolute
-		    {0x2C, 0x3F, 0x3F, false}, // BIT Absolute
-		    {0x2C, 0xC0, 0xFF, true}, // BIT Absolute
-		    {0x2C, 0xFF, 0xC0, true}, // BIT Absolute
-		    {0x2C, 0x40, 0xFF, true}, // BIT Absolute
-		    {0x2C, 0xFF, 0x40, true}, // BIT Absolute
-		    {0x2C, 0xC0, 0x7F, true}, // BIT Absolute
-		    {0x2C, 0x7F, 0xC0, true}, // BIT Absolute
-        })
+      GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
+        {0x24, 0x3F, 0x3F, false}, // BIT Zero Page
+        {0x24, 0x3F, 0x40, true}, // BIT Zero Page
+        {0x24, 0x40, 0x3F, false}, // BIT Zero Page
+        {0x24, 0x40, 0x7F, true}, // BIT Zero Page
+        {0x24, 0x7F, 0x40, true}, // BIT Zero Page
+        {0x24, 0x7F, 0x80, false}, // BIT Zero Page
+        {0x24, 0x80, 0x7F, true}, // BIT Zero Page
+        {0x24, 0xC0, 0xDF, true}, // BIT Zero Page
+        {0x24, 0xDF, 0xC0, true}, // BIT Zero Page
+        {0x24, 0x3F, 0x3F, false}, // BIT Zero Page
+        {0x24, 0xC0, 0xFF, true}, // BIT Zero Page
+        {0x24, 0xFF, 0xC0, true}, // BIT Zero Page
+        {0x24, 0x40, 0xFF, true}, // BIT Zero Page
+        {0x24, 0xFF, 0x40, true}, // BIT Zero Page
+        {0x24, 0xC0, 0x7F, true}, // BIT Zero Page
+        {0x24, 0x7F, 0xC0, true}, // BIT Zero Page
+        {0x2C, 0x3F, 0x3F, false}, // BIT Absolute
+        {0x2C, 0x3F, 0x40, true}, // BIT Absolute
+        {0x2C, 0x40, 0x3F, false}, // BIT Absolute
+        {0x2C, 0x40, 0x7F, true}, // BIT Absolute
+        {0x2C, 0x7F, 0x40, true}, // BIT Absolute
+        {0x2C, 0x7F, 0x80, false}, // BIT Absolute
+        {0x2C, 0x80, 0x7F, true}, // BIT Absolute
+        {0x2C, 0xC0, 0xDF, true}, // BIT Absolute
+        {0x2C, 0xDF, 0xC0, true}, // BIT Absolute
+        {0x2C, 0x3F, 0x3F, false}, // BIT Absolute
+        {0x2C, 0xC0, 0xFF, true}, // BIT Absolute
+        {0x2C, 0xFF, 0xC0, true}, // BIT Absolute
+        {0x2C, 0x40, 0xFF, true}, // BIT Absolute
+        {0x2C, 0xFF, 0x40, true}, // BIT Absolute
+        {0x2C, 0xC0, 0x7F, true}, // BIT Absolute
+        {0x2C, 0x7F, 0xC0, true}, // BIT Absolute
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, valueToTest, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorValue, 2) << ", 0x" << hex(valueToTest, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, operation, 0x06, 0x00, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, operation, 0x06, 0x00, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedResult);
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("BIT Zero Set When Comparison Is Zero", "[opcode][bit]")
-{
+  SECTION("BIT Zero Set When Comparison Is Zero")
+  {
     auto [operation, accumulatorValue, valueToTest, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
-		    {0x24, 0x00, 0x00, true}, // BIT Zero Page
-		    {0x24, 0xFF, 0xFF, false}, // BIT Zero Page
-		    {0x24, 0xAA, 0x55, true}, // BIT Zero Page
-		    {0x24, 0x55, 0xAA, true}, // BIT Zero Page
-		    {0x2C, 0x00, 0x00, true}, // BIT Absolute
-		    {0x2C, 0xFF, 0xFF, false}, // BIT Absolute
-		    {0x2C, 0xAA, 0x55, true}, // BIT Absolute
-		    {0x2C, 0x55, 0xAA, true}, // BIT Absolute
-        })
+      GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
+        {0x24, 0x00, 0x00, true}, // BIT Zero Page
+        {0x24, 0xFF, 0xFF, false}, // BIT Zero Page
+        {0x24, 0xAA, 0x55, true}, // BIT Zero Page
+        {0x24, 0x55, 0xAA, true}, // BIT Zero Page
+        {0x2C, 0x00, 0x00, true}, // BIT Absolute
+        {0x2C, 0xFF, 0xFF, false}, // BIT Absolute
+        {0x2C, 0xAA, 0x55, true}, // BIT Absolute
+        {0x2C, 0x55, 0xAA, true}, // BIT Absolute
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, valueToTest, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorValue, 2) << ", 0x" << hex(valueToTest, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, operation, 0x06, 0x00, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, operation, 0x06, 0x00, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
     }
+  }
 }
-#pragma endregion BIT - Compare Memory with Accumulator
 
-#pragma region BMI - Branch if Negative Set
-TEST_CASE("BMI Program Counter Correct", "[opcode][bmi]")
+TEST_CASE("BMI - Branch if Negative Set", "[opcode][bmi]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x30;
+
+  SECTION("BMI Program Counter Correct")
+  {
     auto [programCounterInitalValue, programOffset, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint16_t>({
-            {0x00, 0x01, 0x05},
-            {0x80, 0x80, 0x04},
-            {0x00, 0xFB, 0xFFFF},
-            {0x7B, 0x80, 0xFFFF},
-        })
+      GENERATE( table<uint8_t, uint8_t, uint16_t>({
+        {0x00, 0x01, 0x05},
+        {0x80, 0x80, 0x04},
+        {0x00, 0xFB, 0xFFFF},
+        {0x7B, 0x80, 0xFFFF},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
+      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(programCounterInitalValue, 2) << ", 0x" << hex(programOffset, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, 0x80, 0x30, programOffset};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-        uint8_t program[] = {0xA9, 0x80, 0x30, programOffset};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-        REQUIRE(bus.cpu.pc == programCounterInitalValue);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.pc, 4) == hex(expectedValue, 4));
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
+  }
 }
-#pragma endregion BMI - Branch if Negative Set
 
-#pragma region BNE - Branch On Result Not Zero
-TEST_CASE("BNE Program Counter Correct", "[opcode][bne]")
+TEST_CASE("BNE - Branch On Result Not Zero", "[opcode][bne]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xD0;
+
+  SECTION("BNE Program Counter Correct")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     auto [programCounterInitalValue, programOffset, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint16_t>({
-            {0x00, 0x01, 0x05},
-            {0x80, 0x80, 0x04},
-            {0x00, 0xFB, 0xFFFF},
-            {0x7B, 0x80, 0xFFFF},
-        })
+      GENERATE( table<uint8_t, uint8_t, uint16_t>({
+        {0x00, 0x01, 0x05},
+        {0x80, 0x80, 0x04},
+        {0x00, 0xFB, 0xFFFF},
+        {0x7B, 0x80, 0xFFFF},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
+      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(programCounterInitalValue, 2) << ", 0x" << hex(programOffset, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, 0x01, 0xD0, programOffset};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-        uint8_t program[] = {0xA9, 0x01, 0xD0, programOffset};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-        REQUIRE(bus.cpu.pc == programCounterInitalValue);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.pc, 4) == hex(expectedValue, 4));
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
+  }
 }
-#pragma endregion BNE - Branch On Result Not Zero
 
-#pragma region BPL - Branch if Negative Clear
-TEST_CASE("BPL Program Counter Correct", "[opcode][bpl]")
+TEST_CASE("BPL - Branch if Negative Clear", "[opcode][bpl]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x10;
+
+  SECTION("BPL Program Counter Correct")
+  {
     auto [programCounterInitalValue, programOffset, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint16_t>({
-            {0x00, 0x01, 0x05},
-            {0x80, 0x80, 0x04},
-            {0x00, 0xFB, 0xFFFF},
-            {0x7B, 0x80, 0xFFFF},
-        })
+      GENERATE( table<uint8_t, uint8_t, uint16_t>({
+        {0x00, 0x01, 0x05},
+        {0x80, 0x80, 0x04},
+        {0x00, 0xFB, 0xFFFF},
+        {0x7B, 0x80, 0xFFFF},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
+      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(programCounterInitalValue, 2) << ", 0x" << hex(programOffset, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, 0x79, 0x10, programOffset};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-        uint8_t program[] = {0xA9, 0x79, 0x10, programOffset};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-        REQUIRE(bus.cpu.pc == programCounterInitalValue);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.pc, 4) == hex(expectedValue, 4));
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
+  }
 }
-#pragma endregion BPL - Branch if Negative Clear
 
-#pragma region BRK - Simulate Interrupt Request (IRQ)
-TEST_CASE("BRK Program Counter Set To Address At Break Vector Address", "[opcode][brk]")
+TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+  uint8_t operation = 0x00;
+
+  SECTION("BRK Program Counter Set To Address At Break Vector Address")
+  {
     bus.cpu.reset();
 
-    uint8_t program[] = {0x00};
+    uint8_t program[] = {operation};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
-    REQUIRE(bus.cpu.pc == 0x00);
+    REQUIRE(bus.cpu.getProgramCounter() == 0x00);
     bus.write(0xFFFE, 0xBC);
     bus.write(0xFFFF, 0xCD);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.pc == 0xCDBC);
-}
+    REQUIRE(bus.cpu.getProgramCounter() == 0xCDBC);
+  }
 
-TEST_CASE("BRK Program Counter Stack Correct", "[opcode][brk]")
-{
+  SECTION("BRK Program Counter Stack Correct")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0xABCD, program, n, 0xABCD);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
     bus.cpu.tick();
 
     REQUIRE(hex(bus.read(stackLocation + (0x0100 - 0)), 2) == hex(0xAB, 2));
     REQUIRE(hex(bus.read(stackLocation + (0x0100 - 1)), 2) == hex(0xCF, 2));
-}
+  }
 
-TEST_CASE("BRK Stack Pointer Correct", "[opcode][brk]")
-{
+  SECTION("BRK Stack Pointer Correct")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0xABCD, program, n, 0xABCD);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.stkp, 2) == hex(stackLocation - 3, 2));
-}
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(stackLocation - 3, 2));
+  }
 
-TEST_CASE("BRK Stack Set Flag Operations Correctly", "[opcode][brk]")
-{
-    auto [operation, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t>({
-            {0x38, 0x31}, //SEC Carry Flag Test
-            {0xF8, 0x38}, //SED Decimal Flag Test
-            {0x78, 0x34}, //SEI Interrupt Flag Test
-        })
+  SECTION("BRK Stack Set Flag Operations Correctly")
+  {
+    auto [sectionOperation, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x38, 0x31}, //SEC Carry Flag Test
+        {0xF8, 0x38}, //SED Decimal Flag Test
+        {0x78, 0x34}, //SEI Interrupt Flag Test
+      })
     );
 
-    //Bus bus
+    DYNAMIC_SECTION(
+      fmt::format("Check if {:s}(0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0x58, sectionOperation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0x58, operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
-        uint8_t stackLocation = bus.cpu.stkp;
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(hex(bus.read(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.read(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("BRK Stack Non Set Flag Operations Correctly", "[opcode][brk]")
-{
+  SECTION("BRK Stack Non Set Flag Operations Correctly")
+  {
     auto [accumulatorValue, memoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t>({
-            {0x01, 0x80, 0xB0}, //Negative
-            {0x01, 0x7F, 0xF0}, //Overflow + Negative
-            {0x00, 0x00, 0x32}, //Zero
-        })
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x01, 0x80, 0xB0}, //Negative
+        {0x01, 0x7F, 0xF0}, //Overflow + Negative
+        {0x00, 0x00, 0x32}, //Zero
+      })
     );
 
-    //Bus bus
+    DYNAMIC_SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0x58, 0xA9, accumulatorValue, 0x69, memoryValue, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0x58, 0xA9, accumulatorValue, 0x69, memoryValue, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
-        uint8_t stackLocation = bus.cpu.stkp;
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(hex(bus.read(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.read(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
     }
+  }
 }
-#pragma endregion BRK - Simulate Interrupt Request (IRQ)
 
-#pragma region BVC - Branch if Overflow Clear
-TEST_CASE("BVC Program Counter Correct", "[opcode][bvc]")
+TEST_CASE("BVC - Branch if Overflow Clear", "[opcode][bvc]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x50;
+
+  SECTION("BVC Program Counter Correct")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     auto [programCounterInitalValue, programOffset, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint16_t>({
-            {0x00, 0x01, 0x03},
-            {0x80, 0x80, 0x02},
-            {0x00, 0xFD, 0xFFFF},
-            {0x7D, 0x80, 0xFFFF},
-        })
+      GENERATE( table<uint8_t, uint8_t, uint16_t>({
+        {0x00, 0x01, 0x03},
+        {0x80, 0x80, 0x02},
+        {0x00, 0xFD, 0xFFFF},
+        {0x7D, 0x80, 0xFFFF},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
+      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(programCounterInitalValue, 2) << ", 0x" << hex(programOffset, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0x50, programOffset};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-        uint8_t program[] = {0x50, programOffset};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-        REQUIRE(bus.cpu.pc == programCounterInitalValue);
-
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.pc, 4) == hex(expectedValue, 4));
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
+  }
 }
-#pragma endregion BVC - Branch if Overflow Clear
 
-#pragma region BVS - Branch if Overflow Set
-TEST_CASE("BVS Program Counter Correct", "[opcode][bvs]")
+TEST_CASE("BVS - Branch if Overflow Set", "[opcode][bvs]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x70;
+
+  SECTION("BVS Program Counter Correct")
+  {
     auto [programCounterInitalValue, programOffset, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint16_t>({
-            {0x00, 0x01, 0x07},
-            {0x80, 0x80, 0x06},
-            {0x00, 0xF9, 0xFFFF},
-            {0x79, 0x80, 0xFFFF},
-        })
+      GENERATE( table<uint8_t, uint8_t, uint16_t>({
+        {0x00, 0x01, 0x07},
+        {0x80, 0x80, 0x06},
+        {0x00, 0xF9, 0xFFFF},
+        {0x79, 0x80, 0xFFFF},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
+      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(programCounterInitalValue, 2) << ", 0x" << hex(programOffset, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      std::string program;
+      fmt::format_to(std::back_inserter(program), "A9 01 69 7F 70 {:02X}", programOffset);
 
-        uint8_t program[] = {0xA9, 0x01, 0x69, 0x7F, 0x70, programOffset};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-        REQUIRE(bus.cpu.pc == programCounterInitalValue);
+      bus.cpu.LoadProgram(programCounterInitalValue, program, programCounterInitalValue);
+      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.pc, 4) == hex(expectedValue, 4));
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
+  }
 }
-#pragma endregion BVS - Branch if Overflow Set
 
-#pragma region CLC - Clear Carry Flag
-TEST_CASE("CLC Carry Flag Cleared Correctly", "[opcode][clc]")
+TEST_CASE("CLC - Clear Carry Flag", "[opcode][clc]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x18;
+
+  SECTION("CLC Carry Flag Cleared Correctly")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x18};
@@ -1016,12 +1130,19 @@ TEST_CASE("CLC Carry Flag Cleared Correctly", "[opcode][clc]")
 
     bus.cpu.tick();
     REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == false);
+  }
 }
-#pragma endregion CLC - Clear Carry Flag
 
-#pragma region CLD - Clear Decimal Flag
-TEST_CASE("CLD Carry Flag Set And Cleared Correctly", "[opcode][cld]")
+TEST_CASE("CLD - Clear Decimal Flag", "[opcode][cld]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xD8;
+
+  SECTION("CLD Carry Flag Set And Cleared Correctly")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0xF9, 0xD8};
@@ -1030,13 +1151,21 @@ TEST_CASE("CLD Carry Flag Set And Cleared Correctly", "[opcode][cld]")
 
     bus.cpu.tick();
     bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == false);
-}
-#pragma endregion CLD - Clear Decimal Flag
 
-#pragma region CLI - Clear Interrupt Flag
-TEST_CASE("CLI Interrupt Flag Cleared Correctly", "[opcode][cli]")
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == false);
+  }
+}
+
+TEST_CASE("CLI - Clear Interrupt Flag", "[opcode][cli]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x58;
+
+  SECTION("CLI Interrupt Flag Cleared Correctly")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x58};
@@ -1045,12 +1174,19 @@ TEST_CASE("CLI Interrupt Flag Cleared Correctly", "[opcode][cli]")
 
     bus.cpu.tick();
     REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == false);
+  }
 }
-#pragma endregion CLI - Clear Interrupt Flag
 
-#pragma region CLV - Clear Overflow Flag
-TEST_CASE("CLV Overflow Flag Cleared Correctly", "[opcode][clv]")
+TEST_CASE("CLV - Clear Overflow Flag", "[opcode][clv]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x88;
+
+  SECTION("CLV Overflow Flag Cleared Correctly")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0xB8};
@@ -1059,823 +1195,876 @@ TEST_CASE("CLV Overflow Flag Cleared Correctly", "[opcode][clv]")
 
     bus.cpu.tick();
     REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == false);
+  }
 }
-#pragma endregion CLV - Clear Overflow Flag
 
-#pragma region CMP - Compare Memory With Accumulator
-TEST_CASE("CMP Zero Flag Set When Values Match", "[opcode][cmp]")
+TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xC9;
+
+  SECTION("CMP Zero Flag Set When Values Match")
+  {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, true},
-            {0xFF, 0x00, false},
-            {0x00, 0xFF, false},
-            {0xFF, 0xFF, true},
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x00, 0x00, true},
+        {0xFF, 0x00, false},
+        {0x00, 0xFF, false},
+        {0xFF, 0xFF, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0xC9, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0xC9, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("CMP Carry Flag Set When Accumulator Is Greater Than Or Equal", "[opcode][cmp]")
-{
+  SECTION("CMP Carry Flag Set When Accumulator Is Greater Than Or Equal")
+  {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, true},
-            {0xFF, 0x00, true},
-            {0x00, 0xFF, false},
-            {0x00, 0x01, false},
-            {0xFF, 0xFF, true},
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x00, 0x00, true},
+        {0xFF, 0x00, true},
+        {0x00, 0xFF, false},
+        {0x00, 0x01, false},
+        {0xFF, 0xFF, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0xC9, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0xC9, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("CMP Negative Flag Set When Result Is Negative", "[opcode][cmp]")
-{
+  SECTION("CMP Negative Flag Set When Result Is Negative")
+  {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0xFE, 0xFF, true},
-            {0x81, 0x1, true},
-            {0x81, 0x2, false},
-            {0x79, 0x1, false},
-            {0x00, 0x1, true},
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0xFE, 0xFF, true},
+        {0x81, 0x1, true},
+        {0x81, 0x2, false},
+        {0x79, 0x1, false},
+        {0x00, 0x1, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0xC9, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0xC9, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
     }
+  }
 }
-#pragma endregion CMP - Compare Memory With Accumulator
 
-#pragma region CPX - Compare Memory With X Register
-TEST_CASE("CPX Zero Flag Set When Values Match", "[opcode][cpx]")
+TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xE0;
+
+  SECTION("CPX Zero Flag Set When Values Match")
+  {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, true},
-            {0xFF, 0x00, false},
-            {0x00, 0xFF, false},
-            {0xFF, 0xFF, true},
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x00, 0x00, true},
+        {0xFF, 0x00, false},
+        {0x00, 0xFF, false},
+        {0xFF, 0xFF, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA2, accumulatorValue, 0xE0, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA2, accumulatorValue, 0xE0, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("CPX Carry Flag Set When Accumulator Is Greater Than Or Equal", "[opcode][cpx]")
-{
+  SECTION("CPX Carry Flag Set When Accumulator Is Greater Than Or Equal")
+  {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, true},
-            {0xFF, 0x00, true},
-            {0x00, 0xFF, false},
-            {0x00, 0x01, false},
-            {0xFF, 0xFF, true},
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x00, 0x00, true},
+        {0xFF, 0x00, true},
+        {0x00, 0xFF, false},
+        {0x00, 0x01, false},
+        {0xFF, 0xFF, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA2, accumulatorValue, 0xE0, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA2, accumulatorValue, 0xE0, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("CPX Negative Flag Set When Result Is Negative", "[opcode][cpx]")
-{
+  SECTION("CPX Negative Flag Set When Result Is Negative")
+  {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0xFE, 0xFF, true},
-            {0x81, 0x1, true},
-            {0x81, 0x2, false},
-            {0x79, 0x1, false},
-            {0x00, 0x1, true},
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0xFE, 0xFF, true},
+        {0x81, 0x1, true},
+        {0x81, 0x2, false},
+        {0x79, 0x1, false},
+        {0x00, 0x1, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA2, accumulatorValue, 0xE0, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA2, accumulatorValue, 0xE0, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
     }
+  }
 }
-#pragma endregion CPX - Compare Memory With X Register
 
-#pragma region CPY - Compare Memory With X Register
-TEST_CASE("CPY Zero Flag Set When Values Match", "[opcode][cpy]")
+TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xC0;
+
+  SECTION("CPY Zero Flag Set When Values Match")
+  {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, true},
-            {0xFF, 0x00, false},
-            {0x00, 0xFF, false},
-            {0xFF, 0xFF, true},
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x00, 0x00, true},
+        {0xFF, 0x00, false},
+        {0x00, 0xFF, false},
+        {0xFF, 0xFF, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA0, accumulatorValue, 0xC0, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA0, accumulatorValue, 0xC0, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("CPY Carry Flag Set When Accumulator Is Greater Than Or Equal", "[opcode][cpy]")
-{
+  SECTION("CPY Carry Flag Set When Accumulator Is Greater Than Or Equal")
+  {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, true},
-            {0xFF, 0x00, true},
-            {0x00, 0xFF, false},
-            {0x00, 0x01, false},
-            {0xFF, 0xFF, true},
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x00, 0x00, true},
+        {0xFF, 0x00, true},
+        {0x00, 0xFF, false},
+        {0x00, 0x01, false},
+        {0xFF, 0xFF, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA0, accumulatorValue, 0xC0, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA0, accumulatorValue, 0xC0, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("CPY Negative Flag Set When Result Is Negative", "[opcode][cpy]")
-{
+  SECTION("CPY Negative Flag Set When Result Is Negative")
+  {
     auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0xFE, 0xFF, true},
-            {0x81, 0x1, true},
-            {0x81, 0x2, false},
-            {0x79, 0x1, false},
-            {0x00, 0x1, true},
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0xFE, 0xFF, true},
+        {0x81, 0x1, true},
+        {0x81, 0x2, false},
+        {0x79, 0x1, false},
+        {0x00, 0x1, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA0, accumulatorValue, 0xC0, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        uint8_t program[] = {0xA0, accumulatorValue, 0xC0, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x00, program, n, 0x00);
-        REQUIRE(bus.cpu.pc == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
     }
-}
-#pragma endregion CPY - Compare Memory With X Register
-
-#pragma region DEC - Decrement Memory by One
-TEST_CASE("DEC Memory Has Correct Value", "[opcode][dec]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t>({
-            {0x00, 0xFF},
-            {0xFF, 0xFE},
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xC6, 0x03, 0x00, initialMemoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        REQUIRE(bus.read(0x0003, false) == expectedValue);
-    }
+  }
 }
 
-TEST_CASE("DEC Zero Set Correctly", "[opcode][dec]")
+TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
 {
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0x01, true},
-            {0x02, false},
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0xC6;
 
-        uint8_t program[] = {0xC6, 0x03, 0x00, initialMemoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+  SECTION("DEC Memory Has Correct Value")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0xFF},
+      {0xFF, 0xFE},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xC6, 0x03, 0x00, initialMemoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      REQUIRE(bus.read(0x0003, false) == expectedValue);
     }
+  }
+
+  SECTION("DEC Zero Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, false},
+      {0x01, true},
+      {0x02, false},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xC6, 0x03, 0x00, initialMemoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+    }
+  }
+
+  SECTION("DEC Negative Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x80, false},
+      {0x81, true},
+      {0x00, true}
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xC6, 0x03, 0x00, initialMemoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+    }
+  }
 }
 
-TEST_CASE("DEC Negative Set Correctly", "[opcode][dec]")
+TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
 {
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x80, false},
-            {0x81, true},
-            {0x00, true}
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0xCA;
 
-        uint8_t program[] = {0xC6, 0x03, 0x00, initialMemoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+  SECTION("DEX Memory Has Correct Value")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0xFF},
+      {0xFF, 0xFE},
+    }));
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x00);
+
+      uint8_t program[] = {0xA2, initialMemoryValue, 0xCA};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == expectedValue);
     }
-}
-#pragma endregion DEC - Decrement Memory by One
+  }
 
-#pragma region DEX - Decrement X by One
-TEST_CASE("DEX Memory Has Correct Value", "[opcode][dex]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t>({
-            {0x00, 0xFF},
-            {0xFF, 0xFE},
-        }));
+  SECTION("DEX Zero Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, false},
+      {0x01, true},
+      {0x02, false},
+    }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.x == 0x00);
-
-        uint8_t program[] = {0xA2, initialMemoryValue, 0xCA};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(bus.cpu.x == expectedValue);
+      uint8_t program[] = {0xA2, initialMemoryValue, 0xCA};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("DEX Zero Set Correctly", "[opcode][dex]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0x01, true},
-            {0x02, false},
-        }));
+  SECTION("DEX Negative Set Correctly", "[opcode][dex]")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x80, false},
+      {0x81, true},
+      {0x00, true}
+    }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA2, initialMemoryValue, 0xCA};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA2, initialMemoryValue, 0xCA};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
     }
-}
-
-TEST_CASE("DEX Negative Set Correctly", "[opcode][dex]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x80, false},
-            {0x81, true},
-            {0x00, true}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xA2, initialMemoryValue, 0xCA};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
-    }
-}
-#pragma endregion DEX - Decrement X by One
-
-#pragma region DEY - Decrement Y by One
-TEST_CASE("DEY Memory Has Correct Value", "[opcode][dey]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t>({
-            {0x00, 0xFF},
-            {0xFF, 0xFE},
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.y == 0x00);
-
-        uint8_t program[] = {0xA0, initialMemoryValue, 0x88};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.y, 2) == hex(expectedValue, 2));
-    }
+  }
 }
 
-TEST_CASE("DEY Zero Set Correctly", "[opcode][dey]")
+TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
 {
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0x01, true},
-            {0x02, false},
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0x88;
 
-        uint8_t program[] = {0xA0, initialMemoryValue, 0x88};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+  SECTION("DEY Memory Has Correct Value")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t>({
+      {0x00, 0xFF},
+      {0xFF, 0xFE},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x00);
+
+      uint8_t program[] = {0xA0, initialMemoryValue, 0x88};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.Y), 2) == hex(expectedValue, 2));
     }
+  }
+
+  SECTION("DEY Zero Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, false},
+      {0x01, true},
+      {0x02, false},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xA0, initialMemoryValue, 0x88};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+    }
+  }
+
+  SECTION("DEY Negative Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x80, false},
+      {0x81, true},
+      {0x00, true}
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xA0, initialMemoryValue, 0x88};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+    }
+  }
 }
 
-TEST_CASE("DEY Negative Set Correctly", "[opcode][dey]")
+TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
 {
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x80, false},
-            {0x81, true},
-            {0x00, true}
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0x49;
 
-        uint8_t program[] = {0xA0, initialMemoryValue, 0x88};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+  SECTION("EOR Accumulator Correct")
+  {
+    auto [accumulatorValue, memoryValue, expectedResult] = GENERATE( table<uint8_t, uint8_t, uint8_t>({
+      {0x00, 0x00, 0x00},
+      {0xFF, 0x00, 0xFF},
+      {0x00, 0xFF, 0xFF},
+      {0x55, 0xAA, 0xFF},
+      {0xFF, 0xFF, 0x00},
+    }));
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xA9, accumulatorValue, 0x49, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedResult);
     }
-}
-#pragma endregion DEY - Decrement Y by One
+  }
 
-#pragma region EOR - Exclusive OR Compare Accumulator With Memory
-TEST_CASE("EOR Accumulator Correct", "[opcode][eor]")
-{
-    auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t>({
-            {0x00, 0x00, 0x00},
-            {0xFF, 0x00, 0xFF},
-            {0x00, 0xFF, 0xFF},
-            {0x55, 0xAA, 0xFF},
-            {0xFF, 0xFF, 0x00},
-        })
-    );
+  SECTION("EOR Negative Flag Correct")
+  {
+    auto [accumulatorValue, memoryValue, expectedResult] = GENERATE( table<uint8_t, uint8_t, bool>({
+      {0xFF, 0xFF, false},
+      {0x80, 0x7F, true},
+      {0x40, 0x3F, false},
+      {0xFF, 0x7F, true},
+    }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", 0x" << hex(expectedResult, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xA9, accumulatorValue, 0x49, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(bus.cpu.a == expectedResult);
+      uint8_t program[] = {0xA9, accumulatorValue, 0x49, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("EOR Negative Flag Correct", "[opcode][eor]")
-{
-    auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0xFF, 0xFF, false},
-            {0x80, 0x7F, true},
-            {0x40, 0x3F, false},
-            {0xFF, 0x7F, true},
-        })
-    );
+  SECTION("EOR Zero Flag Correct")
+  {
+    auto [accumulatorValue, memoryValue, expectedResult] = GENERATE( table<uint8_t, uint8_t, bool>({
+      {0xFF, 0xFF, true},
+      {0x80, 0x7F, false},
+    }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", 0x" << hex(expectedResult, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xA9, accumulatorValue, 0x49, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedResult);
+      uint8_t program[] = {0xA9, accumulatorValue, 0x49, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
     }
-}
-
-TEST_CASE("EOR Zero Flag Correct", "[opcode][eor]")
-{
-    auto [accumulatorValue, memoryValue, expectedResult] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0xFF, 0xFF, true},
-            {0x80, 0x7F, false},
-        })
-    );
-    
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", 0x" << hex(expectedResult, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xA9, accumulatorValue, 0x49, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
-    }
-}
-#pragma endregion EOR - Exclusive OR Compare Accumulator With Memory
-
-#pragma region INC - Increment Memory by One
-TEST_CASE("INC Memory Has Correct Value", "[opcode][inc]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, 0x01},
-            {0xFF, 0x00},
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xE6, 0x03, 0x00, initialMemoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        REQUIRE(bus.read(0x0003, false) == expectedValue);
-    }
+  }
 }
 
-TEST_CASE("INC Zero Set Correctly", "[opcode][inc]")
+TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
 {
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0xFF, true},
-            {0xFE, false},
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0xE6;
 
-        uint8_t program[] = {0xE6, 0x03, 0x00, initialMemoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+  SECTION("INC Memory Has Correct Value")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, 0x01},
+      {0xFF, 0x00},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xE6, 0x03, 0x00, initialMemoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      REQUIRE(bus.read(0x0003, false) == expectedValue);
     }
+  }
+
+  SECTION("INC Zero Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, false},
+      {0xFF, true},
+      {0xFE, false},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xE6, 0x03, 0x00, initialMemoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+    }
+  }
+
+  SECTION("INC Negative Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x78, false},
+      {0x80, true},
+      {0x00, false}
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xE6, 0x03, 0x00, initialMemoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+    }
+  }
 }
 
-TEST_CASE("INC Negative Set Correctly", "[opcode][inc]")
+TEST_CASE("INX - Increment X by One", "[opcode][inx]")
 {
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x78, false},
-            {0x80, true},
-            {0x00, false}
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0xE8;
 
-        uint8_t program[] = {0xE6, 0x03, 0x00, initialMemoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+  SECTION("INX Memory Has Correct Value")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, 0x01},
+      {0xFF, 0x00},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xA2, initialMemoryValue, 0xE8};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == expectedValue);
     }
-}
-#pragma endregion INC - Increment Memory by One
+  }
 
-#pragma region INX - Increment X by One
-TEST_CASE("INX Memory Has Correct Value", "[opcode][inx]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, 0x01},
-            {0xFF, 0x00},
-        }));
+  SECTION("INX Zero Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, false},
+      {0xFF, true},
+      {0xFE, false},
+    }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xA2, initialMemoryValue, 0xE8};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(bus.cpu.x == expectedValue);
+      uint8_t program[] = {0xA2, initialMemoryValue, 0xE8};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("INX Zero Set Correctly", "[opcode][inx]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0xFF, true},
-            {0xFE, false},
-        }));
+  SECTION("INX Negative Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x78, false},
+      {0x80, true},
+      {0x00, false}
+    }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA2, initialMemoryValue, 0xE8};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA2, initialMemoryValue, 0xE8};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
     }
-}
-
-TEST_CASE("INX Negative Set Correctly", "[opcode][inx]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x78, false},
-            {0x80, true},
-            {0x00, false}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xA2, initialMemoryValue, 0xE8};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
-    }
-}
-#pragma endregion INX - Increment X by One
-
-#pragma region INY - Increment Y by One
-TEST_CASE("INY Memory Has Correct Value", "[opcode][iny]")
-{
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, 0x01},
-            {0xFF, 0x00},
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xA0, initialMemoryValue, 0xC8};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(bus.cpu.y == expectedValue);
-    }
+  }
 }
 
-TEST_CASE("INY Zero Set Correctly", "[opcode][iny]")
+TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
 {
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0xFF, true},
-            {0xFE, false},
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0xC8;
 
-        uint8_t program[] = {0xA0, initialMemoryValue, 0xC8};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+  SECTION("INY Memory Has Correct Value")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, 0x01},
+      {0xFF, 0x00},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xA0, initialMemoryValue, 0xC8};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == expectedValue);
     }
+  }
+
+  SECTION("INY Zero Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, false},
+      {0xFF, true},
+      {0xFE, false},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xA0, initialMemoryValue, 0xC8};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+    }
+  }
+
+  SECTION("INY Negative Set Correctly")
+  {
+    auto [initialMemoryValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x78, false},
+      {0x80, true},
+      {0x00, false}
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xA0, initialMemoryValue, 0xC8};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+    }
+  }
 }
 
-TEST_CASE("INY Negative Set Correctly", "[opcode][iny]")
+TEST_CASE("JMP - Jump to New Location", "[opcode][jmp]")
 {
-    auto [initialMemoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x78, false},
-            {0x80, true},
-            {0x00, false}
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(initialMemoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        uint8_t program[] = {0xA0, initialMemoryValue, 0xC8};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
-    }
-}
-#pragma endregion INY - Increment Y by One
-
-#pragma region JMP - Jump to New Location
-TEST_CASE("JMP Program Counter Set Correctly After Jump", "[opcode][jmp]")
-{
+  SECTION("Program Counter Set Correctly After Jump")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x4C, 0x08, 0x00};
@@ -1883,11 +2072,11 @@ TEST_CASE("JMP Program Counter Set Correctly After Jump", "[opcode][jmp]")
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(hex(bus.cpu.pc, 4) == hex(0x08, 4));
-}
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x08, 4));
+  }
 
-TEST_CASE("JMP Program Counter Set Correctly After Indirect Jump", "[opcode][jmp]")
-{
+  SECTION("Program Counter Set Correctly After Indirect Jump")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x6C, 0x03, 0x00, 0x08, 0x00};
@@ -1895,11 +2084,11 @@ TEST_CASE("JMP Program Counter Set Correctly After Indirect Jump", "[opcode][jmp
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(hex(bus.cpu.pc, 4) == hex(0x08, 4));
-}
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x08, 4));
+  }
 
-TEST_CASE("JMP Indirect Wraps Correct If MSB IS FF", "[opcode][jmp]")
-{
+  SECTION("Indirect Wraps Correct If MSB IS FF")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x6C, 0xFF, 0x01, 0x08, 0x00};
@@ -1910,28 +2099,33 @@ TEST_CASE("JMP Indirect Wraps Correct If MSB IS FF", "[opcode][jmp]")
     bus.write(0x0100, 0x02);
 
     bus.cpu.tick();
-    REQUIRE(hex(bus.cpu.pc, 4) == hex(0x0203, 4));
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0203, 4));
+  }
 }
-#pragma endregion JMP - Jump to New Location
 
-#pragma region JSR - Jump to SubRoutine
-TEST_CASE("JSR Stack Loads Correct Value", "[opcode][jsr]")
+TEST_CASE("JSR - Jump to SubRoutine")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  SECTION("Stack Loads Correct Value")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x20, 0xCC, 0xCC};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0xBBAA, program, n, 0xBBAA);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
     bus.cpu.tick();
 
     REQUIRE(hex(bus.read(stackLocation + 0x0100), 4) == hex(0xBB, 4));
     REQUIRE(hex(bus.read(stackLocation + 0x0100 - 1), 4) == hex(0xAC, 4));
-}
+  }
 
-TEST_CASE("JSR Program Counter Correct", "[opcode][jsr]")
-{
+  SECTION("Program Counter Correct")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x20, 0xCC, 0xCC};
@@ -1939,569 +2133,619 @@ TEST_CASE("JSR Program Counter Correct", "[opcode][jsr]")
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.pc, 4) == hex(0xCCCC, 4));
-}
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0xCCCC, 4));
+  }
 
-TEST_CASE("JSR Stack Pointer Correct", "[opcode][jsr]")
-{
+  SECTION("Stack Pointer Correct")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x20, 0xCC, 0xCC};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0xBBAA, program, n, 0xBBAA);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.stkp, 4) == hex(stackLocation - 2, 4));
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 4) == hex(stackLocation - 2, 4));
+  }
 }
-#pragma endregion JSR - Jump to SubRoutine
 
-#pragma region LDA - Load Accumulator with Memory
-TEST_CASE("LDA Accumulator Has Correct Value", "[opcode][lda]")
+TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xA9;
+
+  SECTION("LDA Accumulator Has Correct Value")
+  {
     bus.cpu.reset();
 
-    REQUIRE(bus.cpu.a == 0x00);
+    REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
     uint8_t program[] = {0xA9, 0x03};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.a == 0x03);
-}
+    REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x03);
+  }
 
-TEST_CASE("LDA Zero Set Correctly", "[opcode][lda]")
-{
-    auto [valueToLoad, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, true},
-            {0x03, false},
-        }));
+  SECTION("LDA Zero Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, true},
+      {0x03, false},
+    }));
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-        REQUIRE(bus.cpu.a == 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, valueToLoad};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      uint8_t program[] = {0xA9, valueToLoad};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("LDA Negative Set Correctly", "[opcode][lda]")
-{
-    auto [valueToLoad, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0x79, false},
-            {0x80, true},
-            {0xFF, true}
-        }));
+  SECTION("LDA Negative Set Correctly")
+  {
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, false},
+      {0x79, false},
+      {0x80, true},
+      {0xFF, true}
+    }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        REQUIRE(bus.cpu.a == 0x00);
+      uint8_t program[] = {0xA9, valueToLoad};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToLoad};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
     }
+  }
 }
-#pragma endregion LDA - Load Accumulator with Memory
 
-#pragma region LDX - Load X with Memory
-TEST_CASE("LDX X-Register Has Correct Value", "[opcode][ldx]")
+TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xA2;
+
+  SECTION("LDX X-Register Has Correct Value")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+    Bus bus;
+
     bus.cpu.reset();
 
-    REQUIRE(bus.cpu.x == 0x00);
+    REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x00);
 
     uint8_t program[] = {0xA2, 0x03};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.x == 0x03);
-}
+    REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x03);
+  }
 
-TEST_CASE("LDX Zero Set Correctly", "[opcode][ldx]")
-{
-    auto [valueToLoad, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, true},
-            {0x03, false},
-        }));
+  SECTION("LDX Zero Set Correctly")
+  {
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, true},
+      {0x03, false},
+    }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x00);
 
-        REQUIRE(bus.cpu.x == 0x00);
-
-        uint8_t program[] = {0xA9, valueToLoad};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      uint8_t program[] = {0xA2, valueToLoad};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("LDX Negative Set Correctly", "[opcode][ldx]")
-{
-    auto [valueToLoad, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0x79, false},
-            {0x80, true},
-            {0xFF, true}
-        }));
+  SECTION("LDX Negative Set Correctly")
+  {
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, false},
+      {0x79, false},
+      {0x80, true},
+      {0xFF, true}
+    }));
 
-    //Bus bus;
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x00);
 
-        REQUIRE(bus.cpu.x == 0x00);
+      uint8_t program[] = {0xA2, valueToLoad};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToLoad};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
     }
+  }
 }
-#pragma endregion LDX - Load X with Memory
 
-#pragma region LDY - Load Y with Memory
-TEST_CASE("LDY Y-Register Has Correct Value", "[opcode][ldy]")
+TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xA0;
+
+  SECTION("LDY Y-Register Has Correct Value")
+  {
     bus.cpu.reset();
 
-    REQUIRE(bus.cpu.y == 0x00);
+    REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x00);
 
     uint8_t program[] = {0xA0, 0x03};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
     bus.cpu.tick();
-    REQUIRE(bus.cpu.y == 0x03);
-}
+    REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x03);
+  }
 
-TEST_CASE("LDY Zero Set Correctly", "[opcode][ldy]")
-{
-    auto [valueToLoad, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, true},
-            {0x03, false},
-        }));
+  SECTION("LDY Zero Set Correctly")
+  {
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, true},
+      {0x03, false},
+    }));
 
-    //Bus bus;
+    DYNAMIC_SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x00);
 
-        REQUIRE(bus.cpu.y == 0x00);
-
-        uint8_t program[] = {0xA0, valueToLoad};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      uint8_t program[] = {0xA0, valueToLoad};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("LDY Negative Set Correctly", "[opcode][ldy]")
-{
-    auto [valueToLoad, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0x79, false},
-            {0x80, true},
-            {0xFF, true}
-        }));
+  SECTION("LDY Negative Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+    auto [valueToLoad, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x00, false},
+      {0x79, false},
+      {0x80, true},
+      {0xFF, true}
+    }));
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-        REQUIRE(bus.cpu.y == 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x00);
 
-        uint8_t program[] = {0xA0, valueToLoad};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      uint8_t program[] = {0xA0, valueToLoad};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
     }
+  }
 }
-#pragma endregion LDY - Load Y with Memory
 
-#pragma region LSR - Logical Shift Right
-TEST_CASE("LSR Negative Set Correctly", "[opcode][lsr]")
+TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
 {
-    auto [accumulatorValue, carryBitSet, expectedValue] = 
-        GENERATE( table<uint8_t, bool, bool>({
-            {0xFF, false, false},
-            {0xFE, false, false},
-            {0xFF, true, false},
-            {0x00, true, false},
-        })
-    );
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(carryBitSet, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0x4A;
 
-        uint8_t carryOperation = carryBitSet ? 0x38 : 0x18;
+  SECTION("LSR Negative Set Correctly")
+  {
+    auto [accumulatorValue, carryBitSet, expectedValue] = GENERATE( table<uint8_t, bool, bool>({
+      {0xFF, false, false},
+      {0xFE, false, false},
+      {0xFF, true, false},
+      {0x00, true, false},
+    }));
 
-        uint8_t program[] = {carryOperation, 0xA9, accumulatorValue, 0x4A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, carryBitSet, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
+      uint8_t carryOperation = carryBitSet ? 0x38 : 0x18;
 
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      uint8_t program[] = {carryOperation, 0xA9, accumulatorValue, 0x4A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
+
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("LSR Zero Set Correctly", "[opcode][lsr]")
-{
-    auto [accumulatorValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x01, true},
-            {0x02, false}
-        })
-    );
+  SECTION("LSR Zero Set Correctly")
+  {
+    auto [accumulatorValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x01, true},
+      {0x02, false}
+    }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0x4A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0x4A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("LSR Carry Set Correctly", "[opcode][lsr]")
-{
-    auto [accumulatorValue, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x01, true},
-            {0x02, false}
-        })
-    );
+  SECTION("LSR Carry Set Correctly")
+  {
+    auto [accumulatorValue, expectedValue] = GENERATE( table<uint8_t, bool>({
+      {0x01, true},
+      {0x02, false}
+    }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", " << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0x4A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0x4A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("LSR Correct Value Stored", "[opcode][lsr]")
-{
+  SECTION("LSR Correct Value Stored")
+  {
     auto [operation, valueToShift, expectedValue, expectedLocation] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-            {0x4A, 0xFF, 0x7F, 0x00}, // LSR Accumulator
-            {0x4A, 0xFD, 0x7E, 0x00}, // LSR Accumulator
-            {0x46, 0xFF, 0x7F, 0x01}, // LSR Zero Page
-            {0x56, 0xFF, 0x7F, 0x01}, // LSR Zero Page X
-            {0x4E, 0xFF, 0x7F, 0x01}, // LSR Absolute
-            {0x5E, 0xFF, 0x7F, 0x01}, // LSR Absolute X
-        })
+      GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+        {0x4A, 0xFF, 0x7F, 0x00}, // LSR Accumulator
+        {0x4A, 0xFD, 0x7E, 0x00}, // LSR Accumulator
+        {0x46, 0xFF, 0x7F, 0x01}, // LSR Zero Page
+        {0x56, 0xFF, 0x7F, 0x01}, // LSR Zero Page X
+        {0x4E, 0xFF, 0x7F, 0x01}, // LSR Absolute
+        {0x5E, 0xFF, 0x7F, 0x01}, // LSR Absolute X
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), valueToShift, expectedValue, expectedLocation)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(valueToShift, 2) << ", 0x" << hex(expectedValue, 2) << ", 0x" << hex(expectedLocation, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, valueToShift, operation, expectedLocation};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, valueToShift, operation, expectedLocation};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        uint8_t actualValue;
-        if (operation == 0x4A)
-        {
-            actualValue = bus.cpu.a;
-        }
-        else
-        {
-            actualValue = bus.read(expectedLocation);
-        }
-        REQUIRE(actualValue == expectedValue);
+      uint8_t actualValue;
+      if (operation == 0x4A)
+      {
+        actualValue = bus.cpu.getRegister(bus.cpu.AC);
+      }
+      else
+      {
+        actualValue = bus.read(expectedLocation);
+      }
+      REQUIRE(actualValue == expectedValue);
     }
+  }
 }
-#pragma endregion LSR - Logical Shift Right
 
-#pragma region ORA - Bitwise OR Compare Memory with Accumulator
-TEST_CASE("ORA Accumulator Correct", "[opcode][ora]")
+TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x09;
+
+  SECTION("ORA Accumulator Correct")
+  {
     auto [accumulatorValue, memoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t>({
-            {0x00, 0x00, 0x00},
-            {0xFF, 0xFF, 0xFF},
-            {0x55, 0xAA, 0xFF},
-            {0xAA, 0x55, 0xFF},
-        })
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x00, 0x00, 0x00},
+        {0xFF, 0xFF, 0xFF},
+        {0x55, 0xAA, 0xFF},
+        {0xAA, 0x55, 0xFF},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0x09, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0x09, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(hex(bus.cpu.a, 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("ORA Zero Set Correctly", "[opcode][ora]")
-{
+  SECTION("ORA Zero Set Correctly")
+  {
+    auto [accumulatorValue, memoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t, bool>({
+      {0x00, 0x00, true},
+      {0xFF, 0xFF, false},
+      {0x00, 0x01, false}
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[] = {0xA9, accumulatorValue, 0x09, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+    }
+  }
+
+  SECTION("ORA Negative Set Correctly")
+  {
     auto [accumulatorValue, memoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, true},
-            {0xFF, 0xFF, false},
-            {0x00, 0x01, false}
-        })
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x7F, 0x80, true},
+        {0x79, 0x00, false},
+        {0xFF, 0xFF, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0x09, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0x09, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
+  }
 }
 
-TEST_CASE("ORA Negative Set Correctly", "[opcode][ora]")
+TEST_CASE("PHA - Push Accumulator Onto Stack", "[opcode][pha]")
 {
-    auto [accumulatorValue, memoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x7F, 0x80, true},
-            {0x79, 0x00, false},
-            {0xFF, 0xFF, true},
-        })
-    );
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0x48;
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0x09, memoryValue};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
-
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
-    }
-}
-#pragma endregion ORA - Bitwise OR Compare Memory with Accumulator
-
-#pragma region PHA - Push Accumulator Onto Stack
-TEST_CASE("PHA Stack Has Correct Value", "[opcode][pha]")
-{
+  SECTION("Stack Has Correct Value")
+  {
     uint8_t program[] = {0xA9, 0x03, 0x48};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
     bus.cpu.tick();
     bus.cpu.tick();
 
     REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(0x03, 2));
-}
+  }
 
-TEST_CASE("PHA Stack Pointer Has Correct Value", "[opcode][pha]")
-{
+  SECTION("Stack Pointer Has Correct Value")
+  {
     uint8_t program[] = {0xA9, 0x03, 0x48};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.stkp, 2) == hex(stackLocation - 1, 2));
-}
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(stackLocation - 1, 2));
+  }
 
-TEST_CASE("PHA Stack Pointer Has Correct Value When Wrapping", "[opcode][pha]")
-{
+  SECTION("Stack Pointer Has Correct Value When Wrapping")
+  {
     uint8_t program[] = {0x9A, 0x48};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.stkp, 2) == hex(0xFF, 2));
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(0xFF, 2));
+  }
 }
-#pragma endregion PHA - Push Accumulator Onto Stack
 
-#pragma region PHP - Push Flags Onto Stack
-TEST_CASE("PHP Stack Set Flag Operations Correctly", "[opcode][php]")
+TEST_CASE("PHP - Push Flags Onto Stack", "[opcode][php]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x08;
+
+  SECTION("PHP Stack Set Flag Operations Correctly")
+  {
     auto [operation, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t>({
-            {0x38, 0x31},
-            {0xF8, 0x38},
-            {0x78, 0x34},
-        })
+      GENERATE( table<uint8_t, uint8_t>({
+        {0x38, 0x31},
+        {0xF8, 0x38},
+        {0x78, 0x34},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0x58, operation, 0x08};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0x58, operation, 0x08};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
-        uint8_t stackLocation = bus.cpu.stkp;
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("PHP Stack Non Set Flag Operations Correctly", "[opcode][php]")
-{
+  SECTION("PHP Stack Non Set Flag Operations Correctly", "[opcode][php]")
+  {
     auto [accumulatorValue, memoryValue, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t>({
-            {0x01, 0x80, 0xB0}, //Negative
-            {0x01, 0x7F, 0xF0}, //Overflow + Negative
-            {0x00, 0x00, 0x32}, //Zero
-        })
+      GENERATE( table<uint8_t, uint8_t, uint8_t>({
+        {0x01, 0x80, 0xB0}, //Negative
+        {0x01, 0x7F, 0xF0}, //Overflow + Negative
+        {0x00, 0x00, 0x32}, //Zero
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", 0x" << hex(memoryValue, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0x58, 0xA9, accumulatorValue, 0x69, memoryValue, 0x08};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0x58, 0xA9, accumulatorValue, 0x69, memoryValue, 0x08};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        uint8_t stackLocation = bus.cpu.stkp;
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("PHP Stack Pointer Has Correct Value", "[opcode][php]")
-{
+  SECTION("PHP Stack Pointer Has Correct Value")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x08};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.stkp, 2) == hex(stackLocation - 1, 2));
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(stackLocation - 1, 2));
+  }
 }
-#pragma endregion PHP - Push Flags Onto Stack 
 
-#pragma region PLA - Pull From Stack to Accumulator
-TEST_CASE("PLA Accumulator Has Correct Value", "[opcode][pla]")
+TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x68;
+
+  SECTION("PLA Accumulator Has Correct Value")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0xA9, 0x03, 0x48, 0xA9, 0x00, 0x68};
@@ -2510,71 +2754,80 @@ TEST_CASE("PLA Accumulator Has Correct Value", "[opcode][pla]")
 
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.a, 2) == hex(0x03, 2));
-}
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x03, 2));
+  }
 
-TEST_CASE("PLA Zero Flag Has Correct Value", "[opcode][pla]")
-{
+  SECTION("PLA Zero Flag Has Correct Value", "[opcode][pla]")
+  {
     auto [valueToLoad, expectedResult] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, true},
-            {0x01, false},
-            {0xFF, false},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x00, true},
+        {0x01, false},
+        {0xFF, false},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, valueToLoad, 0x48, 0x68};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToLoad, 0x48, 0x68};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      //uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        uint8_t stackLocation = bus.cpu.stkp;
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("PLA Negative Flag Has Correct Value", "[opcode][pla]")
-{
+  SECTION("PLA Negative Flag Has Correct Value", "[opcode][pla]")
+  {
     auto [valueToLoad, expectedResult] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x7F, false},
-            {0x80, true},
-            {0xFF, true},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x7F, false},
+        {0x80, true},
+        {0xFF, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, valueToLoad, 0x48, 0x68};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToLoad, 0x48, 0x68};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      //uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        uint8_t stackLocation = bus.cpu.stkp;
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedResult);
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedResult);
     }
+  }
 }
-#pragma endregion PLA - Pull From Stack to Accumulator
 
-#pragma region PLP - Pull From Stack to Flags
-TEST_CASE("PLP Carry Flag Set Correctly", "[opcode][plp]")
+TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x28;
+
+  SECTION("Carry Flag Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     bus.cpu.reset();
 
     uint8_t program[] = {0xA9, 0x01, 0x48, 0x28};
@@ -2586,10 +2839,12 @@ TEST_CASE("PLP Carry Flag Set Correctly", "[opcode][plp]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == true);
-}
+  }
 
-TEST_CASE("PLP Zero Flag Set Correctly", "[opcode][plp]")
-{
+  SECTION("Zero Flag Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     bus.cpu.reset();
 
     uint8_t program[] = {0xA9, 0x02, 0x48, 0x28};
@@ -2601,10 +2856,12 @@ TEST_CASE("PLP Zero Flag Set Correctly", "[opcode][plp]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == true);
-}
+  }
 
-TEST_CASE("PLP Decimal Flag Set Correctly", "[opcode][plp]")
-{
+  SECTION("Decimal Flag Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     bus.cpu.reset();
 
     uint8_t program[] = {0xA9, 0x08, 0x48, 0x28};
@@ -2616,10 +2873,12 @@ TEST_CASE("PLP Decimal Flag Set Correctly", "[opcode][plp]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.D) == 1) == true);
-}
+  }
 
-TEST_CASE("PLP Interrupt Flag Set Correctly", "[opcode][plp]")
-{
+  SECTION("Interrupt Flag Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     bus.cpu.reset();
 
     uint8_t program[] = {0xA9, 0x04, 0x48, 0x28};
@@ -2631,10 +2890,12 @@ TEST_CASE("PLP Interrupt Flag Set Correctly", "[opcode][plp]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.I) == 1) == true);
-}
+  }
 
-TEST_CASE("PLP Overflow Flag Set Correctly", "[opcode][plp]")
-{
+  SECTION("Overflow Flag Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     bus.cpu.reset();
 
     uint8_t program[] = {0xA9, 0x40, 0x48, 0x28};
@@ -2646,10 +2907,12 @@ TEST_CASE("PLP Overflow Flag Set Correctly", "[opcode][plp]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == true);
-}
+  }
 
-TEST_CASE("PLP Negative Flag Set Correctly", "[opcode][plp]")
-{
+  SECTION("Negative Flag Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     bus.cpu.reset();
 
     uint8_t program[] = {0xA9, 0x80, 0x48, 0x28};
@@ -2661,269 +2924,288 @@ TEST_CASE("PLP Negative Flag Set Correctly", "[opcode][plp]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == true);
+  }
 }
-#pragma endregion PLP - Pull From Stack to Flags
 
-#pragma region ROL - Rotate Left
-TEST_CASE("ROL Negative Set Correctly", "[opcode][rol]")
+TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x2A;
+
+  SECTION("ROL Negative Set Correctly")
+  {
     auto [accumulatorValue, expectedResult] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x40, true},
-            {0x3F, false},
-            {0x80, false},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x40, true},
+        {0x3F, false},
+        {0x80, false},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", " << hex(expectedResult, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0x2A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0x2A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("ROL Zero Set Correctly", "[opcode][rol]")
-{
+  SECTION("ROL Zero Set Correctly")
+  {
     auto [carryFlagSet, expectedResult] = 
-        GENERATE( table<bool, bool>({
-            {true, false},
-            {false, true},
-        })
+      GENERATE( table<bool, bool>({
+        {true, false},
+        {false, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}({}, {}) works",
+      bus.cpu.executioner.getOperation(operation), carryFlagSet, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(" << carryFlagSet << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t carryOperation = carryFlagSet ? 0x38 : 0x18;
 
-        uint8_t carryOperation = carryFlagSet ? 0x38 : 0x18;
+      uint8_t program[] = {carryOperation, 0x2A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {carryOperation, 0x2A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("ROL Carry Flag Set Correctly", "[opcode][rol]")
-{
+  SECTION("ROL Carry Flag Set Correctly")
+  {
     auto [accumulatorValue, expectedResult] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x80, true},
-            {0x7F, false},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x80, true},
+        {0x7F, false},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0x2A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0x2A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("ROL Correct Value Stored", "[opcode][rol]")
-{
+  SECTION("ROL Correct Value Stored")
+  {
     auto [operation, valueToRotate, expectedValue, expectedLocation] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-            {0x2A, 0x55, 0xAA, 0x00}, // ROL Accumulator
-            {0x2A, 0x55, 0xAA, 0x00}, // ROL Accumulator
-            {0x26, 0x55, 0xAA, 0x01}, // ROL Zero Page
-            {0x36, 0x55, 0xAA, 0x01}, // ROL Zero Page X
-            {0x2E, 0x55, 0xAA, 0x01}, // ROL Absolute
-            {0x3E, 0x55, 0xAA, 0x01}, // ROL Absolute X
-        })
+      GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+        {0x2A, 0x55, 0xAA, 0x00}, // ROL Accumulator
+        {0x2A, 0x55, 0xAA, 0x00}, // ROL Accumulator
+        {0x26, 0x55, 0xAA, 0x01}, // ROL Zero Page
+        {0x36, 0x55, 0xAA, 0x01}, // ROL Zero Page X
+        {0x2E, 0x55, 0xAA, 0x01}, // ROL Absolute
+        {0x3E, 0x55, 0xAA, 0x01}, // ROL Absolute X
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), valueToRotate, expectedValue, expectedLocation)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(valueToRotate, 2) << ", " << hex(expectedValue, 2) << ", " << hex(expectedLocation, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        REQUIRE(bus.cpu.pc == 0x00);
+      uint8_t program[] = {0xA9, valueToRotate, operation, expectedLocation};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToRotate, operation, expectedLocation};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
+      uint8_t actualResult;
+      if (operation == 0x2A)
+      {
+        actualResult = bus.cpu.getRegister(bus.cpu.AC);
+      }
+      else
+      {
+        actualResult = bus.read(expectedLocation);
+      }
 
-        uint8_t actualResult;
-        if (operation == 0x2A)
-        {
-            actualResult = bus.cpu.a;
-        }
-        else
-        {
-            actualResult = bus.read(expectedLocation);
-        }
-
-        REQUIRE(hex(actualResult, 2) == hex(expectedValue, 2));
+      REQUIRE(hex(actualResult, 2) == hex(expectedValue, 2));
     }
+  }
 }
-#pragma endregion ROL - Rotate Left
 
-#pragma region ROR - Rotate Right
-TEST_CASE("ROR Negative Set Correctly", "[opcode][ror]")
+TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x6A;
+
+  SECTION("ROR Negative Set Correctly")
+  {
     auto [accumulatorValue, carryBitSet, expectedValue] = 
-        GENERATE( table<uint8_t, bool, bool>({
-            {0xFF, false, false},
-            {0xFE, false, false},
-            {0xFF, true, true},
-            {0x00, true, true},
-        })
+      GENERATE( table<uint8_t, bool, bool>({
+        {0xFF, false, false},
+        {0xFE, false, false},
+        {0xFF, true, true},
+        {0x00, true, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, carryBitSet, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", " << carryBitSet << ", " << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t carryOperation = carryBitSet ? 0x38 : 0x18;
 
-        uint8_t carryOperation = carryBitSet ? 0x38 : 0x18;
+      uint8_t program[] = {carryOperation, 0xA9, accumulatorValue, 0x6A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {carryOperation, 0xA9, accumulatorValue, 0x6A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("ROR Zero Set Correctly", "[opcode][ror]")
-{
+  SECTION("ROR Zero Set Correctly")
+  {
     auto [accumulatorValue, carryBitSet, expectedResult] = 
-        GENERATE( table<uint8_t, bool, bool>({
-		    {0x00, false, true},
-		    {0x00, true, false},
-		    {0x01, false, true},
-		    {0x01, true, false},
-        })
+      GENERATE( table<uint8_t, bool, bool>({
+        {0x00, false, true},
+        {0x00, true, false},
+        {0x01, false, true},
+        {0x01, true, false},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, carryBitSet, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(" << hex(accumulatorValue, 2) << ", " << carryBitSet << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t carryOperation = carryBitSet ? 0x38 : 0x18;
 
-        uint8_t carryOperation = carryBitSet ? 0x38 : 0x18;
+      uint8_t program[] = {carryOperation, 0xA9, accumulatorValue, 0x6A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {carryOperation, 0xA9, accumulatorValue, 0x6A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("ROR Carry Flag Set Correctly", "[opcode][ror]")
-{
+  SECTION("ROR Carry Flag Set Correctly", "[opcode][ror]")
+  {
     auto [accumulatorValue, expectedResult] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x01, true},
-            {0x02, false},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x01, true},
+        {0x02, false},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumulatorValue, 2) << ", " << expectedResult << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorValue, 0x6A};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorValue, 0x6A};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("ROR Correct Value Stored", "[opcode][ror]")
-{
+  SECTION("ROR Correct Value Stored", "[opcode][ror]")
+  {
     auto [operation, valueToRotate, expectedValue, expectedLocation] = 
-        GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-            {0x6A, 0xAA, 0x55, 0x00}, // ROR Accumulator
-            {0x6A, 0xAA, 0x55, 0x00}, // ROR Accumulator
-            {0x66, 0xAA, 0x55, 0x01}, // ROR Zero Page
-            {0x76, 0xAA, 0x55, 0x01}, // ROR Zero Page X
-            {0x6E, 0xAA, 0x55, 0x01}, // ROR Absolute
-            {0x7E, 0xAA, 0x55, 0x01}, // ROR Absolute X
-        })
+      GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+        {0x6A, 0xAA, 0x55, 0x00}, // ROR Accumulator
+        {0x6A, 0xAA, 0x55, 0x00}, // ROR Accumulator
+        {0x66, 0xAA, 0x55, 0x01}, // ROR Zero Page
+        {0x76, 0xAA, 0x55, 0x01}, // ROR Zero Page X
+        {0x6E, 0xAA, 0x55, 0x01}, // ROR Absolute
+        {0x7E, 0xAA, 0x55, 0x01}, // ROR Absolute X
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), valueToRotate, expectedValue, expectedLocation)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(valueToRotate, 2) << ", " << hex(expectedValue, 2) << ", " << hex(expectedLocation, 2) << ") works")
-    {
-        bus.cpu.reset();
+      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-        REQUIRE(bus.cpu.pc == 0x00);
+      uint8_t program[] = {0xA9, valueToRotate, operation, expectedLocation};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {0xA9, valueToRotate, operation, expectedLocation};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
+      uint8_t actualResult;
+      if (operation == 0x6A)
+      {
+        actualResult = bus.cpu.getRegister(bus.cpu.AC);
+      }
+      else
+      {
+        actualResult = bus.read(expectedLocation);
+      }
 
-        uint8_t actualResult;
-        if (operation == 0x6A)
-        {
-            actualResult = bus.cpu.a;
-        }
-        else
-        {
-            actualResult = bus.read(expectedLocation);
-        }
-
-        REQUIRE(hex(actualResult, 2) == hex(expectedValue, 2));
+      REQUIRE(hex(actualResult, 2) == hex(expectedValue, 2));
     }
+  }
 }
-#pragma endregion ROR - Rotate Right
 
-#pragma region RTI - Return from Interrupt
-TEST_CASE("RTI Program Counter Correct", "[opcode][rti]")
+TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  SECTION("Program Counter Correct")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x00};
@@ -2936,11 +3218,11 @@ TEST_CASE("RTI Program Counter Correct", "[opcode][rti]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.pc, 4) == hex(0xABCF, 4));
-}
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0xABCF, 4));
+  }
 
-TEST_CASE("RTI Carry Flag Set Correctly", "[opcode][rti]")
-{
+  SECTION("Carry Flag Set Correctly")
+  {
     bus.cpu.reset();
 
     //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
@@ -2953,10 +3235,10 @@ TEST_CASE("RTI Carry Flag Set Correctly", "[opcode][rti]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == true);
-}
+  }
 
-TEST_CASE("RTI Zero Flag Set Correctly", "[opcode][rti]")
-{
+  SECTION("Zero Flag Set Correctly")
+  {
     bus.cpu.reset();
 
     //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
@@ -2969,10 +3251,10 @@ TEST_CASE("RTI Zero Flag Set Correctly", "[opcode][rti]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == true);
-}
+  }
 
-TEST_CASE("RTI Interrupt Flag Set Correctly", "[opcode][rti]")
-{
+  SECTION("Interrupt Flag Set Correctly")
+  {
     bus.cpu.reset();
 
     //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
@@ -2985,10 +3267,12 @@ TEST_CASE("RTI Interrupt Flag Set Correctly", "[opcode][rti]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.I) == 1) == true);
-}
+  }
 
-TEST_CASE("RTI Decimal Flag Set Correctly", "[opcode][rti]")
-{
+  SECTION("Decimal Flag Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     bus.cpu.reset();
 
     //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
@@ -3001,13 +3285,15 @@ TEST_CASE("RTI Decimal Flag Set Correctly", "[opcode][rti]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.D) == 1) == true);
-}
+  }
 
-TEST_CASE("RTI Overflow Flag Set Correctly", "[opcode][rti]")
-{
+  SECTION("Overflow Flag Set Correctly")
+  {
     bus.cpu.reset();
 
-    uint8_t program[] = {0xA9, 0x40, 0x48, 0x28};
+    //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
+    //uint8_t program[] = {0xA9, 0x40, 0x48, 0x28};
+    uint8_t program[] = {0xA9, 0x40, 0x48, 0x40};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
@@ -3016,10 +3302,12 @@ TEST_CASE("RTI Overflow Flag Set Correctly", "[opcode][rti]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == true);
-}
+  }
 
-TEST_CASE("RTI Negative Flag Set Correctly", "[opcode][rti]")
-{
+  SECTION("Negative Flag Set Correctly")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     bus.cpu.reset();
 
     uint8_t program[] = {0xA9, 0x80, 0x48, 0x28};
@@ -3031,12 +3319,17 @@ TEST_CASE("RTI Negative Flag Set Correctly", "[opcode][rti]")
     bus.cpu.tick();
 
     REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == true);
+    }
 }
-#pragma endregion RTI - Return from Interrupt
 
-#pragma region RTS - Return from SubRoutine
-TEST_CASE("RTS Program Counter Has Correct Value", "[opcode][rts]")
+TEST_CASE("RTS - Return from SubRoutine", "[opcode][rts]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  SECTION("Program Counter Has Correct Value")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x20, 0x04, 0x00, 0x00, 0x60};
@@ -3046,293 +3339,329 @@ TEST_CASE("RTS Program Counter Has Correct Value", "[opcode][rts]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.pc, 4) == hex(0x03, 4));
-}
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x03, 4));
+  }
 
-TEST_CASE("RTS Stack Pointer Has Correct Value", "[opcode][rts]")
-{
+  SECTION("Stack Pointer Has Correct Value")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
     bus.cpu.reset();
 
     uint8_t program[] = {0x60};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0xBBAA, program, n, 0xBBAA);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.stkp, 4) == hex(stackLocation + 2, 4));
-}
-#pragma endregion RTS - Return from SubRoutine
-
-#pragma region SBC - Subtraction With Borrow
-TEST_CASE("SBC Accumulator Correct When Not In BDC Mode", "[opcode][sbc]")
-{
-    auto [accumlatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
-            {0x00, 0x00, false, 0xFF},
-            {0x00, 0x00, true, 0x00},
-            {0x50, 0xF0, false, 0x5F},
-            {0x50, 0xB0, true, 0xA0},
-            {0xFF, 0xFF, false, 0xFF},
-            {0xFF, 0xFF, true, 0x00},
-            {0xFF, 0x80, false, 0x7E},
-            {0xFF, 0x80, true, 0x7F},
-            {0x80, 0xFF, false, 0x80},
-            {0x80, 0xFF, true, 0x81}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumlatorInitialValue, 2) << ", 0x" << hex(amountToSubtract, 2) << ", " << CarryFlagSet << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        if (CarryFlagSet)
-        { 
-            uint8_t program[] = {0x38, 0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-            bus.cpu.tick();
-        }
-        else
-        {
-            uint8_t program[] = {0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        }
-
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE(bus.cpu.a == expectedValue);
-    }
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 4) == hex((stackLocation + 2) & 0x00FF, 4));
+  }
 }
 
-TEST_CASE("SBC Accumulator Correct When In BDC Mode", "[opcode][sbc]")
+TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
 {
-    auto [accumlatorInitialValue, amountToSubtract, setCarryFlag, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
-            {0x00, 0x99, false, 0x00},
-            {0x00, 0x99, true, 0x01}
-        }));
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    //Bus bus;
+  Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumlatorInitialValue, 2) << ", 0x" << hex(amountToSubtract, 2) << ", " << setCarryFlag << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+  uint8_t operation = 0xE9;
 
-        REQUIRE(bus.cpu.a == 0x00);
+  SECTION("SBC Accumulator Correct When Not In BDC Mode")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-        if (setCarryFlag)
-        { 
-            uint8_t program[] = {0x38, 0xF8, 0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-            bus.cpu.tick();
-        }
-        else
-        {
-            uint8_t program[] = {0xF8, 0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        }
+    auto [accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
+        {0x00, 0x00, false, 0xFF},
+        {0x00, 0x00, true, 0x00},
+        {0x50, 0xF0, false, 0x5F},
+        {0x50, 0xB0, true, 0xA0},
+        {0xFF, 0xFF, false, 0xFF},
+        {0xFF, 0xFF, true, 0x00},
+        {0xFF, 0x80, false, 0x7E},
+        {0xFF, 0x80, true, 0x7F},
+        {0x80, 0xFF, false, 0x80},
+        {0x80, 0xFF, true, 0x81}
+      })
+    );
+    uint8_t operation = 0xE9;
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(expectedValue, 2));
-    }
-}
+    Bus bus;
 
-TEST_CASE("SBC Overflow Correct When Not In BDC Mode", "[opcode][sbc]")
-{
-    auto [accumlatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
-            {0xFF, 0x01, false, false},
-            {0xFF, 0x00, false, false},
-            {0x80, 0x00, false, true},
-            {0x80, 0x00, true, false},
-            {0x81, 0x01, false, true},
-            {0x81, 0x01, true, false},
-            {0x00, 0x80, false, false},
-            {0x00, 0x80, true, true},
-            {0x01, 0x80, true, true},
-            {0x01, 0x7F, false, false}
-        }));
+    DYNAMIC_SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    //Bus bus;
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumlatorInitialValue, 2) << ", 0x" << hex(amountToSubtract, 2) << ", " << CarryFlagSet << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        if (CarryFlagSet)
-        { 
-            uint8_t program[] = {0x38, 0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-            bus.cpu.tick();
-        }
-        else
-        {
-            uint8_t program[] = {0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        }
-
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedValue);
-    }
-}
-
-TEST_CASE("SBC Overflow Correct When In BDC Mode", "[opcode][sbc]")
-{
-    auto [accumlatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
-            {0x63, 0x01, false, false},
-            {0x63, 0x00, false, false},
-            //{0, 1, false, true},
-            //{1, 1, true, true},
-            //{2, 1, true, false},
-            //{1, 1, false, false}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToSubtract << ", " << CarryFlagSet << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        if (CarryFlagSet)
-        { 
-            uint8_t program[] = {0x38, 0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-            bus.cpu.tick();
-        }
-        else
-        {
-            uint8_t program[] = {0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
-            size_t n = sizeof(program) / sizeof(program[0]);
-            bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        }
-
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedValue);
-    }
-}
-
-TEST_CASE("SBC Carry Correct", "[opcode][sbc]")
-{
-    auto [accumlatorInitialValue, amountToSubtract, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, false},
-            {0x00, 0x01, false},
-            {0x01, 0x00, true},
-            {0x02, 0x01, true}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(" << accumlatorInitialValue << ", " << amountToSubtract << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        uint8_t program[] = {0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
+      if (CarryFlagSet)
+      { 
+        uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-
         bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
-    }
-}
-
-TEST_CASE("SBC Zero Correct", "[opcode][sbc]")
-{
-    auto [accumlatorInitialValue, amountToSubtract, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x00, 0x00, false},
-            {0x00, 0x01, false},
-            {0x01, 0x00, true},
-            {0x01, 0x01, false}
-        }));
-
-    //Bus bus;
-
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumlatorInitialValue, 2) << ", 0x" << hex(amountToSubtract, 2) << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
-
-        REQUIRE(bus.cpu.a == 0x00);
-
-        uint8_t program[] = {0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
+      }
+      else
+      {
+        uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      }
 
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("SBC Negative Correct", "[opcode][sbc]")
-{
-    auto [accumlatorInitialValue, amountToSubtract, expectedValue] = 
-        GENERATE( table<uint8_t, uint8_t, bool>({
-            {0x80, 0x01, false},
-            {0x81, 0x01, false},
-            {0x00, 0x01, true},
-            {0x01, 0x01, true}
-        }));
+#ifdef DECIMAL_MODE
+  SECTION("SBC Accumulator Correct When In BDC Mode", "[opcode][sbc]")
+  {
+    auto [accumulatorInitialValue, amountToSubtract, setCarryFlag, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
+        {0x00, 0x99, false, 0x00},
+        {0x00, 0x99, true, 0x01}
+      })
+    );
+    uint8_t operation = 0xE9;
 
-    //Bus bus;
+    Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(accumlatorInitialValue, 2) << ", 0x" << hex(amountToSubtract, 2) << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, setCarryFlag, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-        REQUIRE(bus.cpu.a == 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumlatorInitialValue, 0xE9, amountToSubtract};
+      if (setCarryFlag)
+      { 
+        uint8_t program[] = {0x38, 0xF8, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu.tick();
+      }
+      else
+      {
+        uint8_t program[] = {0xF8, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
+        size_t n = sizeof(program) / sizeof(program[0]);
+        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      }
 
-        bus.cpu.tick();
-        REQUIRE(hex(bus.cpu.a, 2) == hex(accumlatorInitialValue, 2));
-        
-        bus.cpu.tick();
-        REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
-}
-#pragma endregion SBC - Subtraction With Borrow
+  }
+#endif
 
-#pragma region SEC - Set Carry Flag
-TEST_CASE("SEC Carry Flag Set Correctly", "[opcode][sec]")
+  SECTION("SBC Overflow Correct When Not In BDC Mode")
+  {
+    auto [accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
+        {0xFF, 0x01, false, false},
+        {0xFF, 0x00, false, false},
+        {0x80, 0x00, false, true},
+        {0x80, 0x00, true, false},
+        {0x81, 0x01, false, true},
+        {0x81, 0x01, true, false},
+        {0x00, 0x80, false, false},
+        {0x00, 0x80, true, true},
+        {0x01, 0x80, true, true},
+        {0x01, 0x7F, false, false}
+      })
+    );
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      if (CarryFlagSet)
+      { 
+        uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
+        size_t n = sizeof(program) / sizeof(program[0]);
+        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu.tick();
+      }
+      else
+      {
+        uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
+        size_t n = sizeof(program) / sizeof(program[0]);
+        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      }
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedValue);
+    }
+  }
+
+#ifdef DECIMAL_MODE
+  SECTION("SBC Overflow Correct When In BDC Mode")
+  {
+    /// @todo Fix so the commented tests work
+    auto [accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool, uint8_t>({
+        {0x63, 0x01, false, false},
+        {0x63, 0x00, false, false},
+        //{0, 1, false, true},
+        //{1, 1, true, true},
+        //{2, 1, true, false},
+        //{1, 1, false, false}
+      })
+    );
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      if (CarryFlagSet)
+      { 
+        uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
+        size_t n = sizeof(program) / sizeof(program[0]);
+        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu.tick();
+      }
+      else
+      {
+        uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
+        size_t n = sizeof(program) / sizeof(program[0]);
+        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      }
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.V) == 1) == expectedValue);
+    }
+  }
+#endif
+
+  SECTION("SBC Carry Correct")
+  {
+    auto [accumulatorInitialValue, amountToSubtract, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x00, 0x00, false},
+        {0x00, 0x01, false},
+        {0x01, 0x00, true},
+        {0x02, 0x01, true}
+      })
+    );
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.C) == 1) == expectedValue);
+    }
+  }
+
+  SECTION("SBC Zero Correct")
+  {
+    auto [accumulatorInitialValue, amountToSubtract, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x00, 0x00, false},
+        {0x00, 0x01, false},
+        {0x01, 0x00, true},
+        {0x01, 0x01, false}
+      })
+    );
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.Z) == 1) == expectedValue);
+    }
+  }
+
+  SECTION("SBC Negative Correct")
+  {
+    auto [accumulatorInitialValue, amountToSubtract, expectedValue] = 
+      GENERATE( table<uint8_t, uint8_t, bool>({
+        {0x80, 0x01, false},
+        {0x81, 0x01, false},
+        {0x00, 0x01, true},
+        {0x01, 0x01, true}
+      })
+    );
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      
+      bus.cpu.tick();
+      REQUIRE((bus.cpu.GetFlag(bus.cpu.N) == 1) == expectedValue);
+    }
+  }
+}
+
+TEST_CASE("SEC - Set Carry Flag", "[opcode][sec]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x38;
+
+  SECTION("SEC Carry Flag Set Correctly")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x38};
@@ -3341,12 +3670,19 @@ TEST_CASE("SEC Carry Flag Set Correctly", "[opcode][sec]")
 
     bus.cpu.tick();
     REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+  }
 }
-#pragma endregion SEC - Set Carry Flag
 
-#pragma region SED - Set Decimal Mode
-TEST_CASE("SED Decimal Mode Set Correctly", "[opcode][sed]")
+TEST_CASE("Set Decimal Mode", "[opcode][sed]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xF8;
+
+  SECTION("SED Decimal Mode Set Correctly")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0xF8};
@@ -3355,12 +3691,19 @@ TEST_CASE("SED Decimal Mode Set Correctly", "[opcode][sed]")
 
     bus.cpu.tick();
     REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == true);
+  }
 }
-#pragma endregion SED - Set Decimal Mode
 
-#pragma region SEI - Set Interrupt Flag
-TEST_CASE("SEI Interrupt Flag Set Correctly", "[opcode][sei]")
+TEST_CASE("SEI - Set Interrupt Flag", "[opcode][sei]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x78;
+
+  SECTION("SEI Interrupt Flag Set Correctly")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0x78};
@@ -3369,12 +3712,19 @@ TEST_CASE("SEI Interrupt Flag Set Correctly", "[opcode][sei]")
 
     bus.cpu.tick();
     REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == true);
+  }
 }
-#pragma endregion SEI - Set Interrupt Flag
 
-#pragma region STA - Store Accumulator In Memory
-TEST_CASE("STA Memory Has Correct Value", "[opcode][sta]")
+TEST_CASE("STA - Store Accumulator In Memory", "[opcode][sta]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x85;
+
+  SECTION("STA Memory Has Correct Value")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0xA9, 0x03, 0x85, 0x05};
@@ -3385,12 +3735,19 @@ TEST_CASE("STA Memory Has Correct Value", "[opcode][sta]")
     bus.cpu.tick();
 
     REQUIRE(hex(bus.read(0x05), 2) == hex(0x03, 2));
+  }
 }
-#pragma endregion STA - Store Accumulator In Memory
 
-#pragma region STX - Set Memory To X
-TEST_CASE("STX Memory Has Correct Value", "[opcode][stx]")
+TEST_CASE("STX - Set Memory To X", "[opcode][stx]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x86;
+
+  SECTION("STX Memory Has Correct Value")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0xA2, 0x03, 0x86, 0x05};
@@ -3401,12 +3758,19 @@ TEST_CASE("STX Memory Has Correct Value", "[opcode][stx]")
     bus.cpu.tick();
 
     REQUIRE(hex(bus.read(0x05), 2) == hex(0x03, 2));
+  }
 }
-#pragma endregion STX - Set Memory To X
 
-#pragma region STY - Set Memory To Y
-TEST_CASE("STY Memory Has Correct Value", "[opcode][sty]")
+TEST_CASE("STY - Set Memory To Y", "[opcode][sty]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x84;
+
+  SECTION("STY Memory Has Correct Value")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0xA0, 0x03, 0x84, 0x05};
@@ -3417,242 +3781,269 @@ TEST_CASE("STY Memory Has Correct Value", "[opcode][sty]")
     bus.cpu.tick();
 
     REQUIRE(hex(bus.read(0x05), 2) == hex(0x03, 2));
+  }
 }
-#pragma endregion STY - Set Memory To Y
 
-#pragma region TAX, TAY, TSX, TSY Tests
-TEST_CASE("Transfer Correct Value Set", "[opcode][tax][tay][tsx][tsy]")
+TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
 {
-    auto [operation, transferFrom, transferTo] = 
-        GENERATE( table<uint8_t, CPUTest::RegisterMode, CPUTest::RegisterMode>({
-            {0xAA, CPUTest::Accumulator, CPUTest::XRegister},
-            {0xA8, CPUTest::Accumulator, CPUTest::YRegister},
-            {0x8A, CPUTest::XRegister, CPUTest::Accumulator},
-            {0x98, CPUTest::YRegister, CPUTest::Accumulator}
-        })
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  //uint8_t operation = 0x0A;
+
+  SECTION("Transfer Correct Value Set")
+  {
+    auto [sectionOperation, transferFrom, transferTo] = 
+      GENERATE( table<uint8_t, ProcessorTests::RegisterMode, ProcessorTests::RegisterMode>({
+        {0xAA, ProcessorTests::Accumulator, ProcessorTests::XRegister},
+        {0xA8, ProcessorTests::Accumulator, ProcessorTests::YRegister},
+        {0x8A, ProcessorTests::XRegister, ProcessorTests::Accumulator},
+        {0x98, ProcessorTests::YRegister, ProcessorTests::Accumulator}
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), transferFrom, transferTo)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(transferFrom, 2) << ", " << hex(transferTo, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t loadOperation;
+      switch (transferFrom)
+      {
+        case ProcessorTests::Accumulator:
+          loadOperation = 0xA9;
+          break;
+        case ProcessorTests::XRegister:
+          loadOperation = 0xA2;
+          break;
+        case ProcessorTests::YRegister:
+          loadOperation = 0xA0;
+          break;
+      }
 
-        uint8_t loadOperation;
-        switch (transferFrom)
-        {
-            case CPUTest::Accumulator:
-                loadOperation = 0xA9;
-                break;
-            case CPUTest::XRegister:
-                loadOperation = 0xA2;
-                break;
-            case CPUTest::YRegister:
-                loadOperation = 0xA0;
-                break;
-        }
+      uint8_t program[] = {loadOperation, 0x03, sectionOperation};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[] = {loadOperation, 0x03, operation};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        switch (transferFrom)
-        {
-            case CPUTest::Accumulator:
-                REQUIRE(hex(bus.cpu.a, 2) == hex(0x03, 2));
-                break;
-            case CPUTest::XRegister:
-                REQUIRE(hex(bus.cpu.x, 2) == hex(0x03, 2));
-                break;
-            case CPUTest::YRegister:
-                REQUIRE(hex(bus.cpu.y, 2) == hex(0x03, 2));
-                break;
-        }
-
-
+      switch (transferFrom)
+      {
+        case ProcessorTests::Accumulator:
+          REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x03, 2));
+          break;
+        case ProcessorTests::XRegister:
+          REQUIRE(hex(bus.cpu.getRegister(bus.cpu.X), 2) == hex(0x03, 2));
+          break;
+        case ProcessorTests::YRegister:
+          REQUIRE(hex(bus.cpu.getRegister(bus.cpu.Y), 2) == hex(0x03, 2));
+          break;
+      }
     }
-}
+  }
 
-TEST_CASE("Transfer Negative Value Set", "[opcode][tax][tay][tsx][tsy]")
-{
-    auto [operation, value, transferFrom, expectedResult] = GENERATE( table<uint8_t, uint8_t, CPUTest::RegisterMode, bool>({
-        {0xAA, 0x80, CPUTest::Accumulator, true},
-        {0xA8, 0x80, CPUTest::Accumulator, true},
-        {0x8A, 0x80, CPUTest::XRegister, true},
-        {0x98, 0x80, CPUTest::YRegister, true},
-        {0xAA, 0xFF, CPUTest::Accumulator, true},
-        {0xA8, 0xFF, CPUTest::Accumulator, true},
-        {0x8A, 0xFF, CPUTest::XRegister, true},
-        {0x98, 0xFF, CPUTest::YRegister, true},
-        {0xAA, 0x7F, CPUTest::Accumulator, false},
-        {0xA8, 0x7F, CPUTest::Accumulator, false},
-        {0x8A, 0x7F, CPUTest::XRegister, false},
-        {0x98, 0x7F, CPUTest::YRegister, false},
-        {0xAA, 0x00, CPUTest::Accumulator, false},
-        {0xA8, 0x00, CPUTest::Accumulator, false},
-        {0x8A, 0x00, CPUTest::XRegister, false},
-        {0x98, 0x00, CPUTest::YRegister, false},
+  SECTION("Transfer Negative Value Set")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+    auto [operation, value, transferFrom, expectedResult] = GENERATE( table<uint8_t, uint8_t, ProcessorTests::RegisterMode, bool>({
+      {0xAA, 0x80, ProcessorTests::Accumulator, true},
+      {0xA8, 0x80, ProcessorTests::Accumulator, true},
+      {0x8A, 0x80, ProcessorTests::XRegister, true},
+      {0x98, 0x80, ProcessorTests::YRegister, true},
+      {0xAA, 0xFF, ProcessorTests::Accumulator, true},
+      {0xA8, 0xFF, ProcessorTests::Accumulator, true},
+      {0x8A, 0xFF, ProcessorTests::XRegister, true},
+      {0x98, 0xFF, ProcessorTests::YRegister, true},
+      {0xAA, 0x7F, ProcessorTests::Accumulator, false},
+      {0xA8, 0x7F, ProcessorTests::Accumulator, false},
+      {0x8A, 0x7F, ProcessorTests::XRegister, false},
+      {0x98, 0x7F, ProcessorTests::YRegister, false},
+      {0xAA, 0x00, ProcessorTests::Accumulator, false},
+      {0xA8, 0x00, ProcessorTests::Accumulator, false},
+      {0x8A, 0x00, ProcessorTests::XRegister, false},
+      {0x98, 0x00, ProcessorTests::YRegister, false},
     }));
 
-    //Bus bus
+    Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(value, 2) << ", 0x" << hex(transferFrom, 2) << ", " << hex(expectedResult, 2) << ") works")
-    {
-        bus.cpu.reset();
+    DYNAMIC_SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), value, transferFrom, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-        uint8_t loadOperation;
-        switch (transferFrom)
-        {
-            case CPUTest::Accumulator:
-                loadOperation = 0xA9;
-                break;
-            case CPUTest::XRegister:
-                loadOperation = 0xA2;
-                break;
-            case CPUTest::YRegister:
-                loadOperation = 0xA0;
-                break;
-        }
+      uint8_t loadOperation;
+      switch (transferFrom)
+      {
+        case ProcessorTests::Accumulator:
+          loadOperation = 0xA9;
+          break;
+        case ProcessorTests::XRegister:
+          loadOperation = 0xA2;
+          break;
+        case ProcessorTests::YRegister:
+          loadOperation = 0xA0;
+          break;
+      }
 
-        uint8_t program[] = {loadOperation, value, operation};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      uint8_t program[] = {loadOperation, value, operation};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        bus.cpu.tick();
-        bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
     }
-}
+  }
 
-TEST_CASE("Transfer Zero Value Set", "[opcode][tax][tay][tsx][tsy]")
-{
-    auto [operation, value, transferFrom, expectedResult] = GENERATE( table<uint8_t, uint8_t, CPUTest::RegisterMode, bool>({
-        {0xAA, 0xFF, CPUTest::Accumulator, false},
-        {0xA8, 0xFF, CPUTest::Accumulator, false},
-        {0x8A, 0xFF, CPUTest::XRegister, false},
-        {0x98, 0xFF, CPUTest::YRegister, false},
-        {0xAA, 0x00, CPUTest::Accumulator, true},
-        {0xA8, 0x00, CPUTest::Accumulator, true},
-        {0x8A, 0x00, CPUTest::XRegister, true},
-        {0x98, 0x00, CPUTest::YRegister, true},
+  SECTION("Transfer Zero Value Set")
+  {
+    MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+    auto [operation, value, transferFrom, expectedResult] = GENERATE( table<uint8_t, uint8_t, ProcessorTests::RegisterMode, bool>({
+      {0xAA, 0xFF, ProcessorTests::Accumulator, false},
+      {0xA8, 0xFF, ProcessorTests::Accumulator, false},
+      {0x8A, 0xFF, ProcessorTests::XRegister, false},
+      {0x98, 0xFF, ProcessorTests::YRegister, false},
+      {0xAA, 0x00, ProcessorTests::Accumulator, true},
+      {0xA8, 0x00, ProcessorTests::Accumulator, true},
+      {0x8A, 0x00, ProcessorTests::XRegister, true},
+      {0x98, 0x00, ProcessorTests::YRegister, true},
     }));
 
-    //Bus bus
+    Bus bus;
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(operation, 2) << ", 0x" << hex(value, 2) << ", 0x" << hex(transferFrom, 2) << ", " << hex(expectedResult, 2) << ") works")
-    {
-        bus.cpu.reset();
+    DYNAMIC_SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), value, transferFrom, expectedResult)
+    ) {
+      bus.cpu.reset();
 
-        uint8_t loadOperation;
-        switch (transferFrom)
-        {
-            case CPUTest::Accumulator:
-                loadOperation = 0xA9;
-                break;
-            case CPUTest::XRegister:
-                loadOperation = 0xA2;
-                break;
-            case CPUTest::YRegister:
-                loadOperation = 0xA0;
-                break;
-        }
+      uint8_t loadOperation;
+      switch (transferFrom)
+      {
+        case ProcessorTests::Accumulator:
+          loadOperation = 0xA9;
+          break;
+        case ProcessorTests::XRegister:
+          loadOperation = 0xA2;
+          break;
+        case ProcessorTests::YRegister:
+          loadOperation = 0xA0;
+          break;
+      }
 
-        uint8_t program[] = {loadOperation, value, operation};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      uint8_t program[] = {loadOperation, value, operation};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        bus.cpu.tick();
-        bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
     }
+  }
 }
-#pragma endregion TAX, TAY, TSX, TSY Tests
 
-#pragma region TSX - Transfer Stack Pointer to X Register
-TEST_CASE("TSX XRegister Set Correctly", "[opcode][tsx]")
+TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0xBA;
+
+  SECTION("TSX XRegister Set Correctly")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0xBA};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.stkp;
+    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
 
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.x, 2) == hex(stackLocation, 2));
-}
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.X), 2) == hex(stackLocation, 2));
+  }
 
-TEST_CASE("TSX Negative Set Correctly", "[opcode][tsx]")
-{
+  SECTION("TSX Negative Set Correctly")
+  {
     auto [valueToLoad, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, false},
-            {0x7F, false},
-            {0x80, true},
-            {0xFF, true},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x00, false},
+        {0x7F, false},
+        {0x80, true},
+        {0xFF, true},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA2, valueToLoad, 0x9A, 0xBA};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA2, valueToLoad, 0x9A, 0xBA};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("TSX Zero Set Correctly", "[opcode][tsx]")
-{
+  SECTION("TSX Zero Set Correctly")
+  {
     auto [valueToLoad, expectedValue] = 
-        GENERATE( table<uint8_t, bool>({
-            {0x00, true},
-            {0x01, false},
-            {0xFF, false},
-        })
+      GENERATE( table<uint8_t, bool>({
+        {0x00, true},
+        {0x01, false},
+        {0xFF, false},
+      })
     );
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if XXX(0x" << hex(valueToLoad, 2) << ", " << expectedValue << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA2, valueToLoad, 0x9A, 0xBA};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA2, valueToLoad, 0x9A, 0xBA};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
     }
+  }
 }
-#pragma endregion TSX - Transfer Stack Pointer to X Register
 
-#pragma region TXS - Transfer X Register to Stack Pointer
-TEST_CASE("TXS Stack Pointer Set Correctly", "[opcode][txs]")
+TEST_CASE("TXS - Transfer X Register to Stack Pointer", "[opcode][txs]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x9A;
+
+  SECTION("TXS Stack Pointer Set Correctly")
+  {
     bus.cpu.reset();
 
     uint8_t program[] = {0xA2, 0xAA, 0x9A};
@@ -3662,1267 +4053,1613 @@ TEST_CASE("TXS Stack Pointer Set Correctly", "[opcode][txs]")
     bus.cpu.tick();
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.stkp, 2) == hex(0xAA, 2));
+    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(0xAA, 2));
+  }
 }
-#pragma endregion TXS - Transfer X Register to Stack Pointer
 
-#pragma region Accumulator Address Tests
-TEST_CASE("Immediate Mode Accumulator Has Correct Result", "[index][acc]")
+TEST_CASE("Accumulator Address Tests", "[index][acc]")
 {
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x69, 0x01, 0x01, 0x02}, // ADC
-        {0x29, 0x03, 0x03, 0x03}, // AND
-        {0xA9, 0x04, 0x03, 0x03}, // LDA
-        {0x49, 0x55, 0xAA, 0xFF}, // EOR
-        {0x09, 0x55, 0xAA, 0xFF}, // ORA
-        {0xE9, 0x03, 0x01, 0x01}, // SBC
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  //uint8_t operation = 0x0A;
+
+  SECTION("Immediate Mode Accumulator Has Correct Result")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x69, 0x01, 0x01, 0x02}, // ADC
+      {0x29, 0x03, 0x03, 0x03}, // AND
+      {0xA9, 0x04, 0x03, 0x03}, // LDA
+      {0x49, 0x55, 0xAA, 0xFF}, // EOR
+      {0x09, 0x55, 0xAA, 0xFF}, // ORA
+      {0xE9, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorInitialValue, sectionOperation, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorInitialValue, operation, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("ZeroPage Mode Accumulator Has Correct Result", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x65, 0x01, 0x01, 0x02}, // ADC
-        {0x25, 0x03, 0x03, 0x03}, // AND
-        {0xA5, 0x04, 0x03, 0x03}, // LDA
-        {0x45, 0x55, 0xAA, 0xFF}, // EOR
-        {0x05, 0x55, 0xAA, 0xFF}, // ORA
-        {0xE5, 0x03, 0x01, 0x01}, // SBC
+  SECTION("ZeroPage Mode Accumulator Has Correct Result")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x65, 0x01, 0x01, 0x02}, // ADC
+      {0x25, 0x03, 0x03, 0x03}, // AND
+      {0xA5, 0x04, 0x03, 0x03}, // LDA
+      {0x45, 0x55, 0xAA, 0xFF}, // EOR
+      {0x05, 0x55, 0xAA, 0xFF}, // ORA
+      {0xE5, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorInitialValue, sectionOperation, 0x05, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorInitialValue, operation, 0x05, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("ZeroPageX Mode Accumulator Has Correct Result", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x75, 0x00, 0x03, 0x03}, // ADC
-        {0x35, 0x03, 0x03, 0x03}, // AND
-        {0xB5, 0x04, 0x03, 0x03}, // LDA
-        {0x55, 0x55, 0xAA, 0xFF}, // EOR
-        {0x15, 0x55, 0xAA, 0xFF}, // ORA
-        {0xF5, 0x03, 0x01, 0x01}, // SBC
+  SECTION("ZeroPageX Mode Accumulator Has Correct Result")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x75, 0x00, 0x03, 0x03}, // ADC
+      {0x35, 0x03, 0x03, 0x03}, // AND
+      {0xB5, 0x04, 0x03, 0x03}, // LDA
+      {0x55, 0x55, 0xAA, 0xFF}, // EOR
+      {0x15, 0x55, 0xAA, 0xFF}, // ORA
+      {0xF5, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA2, 0x01, sectionOperation, 0x06, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA2, 0x01, operation, 0x06, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("Absolute Mode Accumulator Has Correct Result", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x6D, 0x00, 0x03, 0x03}, // ADC
-        {0x2D, 0x03, 0x03, 0x03}, // AND
-        {0xAD, 0x04, 0x03, 0x03}, // LDA
-        {0x4D, 0x55, 0xAA, 0xFF}, // EOR
-        {0x0D, 0x55, 0xAA, 0xFF}, // ORA
-        {0xED, 0x03, 0x01, 0x01}, // SBC
+  SECTION("Absolute Mode Accumulator Has Correct Result")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x6D, 0x00, 0x03, 0x03}, // ADC
+      {0x2D, 0x03, 0x03, 0x03}, // AND
+      {0xAD, 0x04, 0x03, 0x03}, // LDA
+      {0x4D, 0x55, 0xAA, 0xFF}, // EOR
+      {0x0D, 0x55, 0xAA, 0xFF}, // ORA
+      {0xED, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorInitialValue, sectionOperation, 0x06, 0x00, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorInitialValue, operation, 0x06, 0x00, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("AbsoluteX Mode Accumulator Has Correct Result", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x7D, 0x01, 0x01, 0x02}, // ADC
-        {0x3D, 0x03, 0x03, 0x03}, // AND
-        {0xBD, 0x04, 0x03, 0x03}, // LDA
-        {0x5D, 0x55, 0xAA, 0xFF}, // EOR
-        {0x1D, 0x55, 0xAA, 0xFF}, // ORA
-        {0xFD, 0x03, 0x01, 0x01}, // SBC
+  SECTION("AbsoluteX Mode Accumulator Has Correct Result")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x7D, 0x01, 0x01, 0x02}, // ADC
+      {0x3D, 0x03, 0x03, 0x03}, // AND
+      {0xBD, 0x04, 0x03, 0x03}, // LDA
+      {0x5D, 0x55, 0xAA, 0xFF}, // EOR
+      {0x1D, 0x55, 0xAA, 0xFF}, // ORA
+      {0xFD, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA2, 0x09, sectionOperation, 0xff, 0xff, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA2, 0x09, operation, 0xff, 0xff, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("AbsoluteX Mode Accumulator Has Correct Result When Wrapped", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x7D, 0x01, 0x01, 0x02}, // ADC
-        {0x3D, 0x03, 0x03, 0x03}, // AND
-        {0xBD, 0x04, 0x03, 0x03}, // LDA
-        {0x5D, 0x55, 0xAA, 0xFF}, // EOR
-        {0x1D, 0x55, 0xAA, 0xFF}, // ORA
-        {0xFD, 0x03, 0x01, 0x01}, // SBC
+  SECTION("AbsoluteX Mode Accumulator Has Correct Result When Wrapped")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x7D, 0x01, 0x01, 0x02}, // ADC
+      {0x3D, 0x03, 0x03, 0x03}, // AND
+      {0xBD, 0x04, 0x03, 0x03}, // LDA
+      {0x5D, 0x55, 0xAA, 0xFF}, // EOR
+      {0x1D, 0x55, 0xAA, 0xFF}, // ORA
+      {0xFD, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA2, 0x01, sectionOperation, 0x07, 0x00, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA2, 0x01, operation, 0x07, 0x00, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
     }
-}
+  }
 
-TEST_CASE("AbsoluteY Mode Accumulator Has Correct Result", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x79, 0x01, 0x01, 0x02}, // ADC
-        {0x39, 0x03, 0x03, 0x03}, // AND
-        {0xB9, 0x04, 0x03, 0x03}, // LDA
-        {0x59, 0x55, 0xAA, 0xFF}, // EOR
-        {0x19, 0x55, 0xAA, 0xFF}, // ORA
-        {0xF9, 0x03, 0x01, 0x01}, // SBC
+  SECTION("AbsoluteY Mode Accumulator Has Correct Result")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x79, 0x01, 0x01, 0x02}, // ADC
+      {0x39, 0x03, 0x03, 0x03}, // AND
+      {0xB9, 0x04, 0x03, 0x03}, // LDA
+      {0x59, 0x55, 0xAA, 0xFF}, // EOR
+      {0x19, 0x55, 0xAA, 0xFF}, // ORA
+      {0xF9, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA0, 0x01, sectionOperation, 0x07, 0x00, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA0, 0x01, operation, 0x07, 0x00, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("AbsoluteY Mode Accumulator Has Correct Result When Wrapped", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x79, 0x01, 0x01, 0x02}, // ADC
-        {0x39, 0x03, 0x03, 0x03}, // AND
-        {0xB9, 0x04, 0x03, 0x03}, // LDA
-        {0x59, 0x55, 0xAA, 0xFF}, // EOR
-        {0x19, 0x55, 0xAA, 0xFF}, // ORA
-        {0xF9, 0x03, 0x01, 0x01}, // SBC
+  SECTION("AbsoluteY Mode Accumulator Has Correct Result When Wrapped")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x79, 0x01, 0x01, 0x02}, // ADC
+      {0x39, 0x03, 0x03, 0x03}, // AND
+      {0xB9, 0x04, 0x03, 0x03}, // LDA
+      {0x59, 0x55, 0xAA, 0xFF}, // EOR
+      {0x19, 0x55, 0xAA, 0xFF}, // ORA
+      {0xF9, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA0, 0x09, sectionOperation, 0xff, 0xff, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA0, 0x09, operation, 0xff, 0xff, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("Indexed Indirect Mode Accumulator Has Correct Result", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x61, 0x01, 0x01, 0x02}, // ADC
-        {0x21, 0x03, 0x03, 0x03}, // AND
-        {0xA1, 0x04, 0x03, 0x03}, // LDA
-        {0x41, 0x55, 0xAA, 0xFF}, // EOR
-        {0x01, 0x55, 0xAA, 0xFF}, // ORA
-        {0xE1, 0x03, 0x01, 0x01}, // SBC
+  SECTION("Indexed Indirect Mode Accumulator Has Correct Result")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x61, 0x01, 0x01, 0x02}, // ADC
+      {0x21, 0x03, 0x03, 0x03}, // AND
+      {0xA1, 0x04, 0x03, 0x03}, // LDA
+      {0x41, 0x55, 0xAA, 0xFF}, // EOR
+      {0x01, 0x55, 0xAA, 0xFF}, // ORA
+      {0xE1, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA6, 0x06, sectionOperation, 0x01, 0x06, 0x9, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA6, 0x06, operation, 0x01, 0x06, 0x9, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("Indexed Indirect Mode Accumulator Has Correct Result When Wrapped", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x61, 0x01, 0x01, 0x02}, // ADC
-        {0x21, 0x03, 0x03, 0x03}, // AND
-        {0xA1, 0x04, 0x03, 0x03}, // LDA
-        {0x41, 0x55, 0xAA, 0xFF}, // EOR
-        {0x01, 0x55, 0xAA, 0xFF}, // ORA
-        {0xE1, 0x03, 0x01, 0x01}, // SBC
+  SECTION("Indexed Indirect Mode Accumulator Has Correct Result When Wrapped")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x61, 0x01, 0x01, 0x02}, // ADC
+      {0x21, 0x03, 0x03, 0x03}, // AND
+      {0xA1, 0x04, 0x03, 0x03}, // LDA
+      {0x41, 0x55, 0xAA, 0xFF}, // EOR
+      {0x01, 0x55, 0xAA, 0xFF}, // ORA
+      {0xE1, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA6, 0x06, sectionOperation, 0xff, 0x08, 0x9, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA6, 0x06, operation, 0xff, 0x08, 0x9, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("Indirect Indexed Mode Accumulator Has Correct Result", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x71, 0x01, 0x01, 0x02}, // ADC
-        {0x31, 0x03, 0x03, 0x03}, // AND
-        {0xB1, 0x04, 0x03, 0x03}, // LDA
-        {0x51, 0x55, 0xAA, 0xFF}, // EOR
-        {0x11, 0x55, 0xAA, 0xFF}, // ORA
-        {0xF1, 0x03, 0x01, 0x01}, // SBC
+  SECTION("Indirect Indexed Mode Accumulator Has Correct Result")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x71, 0x01, 0x01, 0x02}, // ADC
+      {0x31, 0x03, 0x03, 0x03}, // AND
+      {0xB1, 0x04, 0x03, 0x03}, // LDA
+      {0x51, 0x55, 0xAA, 0xFF}, // EOR
+      {0x11, 0x55, 0xAA, 0xFF}, // ORA
+      {0xF1, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA0, 0x01, sectionOperation, 0x07, 0x00, 0x08, 0x00, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA0, 0x01, operation, 0x07, 0x00, 0x08, 0x00, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
-}
+  }
 
-TEST_CASE("Indirect Indexed Mode Accumulator Has Correct Result When Wrapped", "[index][acc]")
-{
-    auto [operation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
-        {0x71, 0x01, 0x01, 0x02}, // ADC
-        {0x31, 0x03, 0x03, 0x03}, // AND
-        {0xB1, 0x04, 0x03, 0x03}, // LDA
-        {0x51, 0x55, 0xAA, 0xFF}, // EOR
-        {0x11, 0x55, 0xAA, 0xFF}, // ORA
-        {0xF1, 0x03, 0x01, 0x01}, // SBC
+  SECTION("Indirect Indexed Mode Accumulator Has Correct Result When Wrapped")
+  {
+    auto [sectionOperation, accumulatorInitialValue, valueToTest, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t, uint8_t>({
+      {0x71, 0x01, 0x01, 0x02}, // ADC
+      {0x31, 0x03, 0x03, 0x03}, // AND
+      {0xB1, 0x04, 0x03, 0x03}, // LDA
+      {0x51, 0x55, 0xAA, 0xFF}, // EOR
+      {0x11, 0x55, 0xAA, 0xFF}, // ORA
+      {0xF1, 0x03, 0x01, 0x01}, // SBC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(accumulatorInitialValue, 2) << ", 0x" << hex(valueToTest, 2) << ", 0x" << hex(expectedValue, 2) << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA0, 0x0A, sectionOperation, 0x07, 0x00, 0xFF, 0xFF, valueToTest};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA0, 0x0A, operation, 0x07, 0x00, 0xFF, 0xFF, valueToTest};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        REQUIRE(bus.cpu.a == expectedValue);
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
+  }
 }
-#pragma endregion Accumulator Address Tests
 
-#pragma region Index Address Tests
-TEST_CASE("ZeroPage Mode Index Has Correct Result", "[index][addressmode]")
+TEST_CASE("Index Address Tests", "[index][addressmode]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x0A;
+
+  SECTION("ZeroPage Mode Index Has Correct Result")
+  {
     auto [operation, valueToLoad, testXRegister] = GENERATE( table<uint8_t, uint8_t, bool>({
-        {0xA6, 0x03, true},  // LDX Zero Page
-        {0xB6, 0x03, true},  // LDX Zero Page Y
-        {0xA4, 0x03, false}, // LDY Zero Page
-        {0xB4, 0x03, false}, // LDY Zero Page X
+      {0xA6, 0x03, true},  // LDX Zero Page
+      {0xB6, 0x03, true},  // LDX Zero Page Y
+      {0xA4, 0x03, false}, // LDY Zero Page
+      {0xB4, 0x03, false}, // LDY Zero Page X
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, testXRegister)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(valueToLoad, 2) << ", " << testXRegister << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {operation, 0x03, 0x00, valueToLoad};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {operation, 0x03, 0x00, valueToLoad};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-
-        if (testXRegister)
-        {
-            REQUIRE(bus.cpu.x == valueToLoad);
-        }
-        else
-        {
-            REQUIRE(bus.cpu.y == valueToLoad);
-        }
+      if (testXRegister)
+      {
+        REQUIRE(bus.cpu.getRegister(bus.cpu.X) == valueToLoad);
+      }
+      else
+      {
+        REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == valueToLoad);
+      }
     }
-}
+  }
 
-TEST_CASE("ZeroPageX Mode Index Has Correct Result When Wrapped", "[index][addressmode]")
-{
+  SECTION("ZeroPageX Mode Index Has Correct Result When Wrapped")
+  {
     auto [operation, valueToLoad, testXRegister] = GENERATE( table<uint8_t, uint8_t, bool>({
-        {0xB6, 0x03, true},  // LDX Zero Page Y
-        {0xB4, 0x03, false}, // LDY Zero Page X
+      {0xB6, 0x03, true},  // LDX Zero Page Y
+      {0xB4, 0x03, false}, // LDY Zero Page X
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, testXRegister)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(valueToLoad, 2) << ", " << testXRegister << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t XRegister = testXRegister ? 0xA0 : 0xA2;
 
-        uint8_t XRegister = testXRegister ? 0xA0 : 0xA2;
+      uint8_t program[]= {XRegister, 0xFF, operation, 0x06, 0x00, valueToLoad};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {XRegister, 0xFF, operation, 0x06, 0x00, valueToLoad};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
-
-        if (testXRegister)
-        {
-            REQUIRE(bus.cpu.x == valueToLoad);
-        }
-        else
-        {
-            REQUIRE(bus.cpu.y == valueToLoad);
-        }
+      if (testXRegister)
+      {
+        REQUIRE(bus.cpu.getRegister(bus.cpu.X) == valueToLoad);
+      }
+      else
+      {
+        REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == valueToLoad);
+      }
     }
-}
+  }
 
-TEST_CASE("Absolute Mode Index Has Correct Result", "[index][addressmode]")
-{
+  SECTION("Absolute Mode Index Has Correct Result")
+  {
     auto [operation, valueToLoad, testXRegister] = GENERATE( table<uint8_t, uint8_t, bool>({
-        {0xAE, 0x03, true},  // LDX Absolute
-        {0xAC, 0x03, false}, // LDY Absolute
+      {0xAE, 0x03, true},  // LDX Absolute
+      {0xAC, 0x03, false}, // LDY Absolute
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, testXRegister)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", 0x" << hex(valueToLoad, 2) << ", " << testXRegister << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {operation, 0x04, 0x00, 0x00, valueToLoad};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {operation, 0x04, 0x00, 0x00, valueToLoad};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-
-        if (testXRegister)
-        {
-            REQUIRE(hex(bus.cpu.x, 2) == hex(valueToLoad, 2));
-        }
-        else
-        {
-            REQUIRE(hex(bus.cpu.y, 2) == hex(valueToLoad, 2));
-        }
+      if (testXRegister)
+      {
+        REQUIRE(hex(bus.cpu.getRegister(bus.cpu.X), 2) == hex(valueToLoad, 2));
+      }
+      else
+      {
+        REQUIRE(hex(bus.cpu.getRegister(bus.cpu.Y), 2) == hex(valueToLoad, 2));
+      }
     }
+  }
 }
-#pragma endregion Index Address Tests
 
-#pragma region Compare Address Tests
-#pragma endregion Compare Address Tests
-
-#pragma region Decrement/Increment Address Tests
-#pragma endregion Decrement/Increment Address Tests
-
-#pragma region Store In Memory Address Tests
-#pragma endregion Store In Memory Address Tests
-
-#pragma region Cycle Tests
-TEST_CASE("NumberOfCyclesRemaining Correct After Operations That Do Not Wrap", "[counter][cycles]")
+TEST_CASE("Compare Address Tests", "[compare][address]")
 {
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x0A;
+
+  SECTION("Immediate Mode Compare Operation Has Correct Result")
+  {
+    auto [operation, accumulatorValue, memoryValue, mode] = GENERATE( table<uint8_t, uint8_t, uint8_t, ProcessorTests::RegisterMode>({
+      {0xC9, 0xFF, 0x00, ProcessorTests::Accumulator}, //CMP Immediate
+      {0xE0, 0xFF, 0x00, ProcessorTests::XRegister}, //CPX Immediate
+      {0xC0, 0xFF, 0x00, ProcessorTests::YRegister} //CPY Immediate
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, mode)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t loadOperation;
+      switch (mode)
+      {
+        case ProcessorTests::Accumulator:
+          loadOperation = 0xA9;
+          break;
+        case ProcessorTests::XRegister:
+          loadOperation = 0xA2;
+          break;
+        case ProcessorTests::YRegister:
+          loadOperation = 0xA0;
+          break;
+      }
+
+      uint8_t program[]= {loadOperation, accumulatorValue, operation, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == false);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == false);
+    }
+  }
+
+  SECTION("ZeroPage Modes Compare Operation Has Correct Result")
+  {
+    auto [operation, accumulatorValue, memoryValue, mode] = GENERATE( table<uint8_t, uint8_t, uint8_t, ProcessorTests::RegisterMode>({
+      {0xC5, 0xFF, 0x00, ProcessorTests::Accumulator}, //CMP Zero Page
+      {0xD5, 0xFF, 0x00, ProcessorTests::Accumulator}, //CMP Zero Page X
+      {0xE4, 0xFF, 0x00, ProcessorTests::XRegister}, //CPX Zero Page
+      {0xC4, 0xFF, 0x00, ProcessorTests::YRegister}, //CPY Zero Page
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, mode)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t loadOperation;
+      switch (mode)
+      {
+        case ProcessorTests::Accumulator:
+          loadOperation = 0xA9;
+          break;
+        case ProcessorTests::XRegister:
+          loadOperation = 0xA2;
+          break;
+        case ProcessorTests::YRegister:
+          loadOperation = 0xA0;
+          break;
+      }
+
+      uint8_t program[]= {loadOperation, accumulatorValue, operation, 0x04, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == true);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+    }
+  }
+
+  SECTION("Absolute Modes Compare Operation Has Correct Result")
+  {
+    auto [operation, accumulatorValue, memoryValue, mode] = GENERATE( table<uint8_t, uint8_t, uint8_t, ProcessorTests::RegisterMode>({
+      {0xCD, 0xFF, 0x00, ProcessorTests::Accumulator}, //CMP Absolute
+      {0xDD, 0xFF, 0x00, ProcessorTests::Accumulator}, //CMP Absolute X
+      {0xEC, 0xFF, 0x00, ProcessorTests::XRegister}, //CPX Absolute
+      {0xCC, 0xFF, 0x00, ProcessorTests::YRegister}, //CPY Absolute
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, mode)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t loadOperation;
+      switch (mode)
+      {
+        case ProcessorTests::Accumulator:
+          loadOperation = 0xA9;
+          break;
+        case ProcessorTests::XRegister:
+          loadOperation = 0xA2;
+          break;
+        case ProcessorTests::YRegister:
+          loadOperation = 0xA0;
+          break;
+      }
+
+      uint8_t program[]= {loadOperation, accumulatorValue, operation, 0x05, 0x00, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == true);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+    }
+  }
+
+  SECTION("Indexed Indirect Mode CMP Operation Has Correct Result")
+  {
+    auto [operation, accumulatorValue, memoryValue, addressWraps] = GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
+      {0xC1, 0xFF, 0x00, true},
+      {0xC1, 0xFF, 0x00, false},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, addressWraps)
+    ) {
+      bus.cpu.reset();
+
+      std::vector<uint8_t> program;
+      if (addressWraps) {
+        program = {0xA9, accumulatorValue, 0xA6, 0x06, operation, 0xff, 0x08, 0x9, 0x00, memoryValue};
+      } else {
+        program = {0xA9, accumulatorValue, 0xA6, 0x06, operation, 0x01, 0x06, 0x9, 0x00, memoryValue};
+      }
+
+      bus.cpu.LoadProgram(0x0000, program.data(), program.size(), 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
+
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == true);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+    }
+  }
+
+  SECTION("Indirect Indexed Mode CMP Operation Has Correct Result")
+  {
+    auto [operation, accumulatorValue, memoryValue, addressWraps] = GENERATE( table<uint8_t, uint8_t, uint8_t, bool>({
+      {0xD1, 0xFF, 0x00, true},
+      {0xD1, 0xFF, 0x00, false},
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, addressWraps)
+    ) {
+      bus.cpu.reset();
+
+      std::vector<uint8_t> program;
+      if (addressWraps) {
+        program = {0xA9, accumulatorValue, 0x84, 0x06, operation, 0x07, 0x0A, 0xFF, 0xFF, memoryValue};
+      } else {
+        program = {0xA9, accumulatorValue, 0x84, 0x06, operation, 0x07, 0x01, 0x08, 0x00, memoryValue};
+      }
+
+      bus.cpu.LoadProgram(0x0000, program.data(), program.size(), 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+      bus.cpu.tick();
+
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == false);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == true);
+      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == true);
+    }
+  }
+}
+
+TEST_CASE("Decrement/Increment Address Tests", "[inc][dec][address]")
+{
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x0A;
+
+  SECTION("Zero Page DEC INC Has Correct Result")
+  {
+    auto [operation, memoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t>({
+      {0xC6, 0xFF, 0xFE}, //DEC Zero Page
+      {0xD6, 0xFF, 0xFE}, //DEC Zero Page X
+      {0xE6, 0xFF, 0x00}, //INC Zero Page
+      {0xF6, 0xFF, 0x00}, //INC Zero Page X
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), memoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[]= {operation, 0x02, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+
+      REQUIRE(hex(bus.read(0x02, true), 2) == hex(expectedValue, 2));
+    }
+  }
+
+  SECTION("Absolute DEC INC Has Correct Result")
+  {
+    auto [operation, memoryValue, expectedValue] = GENERATE( table<uint8_t, uint8_t, uint8_t>({
+      {0xCE, 0xFF, 0xFE}, //DEC Zero Page
+      {0xDE, 0xFF, 0xFE}, //DEC Zero Page X
+      {0xEE, 0xFF, 0x00}, //INC Zero Page
+      {0xFE, 0xFF, 0x00}, //INC Zero Page X
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
+      bus.cpu.executioner.getOperation(operation), memoryValue, expectedValue)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t program[]= {operation, 0x02, memoryValue};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+
+      REQUIRE(hex(bus.read(0x03, true), 2) == hex(expectedValue, 2));
+    }
+  }
+}
+
+TEST_CASE("Store In Memory Address Tests", "[storage][address]")
+{
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  uint8_t operation = 0x0A;
+
+  SECTION("ZeroPage Mode Memory Has Correct Result")
+  {
+    auto [operation, mode] = GENERATE( table<uint8_t, ProcessorTests::RegisterMode>({
+      {0x85, ProcessorTests::Accumulator}, // STA Zero Page
+      {0x95, ProcessorTests::Accumulator}, // STA Zero Page X
+      {0x86, ProcessorTests::XRegister}, // STX Zero Page
+      {0x96, ProcessorTests::XRegister}, // STX Zero Page Y
+      {0x84, ProcessorTests::YRegister}, // STY Zero Page
+      {0x94, ProcessorTests::YRegister}, // STY Zero Page X
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}({}) works",
+      bus.cpu.executioner.getOperation(operation), mode)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t loadOperation;
+      switch (mode)
+      {
+        case ProcessorTests::Accumulator:
+          loadOperation = 0xA9;
+          break;
+        case ProcessorTests::XRegister:
+          loadOperation = 0xA2;
+          break;
+        case ProcessorTests::YRegister:
+          loadOperation = 0xA0;
+          break;
+      }
+
+      uint8_t program[]= {loadOperation, 0x04, operation, 0x00, 0x05};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+
+      REQUIRE(hex(bus.read(0x04, true), 2) == hex(0x05, 2));
+    }
+  }
+
+  SECTION("Absolute_Mode_Memory_Has_Correct_Result")
+  {
+    auto [operation, valueToLoad, mode] = GENERATE( table<uint8_t, uint8_t, ProcessorTests::RegisterMode>({
+      {0x8D, 0x03, ProcessorTests::Accumulator}, // STA Absolute
+      {0x9D, 0x03, ProcessorTests::Accumulator}, // STA Absolute X
+      {0x99, 0x03, ProcessorTests::Accumulator}, // STA Absolute X
+      {0x8E, 0x03, ProcessorTests::XRegister}, // STX Zero Page
+      {0x8C, 0x03, ProcessorTests::YRegister}, // STY Zero Page
+    }));
+
+    SECTION(
+      fmt::format("Check if {:s}(0x{:02X}, {}) works",
+      bus.cpu.executioner.getOperation(operation), valueToLoad, mode)
+    ) {
+      bus.cpu.reset();
+
+      uint8_t loadOperation;
+      switch (mode)
+      {
+        case ProcessorTests::Accumulator:
+          loadOperation = 0xA9;
+          break;
+        case ProcessorTests::XRegister:
+          loadOperation = 0xA2;
+          break;
+        case ProcessorTests::YRegister:
+          loadOperation = 0xA0;
+          break;
+      }
+
+      uint8_t program[]= {loadOperation, valueToLoad, operation, 0x04};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+
+      bus.cpu.tick();
+      bus.cpu.tick();
+
+      REQUIRE(hex(bus.read(0x04, true), 2) == hex(valueToLoad, 2));
+    }
+  }
+}
+
+TEST_CASE("Cycle Tests")
+{
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  //uint8_t operation = 0x0A;
+
+  SECTION("NumberOfCyclesRemaining Correct After Operations That Do Not Wrap", "[counter][cycles]")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x69, 2}, // ADC Immediate
-        {0x65, 3}, // ADC Zero Page
-        {0x75, 4}, // ADC Zero Page X
-        {0x6D, 4}, // ADC Absolute
-        {0x7D, 4}, // ADC Absolute X
-        {0x79, 4}, // ADC Absolute Y
-        {0x61, 6}, // ADC Indirect X
-        {0x71, 5}, // ADC Indirect Y
-        {0x29, 2}, // AND Immediate
-        {0x25, 3}, // AND Zero Page
-        {0x35, 4}, // AND Zero Page X
-        {0x2D, 4}, // AND Absolute
-        {0x3D, 4}, // AND Absolute X
-        {0x39, 4}, // AND Absolute Y
-        {0x21, 6}, // AND Indirect X
-        {0x31, 5}, // AND Indirect Y
-        {0x0A, 2}, // ASL Accumulator
-        {0x06, 5}, // ASL Zero Page
-        {0x16, 6}, // ASL Zero Page X
-        {0x0E, 6}, // ASL Absolute
-        {0x1E, 7}, // ASL Absolute X
-        {0x24, 3}, // BIT Zero Page
-        {0x2C, 4}, // BIT Absolute
-        {0x00, 7}, // BRK Implied
-        {0x18, 2}, // CLC Implied
-        {0xD8, 2}, // CLD Implied
-        {0x58, 2}, // CLI Implied
-        {0xB8, 2}, // CLV Implied
-        {0xC9, 2}, // CMP Immediate
-        {0xC5, 3}, // CMP ZeroPage
-        {0xD5, 4}, // CMP Zero Page X
-        {0xCD, 4}, // CMP Absolute
-        {0xDD, 4}, // CMP Absolute X
-        {0xD9, 4}, // CMP Absolute Y
-        {0xC1, 6}, // CMP Indirect X
-        {0xD1, 5}, // CMP Indirect Y
-        {0xE0, 2}, // CPX Immediate
-        {0xE4, 3}, // CPX ZeroPage
-        {0xEC, 4}, // CPX Absolute
-        {0xC0, 2}, // CPY Immediate
-        {0xC4, 3}, // CPY ZeroPage
-        {0xCC, 4}, // CPY Absolute
-        {0xC6, 5}, // DEC Zero Page
-        {0xD6, 6}, // DEC Zero Page X
-        {0xCE, 6}, // DEC Absolute
-        {0xDE, 7}, // DEC Absolute X
-        {0xCA, 2}, // DEX Implied
-        {0x88, 2}, // DEY Implied
-        {0x49, 2}, // EOR Immediate
-        {0x45, 3}, // EOR Zero Page
-        {0x55, 4}, // EOR Zero Page X
-        {0x4D, 4}, // EOR Absolute
-        {0x5D, 4}, // EOR Absolute X
-        {0x59, 4}, // EOR Absolute Y
-        {0x41, 6}, // EOR Indirect X
-        {0x51, 5}, // EOR Indirect Y
-        {0xE6, 5}, // INC Zero Page
-        {0xF6, 6}, // INC Zero Page X
-        {0xEE, 6}, // INC Absolute
-        {0xFE, 7}, // INC Absolute X
-        {0xE8, 2}, // INX Implied
-        {0xC8, 2}, // INY Implied
-        {0x4C, 3}, // JMP Absolute
-        {0x6C, 5}, // JMP Indirect
-        {0x20, 6}, // JSR Absolute
-        {0xA9, 2}, // LDA Immediate
-        {0xA5, 3}, // LDA Zero Page
-        {0xB5, 4}, // LDA Zero Page X
-        {0xAD, 4}, // LDA Absolute
-        {0xBD, 4}, // LDA Absolute X
-        {0xB9, 4}, // LDA Absolute Y
-        {0xA1, 6}, // LDA Indirect X
-        {0xB1, 5}, // LDA Indirect Y
-        {0xA2, 2}, // LDX Immediate
-        {0xA6, 3}, // LDX Zero Page
-        {0xB6, 4}, // LDX Zero Page Y
-        {0xAE, 4}, // LDX Absolute
-        {0xBE, 4}, // LDX Absolute Y
-        {0xA0, 2}, // LDY Immediate
-        {0xA4, 3}, // LDY Zero Page
-        {0xB4, 4}, // LDY Zero Page Y
-        {0xAC, 4}, // LDY Absolute
-        {0xBC, 4}, // LDY Absolute Y
-        {0x4A, 2}, // LSR Accumulator
-        {0x46, 5}, // LSR Zero Page
-        {0x56, 6}, // LSR Zero Page X
-        {0x4E, 6}, // LSR Absolute
-        {0x5E, 7}, // LSR Absolute X
-        {0xEA, 2}, // NOP Implied
-        {0x09, 2}, // ORA Immediate
-        {0x05, 3}, // ORA Zero Page
-        {0x15, 4}, // ORA Zero Page X
-        {0x0D, 4}, // ORA Absolute
-        {0x1D, 4}, // ORA Absolute X
-        {0x19, 4}, // ORA Absolute Y
-        {0x01, 6}, // ORA Indirect X
-        {0x11, 5}, // ORA Indirect Y
-        {0x48, 3}, // PHA Implied
-        {0x08, 3}, // PHP Implied
-        {0x68, 4}, // PLA Implied
-        {0x28, 4}, // PLP Implied
-        {0x2A, 2}, // ROL Accumulator
-        {0x26, 5}, // ROL Zero Page
-        {0x36, 6}, // ROL Zero Page X
-        {0x2E, 6}, // ROL Absolute
-        {0x3E, 7}, // ROL Absolute X
-        {0x6A, 2}, // ROR Accumulator
-        {0x66, 5}, // ROR Zero Page
-        {0x76, 6}, // ROR Zero Page X
-        {0x6E, 6}, // ROR Absolute
-        {0x7E, 7}, // ROR Absolute X
-        {0x40, 6}, // RTI Implied
-        {0x60, 6}, // RTS Implied
-        {0xE9, 2}, // SBC Immediate
-        {0xE5, 3}, // SBC Zero Page
-        {0xF5, 4}, // SBC Zero Page X
-        {0xED, 4}, // SBC Absolute
-        {0xFD, 4}, // SBC Absolute X
-        {0xF9, 4}, // SBC Absolute Y
-        {0xE1, 6}, // SBC Indirect X
-        {0xF1, 5}, // SBC Indirect Y
-        {0x38, 2}, // SEC Implied
-        {0xF8, 2}, // SED Implied
-        {0x78, 2}, // SEI Implied
-        {0x85, 3}, // STA ZeroPage
-        {0x95, 4}, // STA Zero Page X
-        {0x8D, 4}, // STA Absolute
-        {0x9D, 5}, // STA Absolute X
-        {0x99, 5}, // STA Absolute Y
-        {0x81, 6}, // STA Indirect X
-        {0x91, 6}, // STA Indirect Y
-        {0x86, 3}, // STX Zero Page
-        {0x96, 4}, // STX Zero Page Y
-        {0x8E, 4}, // STX Absolute
-        {0x84, 3}, // STY Zero Page
-        {0x94, 4}, // STY Zero Page X
-        {0x8C, 4}, // STY Absolute
-        {0xAA, 2}, // TAX Implied
-        {0xA8, 2}, // TAY Implied
-        {0xBA, 2}, // TSX Implied
-        {0x8A, 2}, // TXA Implied
-        {0x9A, 2}, // TXS Implied
-        {0x98, 2}, // TYA Implied
+      {0x69, 2}, // ADC Immediate
+      {0x65, 3}, // ADC Zero Page
+      {0x75, 4}, // ADC Zero Page X
+      {0x6D, 4}, // ADC Absolute
+      {0x7D, 4}, // ADC Absolute X
+      {0x79, 4}, // ADC Absolute Y
+      {0x61, 6}, // ADC Indirect X
+      {0x71, 5}, // ADC Indirect Y
+      {0x29, 2}, // AND Immediate
+      {0x25, 3}, // AND Zero Page
+      {0x35, 4}, // AND Zero Page X
+      {0x2D, 4}, // AND Absolute
+      {0x3D, 4}, // AND Absolute X
+      {0x39, 4}, // AND Absolute Y
+      {0x21, 6}, // AND Indirect X
+      {0x31, 5}, // AND Indirect Y
+      {0x0A, 2}, // ASL Accumulator
+      {0x06, 5}, // ASL Zero Page
+      {0x16, 6}, // ASL Zero Page X
+      {0x0E, 6}, // ASL Absolute
+      {0x1E, 7}, // ASL Absolute X
+      {0x24, 3}, // BIT Zero Page
+      {0x2C, 4}, // BIT Absolute
+      {0x00, 7}, // BRK Implied
+      {0x18, 2}, // CLC Implied
+      {0xD8, 2}, // CLD Implied
+      {0x58, 2}, // CLI Implied
+      {0xB8, 2}, // CLV Implied
+      {0xC9, 2}, // CMP Immediate
+      {0xC5, 3}, // CMP ZeroPage
+      {0xD5, 4}, // CMP Zero Page X
+      {0xCD, 4}, // CMP Absolute
+      {0xDD, 4}, // CMP Absolute X
+      {0xD9, 4}, // CMP Absolute Y
+      {0xC1, 6}, // CMP Indirect X
+      {0xD1, 5}, // CMP Indirect Y
+      {0xE0, 2}, // CPX Immediate
+      {0xE4, 3}, // CPX ZeroPage
+      {0xEC, 4}, // CPX Absolute
+      {0xC0, 2}, // CPY Immediate
+      {0xC4, 3}, // CPY ZeroPage
+      {0xCC, 4}, // CPY Absolute
+      {0xC6, 5}, // DEC Zero Page
+      {0xD6, 6}, // DEC Zero Page X
+      {0xCE, 6}, // DEC Absolute
+      {0xDE, 7}, // DEC Absolute X
+      {0xCA, 2}, // DEX Implied
+      {0x88, 2}, // DEY Implied
+      {0x49, 2}, // EOR Immediate
+      {0x45, 3}, // EOR Zero Page
+      {0x55, 4}, // EOR Zero Page X
+      {0x4D, 4}, // EOR Absolute
+      {0x5D, 4}, // EOR Absolute X
+      {0x59, 4}, // EOR Absolute Y
+      {0x41, 6}, // EOR Indirect X
+      {0x51, 5}, // EOR Indirect Y
+      {0xE6, 5}, // INC Zero Page
+      {0xF6, 6}, // INC Zero Page X
+      {0xEE, 6}, // INC Absolute
+      {0xFE, 7}, // INC Absolute X
+      {0xE8, 2}, // INX Implied
+      {0xC8, 2}, // INY Implied
+      {0x4C, 3}, // JMP Absolute
+      {0x6C, 5}, // JMP Indirect
+      {0x20, 6}, // JSR Absolute
+      {0xA9, 2}, // LDA Immediate
+      {0xA5, 3}, // LDA Zero Page
+      {0xB5, 4}, // LDA Zero Page X
+      {0xAD, 4}, // LDA Absolute
+      {0xBD, 4}, // LDA Absolute X
+      {0xB9, 4}, // LDA Absolute Y
+      {0xA1, 6}, // LDA Indirect X
+      {0xB1, 5}, // LDA Indirect Y
+      {0xA2, 2}, // LDX Immediate
+      {0xA6, 3}, // LDX Zero Page
+      {0xB6, 4}, // LDX Zero Page Y
+      {0xAE, 4}, // LDX Absolute
+      {0xBE, 4}, // LDX Absolute Y
+      {0xA0, 2}, // LDY Immediate
+      {0xA4, 3}, // LDY Zero Page
+      {0xB4, 4}, // LDY Zero Page Y
+      {0xAC, 4}, // LDY Absolute
+      {0xBC, 4}, // LDY Absolute Y
+      {0x4A, 2}, // LSR Accumulator
+      {0x46, 5}, // LSR Zero Page
+      {0x56, 6}, // LSR Zero Page X
+      {0x4E, 6}, // LSR Absolute
+      {0x5E, 7}, // LSR Absolute X
+      {0xEA, 2}, // NOP Implied
+      {0x09, 2}, // ORA Immediate
+      {0x05, 3}, // ORA Zero Page
+      {0x15, 4}, // ORA Zero Page X
+      {0x0D, 4}, // ORA Absolute
+      {0x1D, 4}, // ORA Absolute X
+      {0x19, 4}, // ORA Absolute Y
+      {0x01, 6}, // ORA Indirect X
+      {0x11, 5}, // ORA Indirect Y
+      {0x48, 3}, // PHA Implied
+      {0x08, 3}, // PHP Implied
+      {0x68, 4}, // PLA Implied
+      {0x28, 4}, // PLP Implied
+      {0x2A, 2}, // ROL Accumulator
+      {0x26, 5}, // ROL Zero Page
+      {0x36, 6}, // ROL Zero Page X
+      {0x2E, 6}, // ROL Absolute
+      {0x3E, 7}, // ROL Absolute X
+      {0x6A, 2}, // ROR Accumulator
+      {0x66, 5}, // ROR Zero Page
+      {0x76, 6}, // ROR Zero Page X
+      {0x6E, 6}, // ROR Absolute
+      {0x7E, 7}, // ROR Absolute X
+      {0x40, 6}, // RTI Implied
+      {0x60, 6}, // RTS Implied
+      {0xE9, 2}, // SBC Immediate
+      {0xE5, 3}, // SBC Zero Page
+      {0xF5, 4}, // SBC Zero Page X
+      {0xED, 4}, // SBC Absolute
+      {0xFD, 4}, // SBC Absolute X
+      {0xF9, 4}, // SBC Absolute Y
+      {0xE1, 6}, // SBC Indirect X
+      {0xF1, 5}, // SBC Indirect Y
+      {0x38, 2}, // SEC Implied
+      {0xF8, 2}, // SED Implied
+      {0x78, 2}, // SEI Implied
+      {0x85, 3}, // STA ZeroPage
+      {0x95, 4}, // STA Zero Page X
+      {0x8D, 4}, // STA Absolute
+      {0x9D, 5}, // STA Absolute X
+      {0x99, 5}, // STA Absolute Y
+      {0x81, 6}, // STA Indirect X
+      {0x91, 6}, // STA Indirect Y
+      {0x86, 3}, // STX Zero Page
+      {0x96, 4}, // STX Zero Page Y
+      {0x8E, 4}, // STX Absolute
+      {0x84, 3}, // STY Zero Page
+      {0x94, 4}, // STY Zero Page X
+      {0x8C, 4}, // STY Absolute
+      {0xAA, 2}, // TAX Implied
+      {0xA8, 2}, // TAY Implied
+      {0xBA, 2}, // TSX Implied
+      {0x8A, 2}, // TXA Implied
+      {0x9A, 2}, // TXS Implied
+      {0x98, 2}, // TYA Implied
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}({}) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[]= {operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
 
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //printf("startingNumberOfCycles: %d\n", startingNumberOfCycles);
-
-        bus.cpu.tick();
-
-        //                      EXPECTED                            ACTUAL
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When In AbsoluteX And Wrap", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When In AbsoluteX And Wrap")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x7D, 5}, // ADC Absolute X
-        {0x3D, 5}, // AND Absolute X
-        {0x1E, 7}, // ASL Absolute X
-        {0xDD, 5}, // CMP Absolute X
-        {0xDE, 7}, // DEC Absolute X
-        {0x5D, 5}, // EOR Absolute X
-        {0xFE, 7}, // INC Absolute X
-        {0xBD, 5}, // LDA Absolute X
-        {0xBC, 5}, // LDY Absolute X
-        {0x5E, 7}, // LSR Absolute X
-        {0x1D, 5}, // ORA Absolute X
-        {0x3E, 7}, // ROL Absolute X
-        {0x7E, 7}, // ROR Absolute X
-        {0xFD, 5}, // SBC Absolute X
-        {0x9D, 5}, // STA Absolute X
-        {0x99, 5}, // STA Absolute Y
+      {0x7D, 5}, // ADC Absolute X
+      {0x3D, 5}, // AND Absolute X
+      {0x1E, 7}, // ASL Absolute X
+      {0xDD, 5}, // CMP Absolute X
+      {0xDE, 7}, // DEC Absolute X
+      {0x5D, 5}, // EOR Absolute X
+      {0xFE, 7}, // INC Absolute X
+      {0xBD, 5}, // LDA Absolute X
+      {0xBC, 5}, // LDY Absolute X
+      {0x5E, 7}, // LSR Absolute X
+      {0x1D, 5}, // ORA Absolute X
+      {0x3E, 7}, // ROL Absolute X
+      {0x7E, 7}, // ROR Absolute X
+      {0xFD, 5}, // SBC Absolute X
+      {0x9D, 5}, // STA Absolute X
+      {0x99, 5}, // STA Absolute Y
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(%d) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA6, 0x06, operation, 0xff, 0xff, 0x00, 0x03};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[]= {0xA6, 0x06, operation, 0xff, 0xff, 0x00, 0x03};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When In AbsoluteY And Wrap", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When In AbsoluteY And Wrap")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x79, 5}, // ADC Absolute Y
-        {0x39, 5}, // AND Absolute Y
-        {0xD9, 5}, // CMP Absolute Y
-        {0x59, 5}, // EOR Absolute Y
-        {0xB9, 5}, // LDA Absolute Y
-        {0xBE, 5}, // LDX Absolute Y
-        {0x19, 5}, // ORA Absolute Y
-        {0xF9, 5}, // SBC Absolute Y
+      {0x79, 5}, // ADC Absolute Y
+      {0x39, 5}, // AND Absolute Y
+      {0xD9, 5}, // CMP Absolute Y
+      {0x59, 5}, // EOR Absolute Y
+      {0xB9, 5}, // LDA Absolute Y
+      {0xBE, 5}, // LDX Absolute Y
+      {0x19, 5}, // ORA Absolute Y
+      {0xF9, 5}, // SBC Absolute Y
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(%d) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA4, 0x06, operation, 0xff, 0xff, 0x00, 0x03};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[]= {0xA4, 0x06, operation, 0xff, 0xff, 0x00, 0x03};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When In IndirectIndexed And Wrap", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When In IndirectIndexed And Wrap")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x71, 6}, // ADC Indirect Y
-        {0x31, 6}, // AND Indirect Y
-        {0xB1, 6}, // LDA Indirect Y
-        {0xD1, 6}, // CMP Indirect Y
-        {0x51, 6}, // EOR Indirect Y
-        {0x11, 6}, // ORA Indirect Y
-        {0xF1, 6}, // SBC Indirect Y
-        {0x91, 6}, // STA Indirect Y
+      {0x71, 6}, // ADC Indirect Y
+      {0x31, 6}, // AND Indirect Y
+      {0xB1, 6}, // LDA Indirect Y
+      {0xD1, 6}, // CMP Indirect Y
+      {0x51, 6}, // EOR Indirect Y
+      {0x11, 6}, // ORA Indirect Y
+      {0xF1, 6}, // SBC Indirect Y
+      {0x91, 6}, // STA Indirect Y
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(%d) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA0, 0x04, operation, 0x05, 0x08, 0xFF, 0xFF, 0x03};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu.tick();
 
-        uint8_t program[]= {0xA0, 0x04, operation, 0x05, 0x08, 0xFF, 0xFF, 0x03};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Carry Set", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Carry Set")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x90, 2}, // BCC
-        {0xB0, 3}, // BCS
+      {0x90, 2}, // BCC
+      {0xB0, 3}, // BCS
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(%d) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0x38, operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x00, 2));
 
-        uint8_t program[]= {0x38, operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Carry Clear", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Carry Clear")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x90, 3}, // BCC
-        {0xB0, 2}, // BCS
+      {0x90, 3}, // BCC
+      {0xB0, 2}, // BCS
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(%d) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0x18, operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x00, 2));
 
-        uint8_t program[]= {0x18, operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Carry And Wrap", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Carry And Wrap")
+  {
     auto [operation, numberOfCyclesUsed, isCarrySet, wrapRight] = GENERATE( table<uint8_t, uint8_t, bool, bool>({
-        {0x90, 4, false, true},  //BCC
-        {0x90, 4, false, false}, //BCC
-        {0xB0, 4, true, true},   //BCC
-        {0xB0, 4, true, false},  //BCC
+      {0x90, 4, false, true},  //BCC
+      {0x90, 4, false, false}, //BCC
+      {0xB0, 4, true, true},   //BCC
+      {0xB0, 4, true, false},  //BCC
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}({:d}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed, isCarrySet, wrapRight)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t carryOperation = isCarrySet ? 0x38 : 0x18;
+      uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
+      uint8_t amountToMove = wrapRight ? 0x0F : 0x84;
 
-        uint8_t carryOperation = isCarrySet ? 0x38 : 0x18;
-        uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
-        uint8_t amountToMove = wrapRight ? 0x0F : 0x84;
+      uint8_t program[]= {carryOperation, operation, amountToMove, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
+      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x00, 2));
 
-        uint8_t program[]= {carryOperation, operation, amountToMove, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Zero Set", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Zero Set")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0xF0, 3}, // BEQ
-        {0xD0, 2}, // BNE
+      {0xF0, 3}, // BEQ
+      {0xD0, 2}, // BNE
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(%d) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, 0x00, operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, 0x00, operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Zero Clear", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Zero Clear")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x90, 3}, // BEQ
-        {0xB0, 2}, // BNE
+      {0x90, 3}, // BEQ
+      {0xB0, 2}, // BNE
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(%d) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, 0x01, operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, 0x01, operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Zero And Wrap", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Zero And Wrap")
+  {
     auto [operation, numberOfCyclesUsed, isZeroSet, wrapRight] = GENERATE( table<uint8_t, uint8_t, bool, bool>({
-        {0xF0, 4, true, true},  //BEQ
-        {0xF0, 4, true, false}, //BEQ
-        {0xD0, 4, false, true},   //BNE
-        {0xD0, 4, false, false},  //BNE
+      {0xF0, 4, true, true},  //BEQ
+      {0xF0, 4, true, false}, //BEQ
+      {0xD0, 4, false, true},   //BNE
+      {0xD0, 4, false, false},  //BNE
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}({:d}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed, isZeroSet, wrapRight)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t newAccumulatorValue = isZeroSet ? 0x00 : 0x01;
+      uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
+      uint8_t amountToMove = wrapRight ? 0x0D : 0x84;
 
-        uint8_t newAccumulatorValue = isZeroSet ? 0x00 : 0x01;
-        uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
-        uint8_t amountToMove = wrapRight ? 0x0D : 0x84;
+      uint8_t program[]= {0xA9, newAccumulatorValue, operation, amountToMove, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, newAccumulatorValue, operation, amountToMove, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Negative Set", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Negative Set")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x30, 3}, // BEQ
-        {0x10, 2}, // BNE
+      {0x30, 3}, // BEQ
+      {0x10, 2}, // BNE
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(%d) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, 0x80, operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, 0x80, operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Negative Clear", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Negative Clear")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x30, 2}, // BEQ
-        {0x10, 3}, // BNE
+      {0x30, 2}, // BEQ
+      {0x10, 3}, // BNE
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}(%d) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, 0x79, operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, 0x79, operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
 
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Negative And Wrap", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Negative And Wrap")
+  {
     auto [operation, numberOfCyclesUsed, isNegativeSet, wrapRight] = GENERATE( table<uint8_t, uint8_t, bool, bool>({
-        {0x30, 4, true, true},  //BEQ
-        {0x30, 4, true, false}, //BEQ
-        {0x10, 4, false, true},   //BNE
-        {0x10, 4, false, false},  //BNE
+      {0x30, 4, true, true},  //BEQ
+      {0x30, 4, true, false}, //BEQ
+      {0x10, 4, false, true},   //BNE
+      {0x10, 4, false, false},  //BNE
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}({:d}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed, isNegativeSet, wrapRight)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t newAccumulatorValue = isNegativeSet ? 0x80 : 0x79;
+      uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
+      uint8_t amountToMove = wrapRight ? 0x0D : 0x84;
 
-        uint8_t newAccumulatorValue = isNegativeSet ? 0x80 : 0x79;
-        uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
-        uint8_t amountToMove = wrapRight ? 0x0D : 0x84;
+      uint8_t program[]= {0xA9, newAccumulatorValue, operation, amountToMove, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu.tick();
 
-        uint8_t program[]= {0xA9, newAccumulatorValue, operation, amountToMove, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
-        REQUIRE(bus.cpu.a == 0x00);
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Overflow Set", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Overflow Set")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x50, 2}, // BVC
-        {0x70, 3}, // BVS
+      {0x50, 2}, // BVC
+      {0x70, 3}, // BVS
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}({:d}) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, 0x01, 0x69, 0x7F, operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, 0x01, 0x69, 0x7F, operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Overflow Clear", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Overflow Clear")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0x50, 3}, // BVC
-        {0x70, 2}, // BVS
+      {0x50, 3}, // BVC
+      {0x70, 2}, // BVS
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}({:d}) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {0xA9, 0x01, 0x69, 0x01, operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
-        uint8_t program[]= {0xA9, 0x01, 0x69, 0x01, operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        REQUIRE(bus.cpu.a == 0x00);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct When Relative And Branch On Overflow And Wrap", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct When Relative And Branch On Overflow And Wrap")
+  {
     auto [operation, numberOfCyclesUsed, isOverflowSet, wrapRight] = GENERATE( table<uint8_t, uint8_t, bool, bool>({
-        {0x50, 4, false, true},  //BVC
-        {0x50, 4, false, false}, //BVC
-        {0x70, 4, true, true},   //BVS
-        {0x70, 4, true, false},  //BVS
+      {0x50, 4, false, true},  //BVC
+      {0x50, 4, false, false}, //BVC
+      {0x70, 4, true, true},   //BVS
+      {0x70, 4, true, false},  //BVS
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}({:d}, {}, {}) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed, isOverflowSet, wrapRight)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed <<  ", " << isOverflowSet << ", " << wrapRight << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t newAccumulatorValue = isOverflowSet ? 0x7F : 0x00;
+      uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
+      uint8_t amountToMove = wrapRight ? 0x0B : 0x86;
 
-        uint8_t newAccumulatorValue = isOverflowSet ? 0x7F : 0x00;
-        uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
-        uint8_t amountToMove = wrapRight ? 0x0B : 0x86;
+      uint8_t program[]= {0xA9, newAccumulatorValue, 0x69, 0x01, operation, amountToMove, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
 
-        uint8_t program[]= {0xA9, newAccumulatorValue, 0x69, 0x01, operation, amountToMove, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
+      bus.cpu.tick();
+      bus.cpu.tick();
 
-        bus.cpu.tick();
-        bus.cpu.tick();
+      //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
-        bus.cpu.tick();
-
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
-}
+  }
 
-TEST_CASE("NumberOfCyclesRemaining Correct After NOP Operations", "[counter][cycles]")
-{
+  SECTION("NumberOfCyclesRemaining Correct After NOP Operations")
+  {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
-        {0xEA, 2}, // NOP Implied
+      {0xEA, 2}, // NOP Implied
 #ifdef ILLEGAL
-        {0x1A, 2}, // NOP Implied
-        {0x3A, 2}, // NOP Implied
-        {0x5A, 2}, // NOP Implied
-        {0x7A, 2}, // NOP Implied
-        {0xDA, 2}, // NOP Implied
-        {0xFA, 2}, // NOP Implied
-        {0x80, 2}, // DOP Immediate
-        {0x82, 2}, // DOP Immediate
-        {0x89, 2}, // DOP Immediate
-        {0xC2, 2}, // DOP Immediate
-        {0xE2, 2}, // DOP Immediate
-        {0x0C, 4}, // TOP Absolute
-        {0x1C, 4}, // TOP AbsoluteX
-        {0x3C, 4}, // TOP AbsoluteX
-        {0x5C, 4}, // TOP AbsoluteX
-        {0x7C, 4}, // TOP AbsoluteX
-        {0xDC, 4}, // TOP AbsoluteX
-        {0xFC, 4}, // TOP AbsoluteX
-        {0x04, 3}, // DOP ZeroPage
-        {0x44, 3}, // DOP ZeroPage
-        {0x64, 3}, // DOP ZeroPage
-        {0x14, 4}, // DOP ZeroPageX
-        {0x34, 4}, // DOP ZeroPageX
-        {0x54, 4}, // DOP ZeroPageX
-        {0x74, 4}, // DOP ZeroPageX
-        {0xD4, 4}, // DOP ZeroPageX
-        {0xF4, 4}, // DOP ZeroPageX
+      {0x1A, 2}, // NOP Implied
+      {0x3A, 2}, // NOP Implied
+      {0x5A, 2}, // NOP Implied
+      {0x7A, 2}, // NOP Implied
+      {0xDA, 2}, // NOP Implied
+      {0xFA, 2}, // NOP Implied
+      {0x80, 2}, // DOP Immediate
+      {0x82, 2}, // DOP Immediate
+      {0x89, 2}, // DOP Immediate
+      {0xC2, 2}, // DOP Immediate
+      {0xE2, 2}, // DOP Immediate
+      {0x0C, 4}, // TOP Absolute
+      {0x1C, 4}, // TOP AbsoluteX
+      {0x3C, 4}, // TOP AbsoluteX
+      {0x5C, 4}, // TOP AbsoluteX
+      {0x7C, 4}, // TOP AbsoluteX
+      {0xDC, 4}, // TOP AbsoluteX
+      {0xFC, 4}, // TOP AbsoluteX
+      {0x04, 3}, // DOP ZeroPage
+      {0x44, 3}, // DOP ZeroPage
+      {0x64, 3}, // DOP ZeroPage
+      {0x14, 4}, // DOP ZeroPageX
+      {0x34, 4}, // DOP ZeroPageX
+      {0x54, 4}, // DOP ZeroPageX
+      {0x74, 4}, // DOP ZeroPageX
+      {0xD4, 4}, // DOP ZeroPageX
+      {0xF4, 4}, // DOP ZeroPageX
 #endif
     }));
 
-    //Bus bus
+    SECTION(
+      fmt::format("Check if {:s}({:d}) works",
+      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+    ) {
+      bus.cpu.reset();
 
-    DYNAMIC_SECTION("Check if " << bus.cpu.inst.getInstructionName(operation) << "(0x" << hex(operation, 2) << ", " << numberOfCyclesUsed << ") works")
-    {
-        bus.cpu.reset();
+      uint8_t program[]= {operation, 0x00};
+      size_t n = sizeof(program) / sizeof(program[0]);
+      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-        uint8_t program[]= {operation, 0x00};
-        size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
 
-        uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      bus.cpu.tick();
 
-        //printf("startingNumberOfCycles: %d\n", startingNumberOfCycles);
-
-        bus.cpu.tick();
-
-        //                      EXPECTED                            ACTUAL
-        REQUIRE(startingNumberOfCycles + numberOfCyclesUsed == bus.cpu.cycle_count);
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
     }
+  }
 }
 
-#pragma endregion Cycle Tests
-
-#pragma region Program Counter Tests
-TEST_CASE("Branch On Negative Set Program Counter Correct When NoBranch Occurs", "[counter][pc]")
+TEST_CASE("Program Counter Tests", "[counter][pc]")
 {
-    //Bus bus
-    bus.cpu.reset();
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
+  Bus bus;
+
+  bus.cpu.reset();
+  REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0000, 4));
+
+  SECTION("Branch On Negative Set Program Counter Correct When NoBranch Occurs")
+  {
     uint8_t program[]= {0xA9, 0x80, 0x10};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    REQUIRE(bus.cpu.a == 0x00);
+    REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
     //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
     bus.cpu.tick();
-    uint16_t currentProgramCounter = bus.cpu.pc;
+    uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
     bus.cpu.tick();
 
-    REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu.pc, 4));
-}
+    REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu.getProgramCounter(), 4));
+  }
 
-TEST_CASE("Branch On Negative Clear Program Counter Correct When NoBranch Occurs", "[counter][pc]")
-{
-    //Bus bus
-    bus.cpu.reset();
-
+  SECTION("Branch On Negative Clear Program Counter Correct When NoBranch Occurs")
+  {
     uint8_t program[]= {0xA9, 0x79, 0x30};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    REQUIRE(bus.cpu.a == 0x00);
+    REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
 
     //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
     bus.cpu.tick();
-    uint8_t currentProgramCounter = bus.cpu.pc;
+    uint8_t currentProgramCounter = bus.cpu.getProgramCounter();
     bus.cpu.tick();
 
-    REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu.pc, 4));
-}
+    REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu.getProgramCounter(), 4));
+  }
 
-TEST_CASE("Branch On Overflow Set Program Counter Correct When NoBranch Occurs", "[counter][pc]")
-{
-    //Bus bus
-    bus.cpu.reset();
-
+  SECTION("Branch On Overflow Set Program Counter Correct When NoBranch Occurs")
+  {
     uint8_t program[]= {0xA9, 0x01, 0x69, 0x01, 0x70, 0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    REQUIRE(bus.cpu.pc == 0x0000);
+    REQUIRE(bus.cpu.getProgramCounter() == 0x0000);
 
     //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
     bus.cpu.tick();
     bus.cpu.tick();
-    uint16_t currentProgramCounter = bus.cpu.pc;
+    uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
 
     bus.cpu.tick();
 
-    REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu.pc, 4));
-}
+    REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu.getProgramCounter(), 4));
+  }
 
-TEST_CASE("Branch On Overflow Clear Program Counter Correct When NoBranch Occurs", "[counter][pc]")
-{
-    //Bus bus
-    bus.cpu.reset();
-
+  SECTION("Branch On Overflow Clear Program Counter Correct When NoBranch Occurs")
+  {
     uint8_t program[]= {0xA9, 0x01, 0x69, 0x7F, 0x50, 0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    REQUIRE(bus.cpu.pc == 0x0000);
+    REQUIRE(bus.cpu.getProgramCounter() == 0x0000);
 
-    //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
+    // Get the number of cycles after the register has been
+    // loaded, so we can isolate the operation under test
     bus.cpu.tick();
     bus.cpu.tick();
-    uint16_t currentProgramCounter = bus.cpu.pc;
+    uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
 
     bus.cpu.tick();
 
-    REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu.pc, 4));
-}
+    REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu.getProgramCounter(), 4));
+  }
 
-TEST_CASE("Program Counter Wraps Correctly", "[counter][pc]")
-{
-    //Bus bus
-    bus.cpu.reset();
-
-    REQUIRE(hex(bus.cpu.pc, 4) == hex(0x0000, 4));
-
+  SECTION("Program Counter Wraps Correctly")
+  {
     uint8_t program[] = {0x38};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0xFFFF, program, n, 0xFFFF);
 
-    REQUIRE(hex(bus.cpu.pc, 4) == hex(0xFFFF, 4));
-
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0xFFFF, 4));
     bus.cpu.tick();
 
-    REQUIRE(hex(bus.cpu.pc, 4) == hex(0x0000, 4));
+    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0000, 4));
+  }
 }
-#pragma endregion Program Counter Tests
-
-
+};

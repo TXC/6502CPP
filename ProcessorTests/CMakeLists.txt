@@ -7,40 +7,85 @@ PROJECT(
   LANGUAGES CXX
 )
 
-SET(LINKER_LANGUAGE CXX)
-SET(CMAKE_CXX_STANDARD 20)
-SET(CMAKE_CXX_STANDARD_REQUIRED ON)
-SET(CMAKE_CXX_EXTENSIONS ON)
-SET(THREADS_PREFER_PTHREAD_FLAD ON)
+SET(APP_NAME tests)
 
-SET(CMAKE_VERBOSE_MAKEFILE ${CMAKE_VERBOSE_MAKEFILE})
-SET(CMAKE_RULE_MESSAGES ${CMAKE_RULE_MESSAGES})
+#SET(CMAKE_VERBOSE_MAKEFILE ${CMAKE_VERBOSE_MAKEFILE})
+#SET(CMAKE_RULE_MESSAGES ${CMAKE_RULE_MESSAGES})
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_COMPILE_FLAGS}")
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${COVERAGE_LINK_FLAGS}")
+INCLUDE(Common)
 
-ADD_EXECUTABLE(tests
-  MainTest.cpp
-  ProcessorTests.cpp
-  ProcessorTests.hpp
-  FunctionalProcessorTests.cpp
+ADD_EXECUTABLE(${APP_NAME})
+
+#COMMON_LANGUAGE_PARAMETERS()
+COMMON_SET_PROJECT_FLAGS()
+
+TARGET_SOURCES(tests
+  PUBLIC  MainTest.hpp
+          ProcessorTests.hpp
+          FunctionalProcessorTests.hpp
+
+  PRIVATE MainTest.cpp
+          ProcessorTests.cpp
+          FunctionalProcessorTests.cpp
 )
 
-SET_TARGET_PROPERTIES(tests PROPERTIES VERSION  "${${PROJECT_NAME}_VERSION}"
-                               LINKER_LANGUAGE  "${LINKER_LANGUAGE}"
-                            CMAKE_CXX_STANDARD  "${CMAKE_CXX_STANDARD}"
-                   CMAKE_CXX_STANDARD_REQUIRED  "${CMAKE_CXX_STANDARD_REQUIRED}"
-                          CMAKE_CXX_EXTENSIONS  "${CMAKE_CXX_EXTENSIONS}"
-                   THREADS_PREFER_PTHREAD_FLAD  "${THREADS_PREFER_PTHREAD_FLAD}"
-)
+OPTION(TEST_FUNC "Include Klaus Dormann's Functional Test suite" OFF)
+OPTION(TEST_IRQ "Include Klaus Dormann's Interrupt Test suite" OFF)
+OPTION(TEST_TIME "Include Ed Spittles's Timing Test suite" OFF)
 
-TARGET_LINK_LIBRARIES(tests PUBLIC Processor)
-TARGET_INCLUDE_DIRECTORIES(tests PUBLIC Processor)
+SET(TestDataDirectory "${CMAKE_CURRENT_SOURCE_DIR}/FunctionalTests/" CACHE PATH "Path to directory where binary test files can be found, must end with slash")
+
+IF(TEST_FUNC)
+  ADD_COMPILE_DEFINITIONS(TEST_FUNC=1)
+ENDIF(TEST_FUNC)
+  
+IF(TEST_IRQ)
+  ADD_COMPILE_DEFINITIONS(TEST_IRQ=1)
+ENDIF(TEST_IRQ)
+  
+IF(TEST_TIME)
+  ADD_COMPILE_DEFINITIONS(TEST_TIME=1)
+ENDIF(TEST_TIME)
+
+IF(DEFINED TestDataDirectory AND IS_DIRECTORY ${TestDataDirectory})
+  ADD_COMPILE_DEFINITIONS(TESTDIR=${TestDataDirectory})
+ELSEIF(DEFINED TestDataDirectory AND NOT IS_DIRECTORY ${TestDataDirectory})
+  MESSAGE(SEND_ERROR "[ TESTDIR ] - Path not found - ${TestDataDirectory}")
+ENDIF()
+
+FIND_PACKAGE(Processor REQUIRED)
+IF(Processor_FOUND)
+  TARGET_LINK_LIBRARIES(${APP_NAME} PUBLIC Processor::Processor)
+  #TARGET_INCLUDE_DIRECTORIES(${APP_NAME} PUBLIC Processor::Processor)
+ENDIF()
+
+#FIND_PACKAGE(fmt REQUIRED CONFIG)
+#IF(fmt_FOUND)
+#  TARGET_LINK_LIBRARIES(${APP_NAME} PRIVATE
+#    fmt::fmt-header-only
+#  )
+#ENDIF()
+#
+#FIND_PACKAGE(spdlog REQUIRED)
+#IF(spdlog_FOUND)
+#  TARGET_LINK_LIBRARIES(${APP_NAME} PRIVATE
+#    spdlog::spdlog_header_only
+#  )
+#ENDIF()
 
 FIND_PACKAGE(Catch2 3 REQUIRED)
-TARGET_LINK_LIBRARIES(tests PRIVATE Catch2::Catch2WithMain)
+IF(Catch2_FOUND)
+  TARGET_LINK_LIBRARIES(${APP_NAME} PRIVATE
+    Catch2::Catch2WithMain
+#    Catch2::Catch2
+  )
 
-INCLUDE(CTest)
-INCLUDE(Catch)
+  INCLUDE(CTest)
+  INCLUDE(Catch)
+  
+  catch_discover_tests(${APP_NAME})
+ENDIF()
 
-catch_discover_tests(tests)
+TARGET_INCLUDE_DIRECTORIES(${APP_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+
+common_create_install(NAME Processor TARGETS "${APP_NAME}")

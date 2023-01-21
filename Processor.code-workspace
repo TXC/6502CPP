@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../6502Net"
 		}
 	],
 	"settings": {
@@ -74,7 +77,16 @@
 			"bit": "cpp",
 			"charconv": "cpp",
 			"format": "cpp",
-			"__memory": "cpp"
-		}
+			"__memory": "cpp",
+			"filesystem": "cpp",
+			"deque": "cpp",
+			"fstream": "cpp",
+			"iomanip": "cpp",
+			"stack": "cpp",
+			"condition_variable": "cpp",
+			"thread": "cpp",
+			"__std_stream": "cpp"
+		},
+		"editor.tabSize": 2
 	}
 }

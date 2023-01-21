@@ -1,19 +1,36 @@
 #include "Bus.hpp"
-#include "Log.hpp"
+#include "Types.hpp"
+#include "Logger.hpp"
 #include <iostream>
+#ifdef SPDLOG_FMT_EXTERNAL
+#include <fmt/format.h>
+#else
+#include <spdlog/fmt/fmt.h>
+#endif
+#include <signal.h>
 
 namespace CPU
 {
 
+  void handler(int sig)
+  {
+    std::cout << "Segmention Fault Detected. "
+              << "Printing Backtrace:" << std::endl
+              << Backtrace() << std::endl;
+    exit(1);
+  }
+
+
   Bus::Bus()
   {
+    signal(SIGSEGV, handler);
+    Logger log;
     // Connect CPU to communication bus
     cpu.ConnectBus(this);
-
+    
     // Clear RAM contents, just in case :P
     reset();
   }
-
 
   Bus::~Bus()
   {
@@ -39,6 +56,7 @@ namespace CPU
   {
     if (addr >= 0x0000 && addr <= 0xFFFF)
     {
+      //Logger::log()->debug("RAM: ${:04X} = {:02X}", addr, ram[addr]);
       return ram[addr];
     }
 
@@ -48,7 +66,8 @@ namespace CPU
   void Bus::dump(uint16_t offset)
   {
 #ifdef LOGMODE
-    fprintf(CPU::logfile, "Actual ADDR: $%04X\n", offset);
+    Logger::log()->info("Actual ADDR: ${:04X}", offset);
+
     uint16_t offsetStart = offset & 0xFFF0;
     uint16_t offsetStop = offset | 0x000F;
     dump(offsetStart, offsetStop);
@@ -58,15 +77,21 @@ namespace CPU
   void Bus::dump(uint16_t offsetStart, uint16_t offsetStop)
   {
 #ifdef LOGMODE
-    std::string log = dumpRaw(offsetStart, offsetStop);
-    fprintf(CPU::logfile, "%s", log.c_str());
-    fflush(CPU::logfile);
+    Logger::log()->info("MEMORY LOG FOR: ${:04X} - ${:04X}", offsetStart, offsetStop);
+    Logger::log()->info(" ADDR 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
+
+    std::map<uint16_t, Bus::MEMORYMAP> memory = memoryDump(offsetStart, offsetStop);
+    for (auto& i : memory)
+    {
+      Logger::log()->info("{}", i.second);
+    }
 #endif
   }
 
+  /*
   std::string Bus::dumpRaw(uint16_t offsetStart, uint16_t offsetStop)
   {
-    std::string log = string_format("MEMORY LOG FOR: $%04X - $%04X \n$%04X:", offsetStart, offsetStop, offsetStart);
+    std::string log = fmt::format("MEMORY LOG FOR: ${:04X} - ${:04X} \n${:04X}:", offsetStart, offsetStop, offsetStart);
 
     uint16_t multiplier = 0;
     for (uint16_t i = offsetStart; i <= offsetStop; i++)
@@ -75,11 +100,11 @@ namespace CPU
         multiplier++;
         if (i != offsetStop)
         {
-          log += string_format("\n$%04X:", offsetStart + (multiplier * 0x0010));
+          log += fmt::format("\n${:04X}:", offsetStart + (multiplier * 0x0010));
         }
       }
 
-      log += string_format(" %02X", read(i, true));
+      log += fmt::format(" {:02X}", read(i, true));
       if (i == offsetStop)
       {
         log += "\n";
@@ -87,5 +112,64 @@ namespace CPU
     }
 
     return log;
+  }
+  */
+
+  // Update Memory Map
+  void Bus::updateMemoryMap(uint16_t offset, uint8_t rows, bool clear)
+  {
+    if (clear)
+    {
+      memorymap.clear();
+    }
+
+    uint16_t offsetStart = offset & 0xFFF0;
+    uint16_t offsetStop = (rows * (offset + 1)) | 0x000F;
+
+    std::map<uint16_t, Bus::MEMORYMAP> memory = memoryDump(offsetStart, offsetStop);
+
+    uint16_t multiplier = 0;
+    for (auto& i : memory)
+    {
+      uint32_t offsetPos = (16 * (uint32_t)multiplier) + (uint32_t)offset;
+      auto row = i.second;
+      memorymap[row.Offset] = row;
+    }
+  }
+
+  std::map<uint16_t, Bus::MEMORYMAP> Bus::memoryDump(uint16_t offsetStart, uint16_t offsetStop)
+  {
+    std::map<uint16_t, Bus::MEMORYMAP> memory;
+    uint16_t addr = offsetStart & 0xFFF0,
+             multiplier = 0,
+             offset = 0x00;
+
+    while (addr <= (offsetStop & 0xFFF0))
+    {
+      offset = (offsetStart & 0xFFF0) + (multiplier * 0x0010);
+
+      memory[multiplier] = {
+        offset,             // Offset $
+        read(addr++, true), // 0x00
+        read(addr++, true), // 0x01
+        read(addr++, true), // 0x02
+        read(addr++, true), // 0x03
+        read(addr++, true), // 0x04
+        read(addr++, true), // 0x05
+        read(addr++, true), // 0x06
+        read(addr++, true), // 0x07
+        read(addr++, true), // 0x08
+        read(addr++, true), // 0x09
+        read(addr++, true), // 0x0A
+        read(addr++, true), // 0x0B
+        read(addr++, true), // 0x0C
+        read(addr++, true), // 0x0D
+        read(addr++, true), // 0x0E
+        read(addr, true)  // 0x0F
+      };
+      //++addr;
+      ++multiplier;
+    }
+    return memory;
   }
 }

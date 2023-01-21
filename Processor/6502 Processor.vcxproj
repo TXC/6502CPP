@@ -46,13 +46,13 @@
     <ClCompile Include="Bus.cpp" />
     <ClCompile Include="Executioner.cpp" />
     <ClCompile Include="Instructions.cpp" />
-    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="Logger.cpp" />
     <ClCompile Include="Processor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bus.hpp" />
     <ClInclude Include="Executioner.hpp" />
-    <ClInclude Include="Log.hpp" />
+    <ClInclude Include="Logger.hpp" />
     <ClInclude Include="Processor.hpp" />
     <ClInclude Include="Singleton.hpp" />
     <ClInclude Include="Types.hpp" />

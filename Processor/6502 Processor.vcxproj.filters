@@ -21,7 +21,7 @@
     <ClCompile Include="Executioner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Log.cpp">
+    <ClCompile Include="Logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Processor.cpp">
@@ -38,7 +38,7 @@
     <ClInclude Include="Executioner.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Log.hpp">
+    <ClInclude Include="Logger.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Processor.hpp">
