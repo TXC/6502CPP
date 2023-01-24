@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Formatters.hpp"
+#include <memory>
 #include <spdlog/spdlog.h>
 #include <spdlog/pattern_formatter.h>
 
@@ -13,10 +14,6 @@ namespace CPU
     Logger();
     ~Logger();
 
-#ifdef LOGMODE
-    //static FILE* logfile = nullptr;
-    //static std::ofstream logfile;
-#endif
   private:
     static void createLogger();
 

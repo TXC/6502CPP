@@ -8,12 +8,25 @@ namespace CPU
   class JammedCPU : public std::exception
   {
     private:
-      char * message;
+      std::string message;
 
     public:
       JammedCPU(char * msg): message(msg) {}
-      char * what () {
-        return message;
+      JammedCPU(const std::string msg): message(msg) {}
+      const char * what () const _NOEXCEPT {
+        return message.c_str();
+      }
+  };
+  class IllegalInstruction : public std::exception
+  {
+    private:
+      std::string message;
+
+    public:
+      IllegalInstruction(char * msg): message(msg) {}
+      IllegalInstruction(const std::string msg): message(msg) {}
+      const char * what () const _NOEXCEPT {
+        return message.c_str();
       }
   };
 }

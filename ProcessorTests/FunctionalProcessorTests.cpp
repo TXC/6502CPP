@@ -9,7 +9,7 @@
 #include <fmt/format.h>
 /*
 #include <spdlog/spdlog.h>
-#ifdef SPDLOG_FMT_EXTERNAL
+#if defined(SPDLOG_FMT_EXTERNAL)
 #include <fmt/format.h>
 #else
 #include <spdlog/fmt/fmt.h>
@@ -28,7 +28,7 @@ namespace CPUTest
  * 
  * @see https://github.com/Klaus2m5/6502_65C02_functional_tests
  */
-TEST_CASE("KlausDormann's Functional Test Program", "[.KlausDormann]")
+TEST_CASE("KlausDormann's Functional Test Program", "[.KlausDormann][.functional]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
@@ -127,7 +127,7 @@ TEST_CASE("KlausDormann's Functional Test Program", "[.KlausDormann]")
   }
 }
 
-TEST_CASE("Klaus Dormann's Interrupt Test Program", "[.KlausDormann]")
+TEST_CASE("Klaus Dormann's Interrupt Test Program", "[.KlausDormann][.interrupt]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
@@ -218,8 +218,8 @@ TEST_CASE("Ed Spittles Test Program", "[.EdSpittles]")
 
       bus.cpu.tick();
 
-      fmt::print("Step: {} PC: {:04X}", numberOfLoops, bus.cpu.getProgramCounter());
-      fmt::print("Step: {} Cycles: {}", numberOfLoops, bus.cpu.cycle_count);
+      //CAPTURE(fmt::format("Step: {} PC: {:04X}", numberOfLoops, bus.cpu.getProgramCounter()));
+      //CAPTURE(fmt::format("Step: {} Cycles: {}", numberOfLoops, bus.cpu.cycle_count));
 
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(CycleTestDataResults[numberOfLoops].PC, 4));
       REQUIRE(hex(bus.cpu.cycle_count, 4) == hex(CycleTestDataResults[numberOfLoops].CC, 4));

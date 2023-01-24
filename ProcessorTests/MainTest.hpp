@@ -6,17 +6,9 @@
 #include <string>
 
 #include <fmt/format.h>
-//#include <spdlog/spdlog.h>
-/*
-#ifdef SPDLOG_FMT_EXTERNAL
-#include <fmt/format.h>
-//#include <fmt/ostream.h>
-#else
-#include <spdlog/fmt/fmt.h>
-//#include <spdlog/fmt/ostr.h>
-#endif
-*/
-
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_section_info.hpp>
+#include <catch2/matchers/catch_matchers_templated.hpp>
 
 namespace CPUTest
 {
@@ -26,10 +18,18 @@ namespace CPUTest
   class MainTest
   {
   public:
+
     static void logTestCaseName(std::string name)
     {
       CPU::Logger::log()->info("");
       CPU::Logger::log()->info(" *** {: <32} ***", name);
+      CPU::Logger::log()->info("");
+    }
+
+    static void logSectionName(std::string section)
+    {
+      CPU::Logger::log()->info("");
+      CPU::Logger::log()->info(" *** SECTION {: <24} ***", section);
       CPU::Logger::log()->info("");
     }
 

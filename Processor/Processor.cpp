@@ -4,10 +4,12 @@
 #include "Executioner.hpp"
 #include "Bus.hpp"
 #include "Logger.hpp"
+#include "Exceptions.hpp"
+
 #include <stdexcept>
 #include <sstream>
 #include <spdlog/spdlog.h>
-#ifdef SPDLOG_FMT_EXTERNAL
+#if defined(SPDLOG_FMT_EXTERNAL)
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #else
@@ -196,7 +198,7 @@ namespace CPU
     // Reset takes time
     extra_cycles = 0;
     cycle_count = 0;
-    clock_count = 0;
+    operation_cycle = 0;
     jammed = false;
 
     _previousInterrupt = false;
@@ -220,7 +222,7 @@ namespace CPU
   void Processor::irq()
   {
     // If interrupts aren't allowed
-    if (GetFlag(I) != 0)
+    if (GetFlag(I) == 1)
     {
       return;
     }
@@ -248,73 +250,85 @@ namespace CPU
   {
     if (jammed)
     {
-#ifdef LOGMODE
+#if defined(LOGMODE)
       Logger::log()->error("JAMMED");
 #endif
       return;
     }
 
-    // This is per operation
+    // These are per operation
     extra_cycles = 0;
+    cycle_count = 0;
 
     // Read next instruction byte. This 8-bit value is used to index
     // the translation table to get the relevant information about
     // how to implement the instruction
 
     opcode = readMemory(reg.PC);
-//    Logger::log()->info("Processor::tick() PC: 0x{:04X} - OP: 0x{:02X}", reg.PC, opcode);
-
-    //UpdateMemoryMap();
-#ifdef LOGMODE
-    disassemble(reg.PC);
-    Logger::log()->info(
-      "{:>10d}:{:02X} OP: 0x{:02X} / {}:{} {: <17s} {}",
-      clock_count, cycle_count, opcode, executioner.getInstructionName(opcode), executioner.getAddressModeName(opcode),
-      "XXX", reg
-    );
-#endif
-
-    // Always set the unused status flag bit to 1
-    SetFlag(U, true);
-
-    // Increment program counter, we read the opcode byte
-    incrementProgramCounter();
-
-    // Get Starting number of cycles
-    //cycles = lookup[opcode].cycles;
-
-    // Perform operation incl. fetch of intermmediate
-    // data using the required addressing mode
+    //Logger::log()->info("Processor::tick() PC: 0x{:04X} - OP: 0x{:02X}", reg.PC, opcode);
     try
     {
-      uint8_t opcycle = executioner.execute(opcode);
+      //UpdateMemoryMap();
+
+#if defined(LOGMODE)
+      disassemble(reg.PC);
+      Logger::log()->info(
+        "{:>10d}:{:02X} OP: 0x{:02X} / {}:{} {: <17s} {}",
+        operation_cycle, cycle_count, opcode, executioner.getInstructionName(opcode), executioner.getAddressModeName(opcode),
+        "XXX", reg
+      );
+#endif
+
+      // Always set the unused status flag bit to 1
+      SetFlag(U, true);
+
+      // Increment program counter, we read the opcode byte
+      incrementProgramCounter();
+
+      // Get Starting number of cycles
+      //cycles = lookup[opcode].cycles;
+
+      // Perform operation incl. fetch of intermmediate
+      // data using the required addressing mode
+      executioner.execute(opcode);
+    }
+    catch (const CPU::JammedCPU& e)
+    {
+      std::cout << "JammedCPU : Executioner::execute() reported a Jammed CPU exception:" << std::endl << e.what() << std::endl;
+      return;
+    }
+    catch (const CPU::IllegalInstruction& e)
+    {
+      std::cout << "IllegalInstruction : Executioner::execute() reported Illegal Instruction exception:" << std::endl << e.what() << std::endl;
+      return;
     }
     catch (const std::runtime_error& e)
     {
-      std::cout << "std::runtime_error : Executioner::execute() reported an exception:" << std::endl << e.what() << std::endl;
-#ifdef DEBUG
-      print_exception(e);
-#endif
+      std::cout << "std::runtime_error : Executioner::execute() reported an runtime exception:" << std::endl << e.what() << std::endl;
+      return;
     }
-    // The addressmode and opcode may have altered the number
-    // of cycles this instruction requires before its completed
-    //cycles += (additional_cycle1 & additional_cycle2);
+    catch (const std::exception& e)
+    {
+      std::cout << "std::exception : Executioner::execute() reported an exception:" << e.what() << std::endl;
+      return;
+    }
+    catch (...)
+    {
+      std::cout << "catch_all exception" << std::endl;
+      return;
+    }
+
 
     // Always set the unused status flag bit to 1
     SetFlag(U, true);
 
-
-    // Increment global clock count - This is actually unused unless logging is enabled
-    // but I've kept it in because its a handy watch variable for debugging
-    clock_count++;
-
-#ifdef LOGMODE
+#if defined(LOGMODE)
     // This logger dumps every cycle the entire processor state for analysis.
     // This can be used for debugging the emulation, but has little utility
     // during emulation. Its also very slow, so only use if you have to.
     Logger::log()->info(
       "{:>10d}:{:02X} OP: 0x{:02X} / {}:{} {: <17s} {}",
-      clock_count, cycle_count, opcode, executioner.getInstructionName(opcode), executioner.getAddressModeName(opcode),
+      operation_cycle, cycle_count, opcode, executioner.getInstructionName(opcode), executioner.getAddressModeName(opcode),
       "XXX", reg
     );
 #endif
@@ -332,6 +346,10 @@ namespace CPU
         TriggerIRQ = false;
       }
     }
+
+    // Increment global clock count - This is actually unused unless logging is enabled
+    // but I've kept it in because its a handy watch variable for debugging
+    operation_cycle += cycle_count;
   }
 
   void Processor::setJammed()
@@ -347,7 +365,7 @@ namespace CPU
   // Returns the value of a specific bit of the status register
   uint8_t Processor::GetFlag(FLAGS6502 f)
   {
-//#ifdef DEBUG
+//#if defined(DEBUG)
 //    Logger::log()->debug("GetFlag - Current: 0x{:02X} {} ", reg.SR, DecodeFlag(reg.SR));
 //#endif
     //return ((status & f) > 0) ? 1 : 0;
@@ -681,6 +699,14 @@ namespace CPU
   void Processor::addExtraCycle(bool incCycleCount)
   {
     extra_cycles = (extra_cycles + 1);
+
+//#if defined(DEBUG)
+//    Logger::log()->debug(
+//      "addExtraCycle: {} - incrementCycle: {} - {}",
+//      executioner.getOperation(opcode), incCycleCount, reg
+//    );
+//#endif
+
     if (incCycleCount)
     {
       incrementCycleCount();
@@ -691,6 +717,12 @@ namespace CPU
   // Increment Cycle Count
   void Processor::incrementCycleCount()
   {
+//#if defined(DEBUG)
+//    Logger::log()->debug(
+//      "incrementCycleCount: {} - Current Cycle: {} - {}",
+//      executioner.getOperation(opcode), cycle_count, reg
+//    );
+//#endif
     //cycle_count++;
     cycle_count = (cycle_count + 1) & 0xFF;
 
@@ -914,7 +946,7 @@ namespace CPU
 
   void Processor::disassemble(uint16_t addr)
   {
-#ifdef LOGMODE
+#if defined(LOGMODE)
     Processor::DISASSEMBLY CD = setDisassembly(addr);
     Logger::log()->info("{} {}", CD, reg);
 #endif
@@ -922,7 +954,7 @@ namespace CPU
 
   void Processor::disassemble(uint16_t nStart, uint16_t nStop)
   {
-#ifdef LOGMODE
+#if defined(LOGMODE)
     uint16_t addr = nStart;
   //Logger::log()->info("disassemble: nStart: ${:04X} nStop: ${:04X}", nStart, nStop);
 

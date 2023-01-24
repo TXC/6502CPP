@@ -4,7 +4,7 @@
 
 #include <array>
 #include <map>
-#ifdef SPDLOG_FMT_EXTERNAL
+#if defined(SPDLOG_FMT_EXTERNAL)
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #else
@@ -29,7 +29,7 @@ namespace CPU
 
     struct MEMORYMAP
     {
-      uint32_t  Offset;
+      uint16_t  Offset;
       uint8_t   Pos00;
       uint8_t   Pos01;
       uint8_t   Pos02;
@@ -63,7 +63,7 @@ namespace CPU
     };
 
   private:
-    std::map<uint32_t, MEMORYMAP> memorymap = {};
+    std::map<uint16_t, MEMORYMAP> memorymap = {};
 
   public: // Bus Read & Write
     void reset();
@@ -72,7 +72,7 @@ namespace CPU
 
   public: // DEBUG
     std::map<uint16_t, MEMORYMAP> memoryDump(uint16_t offsetStart, uint16_t offsetStop);
-    void updateMemoryMap(uint16_t offset = 0x0000, uint8_t rows = 0xFF, bool clear = true);
+    //void updateMemoryMap(uint16_t offset = 0x0000, uint8_t rows = 0xFF, bool clear = true);
     void dump(uint16_t offsetStart);
     void dump(uint16_t offsetStart, uint16_t offsetStop);
   };

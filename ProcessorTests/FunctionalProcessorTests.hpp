@@ -9,15 +9,6 @@
 #include <vector>
 #include <filesystem>
 
-/*
-#ifdef SPDLOG_FMT_EXTERNAL
-#include <fmt/format.h>
-//#include <fmt/ostream.h>
-#else
-#include <spdlog/fmt/fmt.h>
-//#include <spdlog/fmt/ostr.h>
-#endif
-*/
 
 #define _STRINGIZE(x) #x
 #define STRINGIZE(x) _STRINGIZE(x)
@@ -32,8 +23,7 @@ namespace CPUTest
     {
       std::fstream fp;
 
-#ifdef TESTDIR
-      //std::filesystem::path filepath = STRINGIZE(TESTDIR);
+#if defined(TESTDIR)
       std::filesystem::path filepath = std::string(STRINGIZE(TESTDIR));
 #else
       std::filesystem::path filepath = std::filesystem::current_path();
@@ -56,15 +46,9 @@ namespace CPUTest
                   << "Error code: " << e.code().value() 
                   << " (" << e.code().message() << ")\n"
                   << "Error category: " << e.code().category().name() << '\n';
-#ifdef DEBUG
-        print_exception(e);
-#endif
       } catch (const std::exception& e) {
         std::cout << "EHH?! Caught an exception.\n"
                   << "Error code: " << e.what() << '\n';
-#ifdef DEBUG
-        print_exception(e);
-#endif
       }
 
       return fp;
@@ -151,9 +135,6 @@ namespace CPUTest
       } catch (const std::exception& e) {
         std::cout << "Caught an exception.\n"
                   << "Error code: " << e.what() << '\n';
-#ifdef DEBUG
-        print_exception(e);
-#endif
       }
       return data;
     }
@@ -215,9 +196,6 @@ namespace CPUTest
       } catch (const std::exception& e) {
         std::cout << "Caught an exception.\n"
                   << "Error code: " << e.what() << '\n';
-#ifdef DEBUG
-        print_exception(e);
-#endif
       }
       return results;
     }

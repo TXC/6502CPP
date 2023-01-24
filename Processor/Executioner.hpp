@@ -4,17 +4,12 @@
 #include <vector>
 #include <map>
 
-#ifdef SPDLOG_FMT_EXTERNAL
+#if defined(SPDLOG_FMT_EXTERNAL)
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #else
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/fmt/ostr.h>
-#endif
-
-#ifdef LOGMODE
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
 #endif
 
 namespace CPU
@@ -36,7 +31,7 @@ namespace CPU
     void reset();
 
   public:
-    typedef uint8_t(Executioner::* ExecutionType)(void);
+    typedef void(Executioner::* ExecutionType)(void);
 
     // This structure are used to compile and store
     // the opcode translation tables.
@@ -78,6 +73,7 @@ namespace CPU
     };
 
     std::map<uint8_t, OperationType> lookup = {};
+    //static std::map<uint8_t, OperationType> lookup;
 
 
   private:
@@ -87,8 +83,8 @@ namespace CPU
     uint8_t* opcode = nullptr;
     // Counts how many cycles the instruction has remaining
     uint8_t* cycle_count = nullptr;
-    // A global accumulation of the number of clocks
-    uint32_t* clock_count = nullptr;
+    // Operation/Tick cycle
+    uint32_t* operation_cycle = nullptr;
 
     // Assistive variables to facilitate emulation
 
@@ -112,14 +108,14 @@ namespace CPU
 
     // Internal use methods, uses the currently loaded opcode
   private:
-    uint8_t execute();
+    void execute();
     std::string getInstructionName();
     std::string getAddressModeName();
     std::string getOperation();
 
     // External use methods, uses opcode via arguments
   public:
-    uint8_t execute(uint8_t opcode);
+    void execute(uint8_t opcode);
     // Helper method, returns mnemonic for instruction
     std::string getInstructionName(uint8_t opcode);
     // Helper method, returns mnemonic for address mode
@@ -127,8 +123,9 @@ namespace CPU
     // Helper method, returns instruction mnemonics (INST:ADDR [opcode])
     std::string getOperation(uint8_t opcode);
 
+    void printInstructions();
 
-  public:
+  private:
     // Addressing Modes =============================================
     // The 6502 has a variety of addressing modes to access data in 
     // memory, some of which are direct and some are indirect (like
@@ -145,20 +142,21 @@ namespace CPU
     // and how the memory is accessed, so they return the required
     // adjustment.
 
-    uint8_t ACC();
-    uint8_t IMP();
-    uint8_t IMM();
-    uint8_t REL();
-    uint8_t ZP0();
-    uint8_t ZPX();
-    uint8_t ZPY();
-    uint8_t ABS();
-    uint8_t ABX();
-    uint8_t ABY();
-    uint8_t IND();
-    uint8_t IZX();
-    uint8_t IZY();
+    void addrACC();
+    void addrIMP();
+    void addrIMM();
+    void addrREL();
+    void addrZP0();
+    void addrZPX();
+    void addrZPY();
+    void addrABS();
+    void addrABX();
+    void addrABY();
+    void addrIND();
+    void addrIZX();
+    void addrIZY();
 
+  private:
     // Opcodes ======================================================
     // There are 56 "legitimate" opcodes provided by the 6502 CPU. I
     // have not modelled "unofficial" opcodes. As each opcode is 
@@ -181,103 +179,105 @@ namespace CPU
     // the class implementation file. Note they are listed in
     // alphabetical order here for ease of finding.
 
-    uint8_t ADC();
-    uint8_t AND();
-    uint8_t ASL();
-    uint8_t BCC();
-    uint8_t BCS();
-    uint8_t BEQ();
-    uint8_t BIT();
-    uint8_t BMI();
-    uint8_t BNE();
-    uint8_t BPL();
-    uint8_t BRK();
-    uint8_t BVC();
-    uint8_t BVS();
-    uint8_t CLC();
-    uint8_t CLD();
-    uint8_t CLI();
-    uint8_t CLV();
-    uint8_t CMP();
-    uint8_t CPX();
-    uint8_t CPY();
-    uint8_t DEC();
-    uint8_t DEX();
-    uint8_t DEY();
-    uint8_t EOR();
-    uint8_t INC();
-    uint8_t INX();
-    uint8_t INY();
-    uint8_t JMP();
-    uint8_t JSR();
-    uint8_t LDA();
-    uint8_t LDX();
-    uint8_t LDY();
-    uint8_t LSR();
-    uint8_t NOP();
-    uint8_t ORA();
-    uint8_t PHA();
-    uint8_t PHP();
-    uint8_t PLA();
-    uint8_t PLP();
-    uint8_t ROL();
-    uint8_t ROR();
-    uint8_t RTI();
-    uint8_t RTS();
-    uint8_t SBC();
-    uint8_t SEC();
-    uint8_t SED();
-    uint8_t SEI();
-    uint8_t STA();
-    uint8_t STX();
-    uint8_t STY();
-    uint8_t TAX();
-    uint8_t TAY();
-    uint8_t TSX();
-    uint8_t TXA();
-    uint8_t TXS();
-    uint8_t TYA();
+    void opADC();
+    void opAND();
+    void opASL();
+    void opBCC();
+    void opBCS();
+    void opBEQ();
+    void opBIT();
+    void opBMI();
+    void opBNE();
+    void opBPL();
+    void opBRK();
+    void opBVC();
+    void opBVS();
+    void opCLC();
+    void opCLD();
+    void opCLI();
+    void opCLV();
+    void opCMP();
+    void opCPX();
+    void opCPY();
+    void opDEC();
+    void opDEX();
+    void opDEY();
+    void opEOR();
+    void opINC();
+    void opINX();
+    void opINY();
+    void opJMP();
+    void opJSR();
+    void opLDA();
+    void opLDX();
+    void opLDY();
+    void opLSR();
+    void opNOP();
+    void opORA();
+    void opPHA();
+    void opPHP();
+    void opPLA();
+    void opPLP();
+    void opROL();
+    void opROR();
+    void opRTI();
+    void opRTS();
+    void opSBC();
+    void opSEC();
+    void opSED();
+    void opSEI();
+    void opSTA();
+    void opSTX();
+    void opSTY();
+    void opTAX();
+    void opTAY();
+    void opTSX();
+    void opTXA();
+    void opTXS();
+    void opTYA();
 
-#ifdef ILLEGAL
+    // I capture all "missing/illegal" opcodes with this function.
+    void opXXX();
+
+#if defined(EMULATE65C02)
+    void opSTP();
+    void opWAI();
+#endif
+
+#if defined(ILLEGAL)
     // Illegal opcodes
-    uint8_t ALR();
-    uint8_t ANC();
-    uint8_t ANC2();
-    uint8_t ANE();
-    uint8_t ARR();
-    uint8_t DCP();
-    uint8_t ISC();
-    uint8_t LAS();
-    uint8_t LAX();
-    uint8_t LXA();
-    uint8_t RLA();
-    uint8_t RRA();
-    uint8_t SAX();
-    uint8_t SBX();
-    uint8_t SHA();
-    uint8_t SHX();
-    uint8_t SHY();
-    uint8_t SLO();
-    uint8_t SRE();
-    uint8_t TAS();
-    uint8_t USBC();
-    uint8_t DOP();
-    uint8_t TOP();
-    uint8_t JAM();
-#endif
+    void opALR();
+    void opANC();
+    void opANC2();
+    void opANE();
+    void opARR();
+    void opDCP();
+    void opISC();
+    void opLAS();
+    void opLAX();
+    void opLXA();
+    void opRLA();
+    void opRRA();
+    void opSAX();
+    void opSBX();
+    void opSHA();
+    void opSHX();
+    void opSHY();
+    void opSLO();
+    void opSRE();
+    void opTAS();
+    void opUSBC();
+    void opDOP();
+    void opTOP();
+    void opJAM();
 
-#ifndef ILLEGAL
-    // I capture all "unofficial" opcodes with this function. It is
-    // functionally identical to a NOP
-    uint8_t XXX();
-#endif
-
-#ifdef ILLEGAL
   private:
     // Magic value that depends on manufacturer and/or batch 
     // https://www.nesdev.org/wiki/Visual6502wiki/6502_Opcode_8B_(XAA,_ANE)
     // Can be 0xFF, 0xFE, 0xEE & 0x00 or something else
-    uint8_t  magic = 0xFF;
+    uint8_t magic_ANE = 0xEF;
+    uint8_t magic_LXA = 0xEE;
 #endif
+
   };
 }

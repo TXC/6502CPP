@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
@@ -43,7 +44,7 @@ namespace CPU
 
       //std::cout << "Logging to: " << filename.string() << std::endl;
       logger->set_pattern("[%Y-%m-%d %T.%e] [%=10l] %v");
-#ifdef DEBUG
+#if defined(DEBUG)
       // Set global log level to debug
       logger->set_level(spdlog::level::debug);
 #endif
@@ -62,7 +63,6 @@ namespace CPU
   {
     if (logger == nullptr)
     {
-      std::cout << "No logger!" << std::endl;
       createLogger();
     }
     return logger;

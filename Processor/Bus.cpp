@@ -2,7 +2,7 @@
 #include "Types.hpp"
 #include "Logger.hpp"
 #include <iostream>
-#ifdef SPDLOG_FMT_EXTERNAL
+#if defined(SPDLOG_FMT_EXTERNAL)
 #include <fmt/format.h>
 #else
 #include <spdlog/fmt/fmt.h>
@@ -14,22 +14,71 @@ namespace CPU
 
   void handler(int sig)
   {
-    std::cout << "Segmention Fault Detected. "
-              << "Printing Backtrace:" << std::endl
+#if defined(DEBUG)
+    std::cout << "DEBUG MODE ACTIVE!" << std::endl;
+#endif
+    switch(sig)
+    {
+      case SIGABRT:
+        std::cout << "Abort Detected." << std::endl;
+        break;
+      case SIGFPE:
+        std::cout << "Floating Point Exception Detected." << std::endl;
+        break;
+      case SIGILL:
+        std::cout << "Illegal Instruction Detected." << std::endl;
+        break;
+      case SIGINT:
+        std::cout << "Interrupt Detected." << std::endl;
+        break;
+      case SIGSEGV:
+        std::cout << "Segmention Fault Detected." << std::endl;
+        break;
+      case SIGTERM:
+        std::cout << "Termination Detected." << std::endl;
+        break;
+      default:
+        std::cout << "Unknown Fault Detected." << std::endl;
+    }
+#if defined(DEBUG)
+    std::cout << "Printing Backtrace:" << std::endl
               << Backtrace() << std::endl;
-    exit(1);
+#endif
+    exit(128 + sig);
   }
 
 
   Bus::Bus()
   {
-    signal(SIGSEGV, handler);
-    Logger log;
-    // Connect CPU to communication bus
-    cpu.ConnectBus(this);
-    
-    // Clear RAM contents, just in case :P
-    reset();
+    try
+    {
+      Logger log;
+
+      signal(SIGABRT, handler);
+      signal(SIGFPE, handler);
+      signal(SIGILL, handler);
+      signal(SIGINT, handler);
+      signal(SIGSEGV, handler);
+      signal(SIGTERM, handler);
+
+      // Connect CPU to communication bus
+      cpu.ConnectBus(this);
+      
+      // Clear RAM contents, just in case :P
+      reset();
+    }
+    catch (const std::exception& e)
+    {
+      std::cout << "std::exception :" << e.what() << std::endl;
+#if defined(DEBUG)
+      print_exception(e);
+#endif
+    }
+    catch (...)
+    {
+      std::cout << "catch_all exception" << std::endl;
+      exit(1);
+    }
   }
 
   Bus::~Bus()
@@ -65,7 +114,7 @@ namespace CPU
 
   void Bus::dump(uint16_t offset)
   {
-#ifdef LOGMODE
+#if defined(LOGMODE)
     Logger::log()->info("Actual ADDR: ${:04X}", offset);
 
     uint16_t offsetStart = offset & 0xFFF0;
@@ -76,7 +125,7 @@ namespace CPU
 
   void Bus::dump(uint16_t offsetStart, uint16_t offsetStop)
   {
-#ifdef LOGMODE
+#if defined(LOGMODE)
     Logger::log()->info("MEMORY LOG FOR: ${:04X} - ${:04X}", offsetStart, offsetStop);
     Logger::log()->info(" ADDR 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
 
@@ -115,6 +164,7 @@ namespace CPU
   }
   */
 
+/*
   // Update Memory Map
   void Bus::updateMemoryMap(uint16_t offset, uint8_t rows, bool clear)
   {
@@ -136,6 +186,7 @@ namespace CPU
       memorymap[row.Offset] = row;
     }
   }
+*/
 
   std::map<uint16_t, Bus::MEMORYMAP> Bus::memoryDump(uint16_t offsetStart, uint16_t offsetStop)
   {

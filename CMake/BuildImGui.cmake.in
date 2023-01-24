@@ -2,22 +2,84 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
 
 PROJECT(@IMGUI_NAME@ VERSION @IMGUI_VERSION@ LANGUAGES CXX)
 
-OPTION(WITH_ALLEGRO5 "With Allegro5 support" OFF)
-OPTION(WITH_ANDROID "With Android support" OFF)
-OPTION(WITH_DIRECTX9 "With DirectX 9 support" OFF)
-OPTION(WITH_DIRECTX10 "With DirectX 10 support" OFF)
-OPTION(WITH_DIRECTX11 "With DirectX 11 support" OFF)
-OPTION(WITH_DIRECTX12 "With DirectX 12 support" OFF)
-OPTION(WITH_GLFW "With GLFW support" OFF)
-OPTION(WITH_GLUT "With GLUT support" OFF)
-OPTION(WITH_METAL "With MacOS Metal support" OFF)
-OPTION(WITH_OPENGL2 "With OpenGL 2 support" OFF)
-OPTION(WITH_OPENGL3 "With OpenGL 3 support" OFF)
-OPTION(WITH_SDL "With SDL support" OFF)
-OPTION(WITH_SDLRENDERER "With SDL Renderer support" OFF)
-OPTION(WITH_VULKAN "With Vulkan support" OFF)
-OPTION(WITH_WGPU "With WGPU support" OFF)
-OPTION(WITH_WIN32 "With Win32 support" OFF)
+# Renderer + Platform
+OPTION(WITH_ALLEGRO5 "[RENDERER + PLATFORM] With Allegro5 support" OFF)
+
+IF(ANDROID)
+  # Platform
+  OPTION(WITH_ANDROID "[PLATFORM] With Android support" OFF)
+ENDIF()
+
+IF(WIN32)
+  # Renderer
+  OPTION(WITH_DIRECTX9 "[RENDERER] With DirectX 9 support" OFF)
+  # Renderer
+  OPTION(WITH_DIRECTX10 "[RENDERER] With DirectX 10 support" OFF)
+  # Renderer
+  OPTION(WITH_DIRECTX11 "[RENDERER] With DirectX 11 support" OFF)
+  # Renderer
+  OPTION(WITH_DIRECTX12 "[RENDERER] With DirectX 12 support" OFF)
+  # Platform
+  OPTION(WITH_WIN32 "[PLATFORM] With Win32 support" OFF)
+ENDIF()
+
+# Platform
+OPTION(WITH_GLFW "[PLATFORM] With GLFW support" OFF)
+# Platform
+OPTION(WITH_GLUT "[PLATFORM] With GLUT support (OBSOLETE PREHISTORIC SOFTWARE)" OFF)
+
+IF(APPLE)
+  # Renderer
+  OPTION(WITH_METAL "[RENDERER] With MacOS Metal support" OFF)
+  # Platform
+  OPTION(WITH_OSX "[PLATFORM] With MacOS support" OFF)
+ENDIF()
+
+# Renderer
+OPTION(WITH_OPENGL2 "[RENDERER] With OpenGL 2 support" OFF)
+# Renderer
+OPTION(WITH_OPENGL3 "[RENDERER] With OpenGL 3 support" OFF)
+# Platform
+OPTION(WITH_SDL "[PLATFORM] With SDL support" OFF)
+# Renderer
+OPTION(WITH_SDLRENDERER "[RENDERER] With SDL Renderer support" OFF)
+# Renderer
+OPTION(WITH_VULKAN "[RENDERER] With Vulkan support" OFF)
+# Renderer
+OPTION(WITH_WGPU "[RENDERER] With WGPU support" OFF)
+
+
+
+IF(
+  NOT WITH_ANDROID
+  AND NOT WITH_GLFW
+  AND NOT WITH_GLUT
+  AND NOT WITH_OSX
+  AND NOT WITH_SDL
+  AND NOT WITH_WIN32
+)
+  MESSAGE(WARNING "You need a platform for your renderer to work with")
+ENDIF()
+
+IF(
+  NOT WITH_DIRECTX9
+  AND NOT WITH_DIRECTX10
+  AND NOT WITH_DIRECTX11
+  AND NOT WITH_DIRECTX12
+  AND NOT WITH_METAL
+  AND NOT WITH_OPENGL2
+  AND NOT WITH_OPENGL3
+  AND NOT WITH_SDLRENDERER
+  AND NOT WITH_VULKAN
+  AND NOT WITH_WGPU
+)
+  MESSAGE(WARNING "You need a renderer for your platform to work with")
+ENDIF()
+
+IF(WITH_GLUT)
+  MESSAGE(WARNING "You really miss the 90's, huh?")
+  MESSAGE(WARNING "Fine, but you have been warned!")
+ENDIF()
 
 INCLUDE(GNUInstallDirs)
 INCLUDE(Common)
@@ -71,7 +133,7 @@ IF(WITH_DIRECTX9 AND WIN32)
     FILES    backends/imgui_impl_dx9.h
     PRIVATE  backends/imgui_impl_dx9.cpp
   )
-  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC d3d9 dxgi d3dcompiler)
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE d3d9 dxgi d3dcompiler)
 ENDIF()
 
 IF(WITH_DIRECTX10 AND WIN32)
@@ -80,7 +142,7 @@ IF(WITH_DIRECTX10 AND WIN32)
     FILES    backends/imgui_impl_dx10.h
     PRIVATE  backends/imgui_impl_dx10.cpp
   )
-  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC d3d10 d3dcompiler)
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE d3d10 d3dcompiler)
 ENDIF()
 
 IF(WITH_DIRECTX11 AND WIN32)
@@ -89,7 +151,7 @@ IF(WITH_DIRECTX11 AND WIN32)
     FILES    backends/imgui_impl_dx11.h
     PRIVATE  backends/imgui_impl_dx11.cpp
   )
-  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC d3d11 d3dcompiler)
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE d3d11 d3dcompiler)
 ENDIF()
 
 IF(WITH_DIRECTX12 AND WIN32)
@@ -98,7 +160,7 @@ IF(WITH_DIRECTX12 AND WIN32)
     FILES    backends/imgui_impl_dx12.h
     PRIVATE  backends/imgui_impl_dx12.cpp
   )
-  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC d3d12 dxgi d3dcompiler)
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE d3d12 dxgi d3dcompiler)
 ENDIF()
 
 IF(WITH_GLFW)
@@ -109,7 +171,8 @@ IF(WITH_GLFW)
       FILES    backends/imgui_impl_glfw.h
       PRIVATE  backends/imgui_impl_glfw.cpp
     )
-    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC glfw)
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE ${GLFW3_LIBRARY})
+    TARGET_INCLUDE_DIRECTORIES(@IMGUI_TARGET@ INTERFACE ${GLFW3_INCLUDE_DIR})
   ENDIF()  
 ENDIF()
 
@@ -121,8 +184,8 @@ IF(WITH_GLUT)
       FILES    backends/imgui_impl_glut.h
       PRIVATE  backends/imgui_impl_glut.cpp
     )
-    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC ${GLUT_INCLUDE_DIRS})
-    TARGET_INCLUDE_DIRECTORIES(@IMGUI_TARGET@ PUBLIC ${GLUT_LIBRARIES})
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE ${GLUT_INCLUDE_DIRS})
+    TARGET_INCLUDE_DIRECTORIES(@IMGUI_TARGET@ INTERFACE ${GLUT_LIBRARIES})
   ENDIF()
 ENDIF()
 
@@ -136,9 +199,7 @@ IF(WITH_METAL AND APPLE)
   SET(_CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK})
   SET(CMAKE_FIND_FRAMEWORK ONLY)
 
-  FIND_LIBRARY(COCOA_LIBRARY Cocoa)
   FIND_LIBRARY(OPENGL_LIBRARY OpenGL)
-  FIND_LIBRARY(IOKIT_LIBRARY IOKit)
   FIND_LIBRARY(COREVIDEO_LIBRARY CoreVideo)
   FIND_LIBRARY(METAL_LIBRARY Metal)
   FIND_LIBRARY(METALKIT_LIBRARY MetalKit)
@@ -147,11 +208,9 @@ IF(WITH_METAL AND APPLE)
   SET(CMAKE_FIND_FRAMEWORK ${_CMAKE_FIND_FRAMEWORK})
   UNSET(_CMAKE_FIND_FRAMEWORK)
 
-  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE
     "-framework Metal"
     "-framework MetalKit"
-    "-framework Cocoa"
-    "-framework IOKit"
     "-framework CoreVideo"
     "-framework QuartzCore"
     "-framework OpenGL"
@@ -167,7 +226,7 @@ IF(WITH_OPENGL2)
       FILES    backends/imgui_impl_opengl2.h
       PRIVATE  backends/imgui_impl_opengl2.cpp
     )
-    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC OpenGL::GL)
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE OpenGL::GL)
   ENDIF()  
 ENDIF()
 
@@ -179,8 +238,30 @@ IF(WITH_OPENGL3)
       FILES    backends/imgui_impl_opengl3.h
       PRIVATE  backends/imgui_impl_opengl3.cpp
     )
-    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC OpenGL::GL)
-  ENDIF()  
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE OpenGL::GL)
+  ENDIF()
+ENDIF()
+
+IF(WITH_OSX AND APPLE)
+  TARGET_SOURCES(@IMGUI_TARGET@ INTERFACE
+    FILE_SET HEADERS
+    FILES    backends/imgui_impl_osx.h
+    PRIVATE  backends/imgui_impl_osx.mm
+  )
+
+  SET(_CMAKE_FIND_FRAMEWORK ${CMAKE_FIND_FRAMEWORK})
+  SET(CMAKE_FIND_FRAMEWORK ONLY)
+
+  FIND_LIBRARY(COCOA_LIBRARY Cocoa)
+  FIND_LIBRARY(IOKIT_LIBRARY IOKit)
+
+  SET(CMAKE_FIND_FRAMEWORK ${_CMAKE_FIND_FRAMEWORK})
+  UNSET(_CMAKE_FIND_FRAMEWORK)
+
+  TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE
+    "-framework Cocoa"
+    "-framework IOKit"
+  )
 ENDIF()
 
 IF(WITH_SDL)
@@ -191,7 +272,7 @@ IF(WITH_SDL)
       FILES    backends/imgui_impl_sdl.h
       PRIVATE  backends/imgui_impl_sdl.cpp
     )
-    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC SDL:SDL)
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE SDL:SDL)
   ENDIF()
 ENDIF()
 
@@ -203,7 +284,7 @@ IF(WITH_SDLRENDERER)
       FILES    backends/imgui_impl_sdlrenderer.h
       PRIVATE  backends/imgui_impl_sdlrenderer.cpp
     )
-    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC SDL:SDL)
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE SDL:SDL)
   ENDIF()
 ENDIF()
 
@@ -215,7 +296,7 @@ IF(WITH_VULKAN)
       FILES    backends/imgui_impl_vulkan.h
       PRIVATE  backends/imgui_impl_vulkan.cpp
     )
-    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ PUBLIC Vulkan::Vulkan)
+    TARGET_LINK_LIBRARIES(@IMGUI_TARGET@ INTERFACE Vulkan::Vulkan)
   ENDIF()
 ENDIF()
 

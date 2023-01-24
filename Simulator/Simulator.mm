@@ -3,10 +3,15 @@
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
-#include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_metal.h"
+#import <Bus.hpp>
+#import <Processor.hpp>
+
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_metal.h>
+
 #include <stdio.h>
+#include <map>
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_EXPOSE_NATIVE_COCOA
@@ -16,9 +21,6 @@
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
 
-#import "Processor.hpp"
-#import "Bus.hpp"
-
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -26,7 +28,7 @@ static void glfw_error_callback(int error, const char* description)
 
 int main(int, char**)
 {
-    Bus cpuBus;
+    CPU::Bus cpuBus;
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -157,6 +159,7 @@ int main(int, char**)
 
             if (show_memorymap_window)
             {
+                std::map<uint16_t, CPU::Bus::MEMORYMAP> memorymap = cpuBus.memoryDump(0x100, 0x1FF);
                 ImGui::Begin("Memory Map", &show_memorymap_window);
 
                 if (ImGui::BeginTable("memorymap", 17))
@@ -180,43 +183,43 @@ int main(int, char**)
                     ImGui::TableSetupColumn("0F", ImGuiTableColumnFlags_WidthFixed);
                     ImGui::TableHeadersRow();
 
-                    for (auto it = begin (cpuBus.cpu.memorymap); it != end (cpuBus.cpu.memorymap); ++it)
+                    for (const auto& [key, it] : memorymap)
                     {
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Offset);
+                        ImGui::Text("%02X", it.Offset);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos00);
+                        ImGui::Text("%02X", it.Pos00);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos01);
+                        ImGui::Text("%02X", it.Pos01);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos02);
+                        ImGui::Text("%02X", it.Pos02);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos03);
+                        ImGui::Text("%02X", it.Pos03);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos04);
+                        ImGui::Text("%02X", it.Pos04);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos05);
+                        ImGui::Text("%02X", it.Pos05);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos06);
+                        ImGui::Text("%02X", it.Pos06);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos07);
+                        ImGui::Text("%02X", it.Pos07);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos08);
+                        ImGui::Text("%02X", it.Pos08);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos09);
+                        ImGui::Text("%02X", it.Pos09);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos0A);
+                        ImGui::Text("%02X", it.Pos0A);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos0B);
+                        ImGui::Text("%02X", it.Pos0B);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos0C);
+                        ImGui::Text("%02X", it.Pos0C);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos0D);
+                        ImGui::Text("%02X", it.Pos0D);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos0E);
+                        ImGui::Text("%02X", it.Pos0E);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it->Pos0F);
+                        ImGui::Text("%02X", it.Pos0F);
                     }
                     ImGui::EndTable();
                 }

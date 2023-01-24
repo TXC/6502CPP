@@ -3,22 +3,24 @@
 
 #include <catch2/catch_all.hpp>
 #include <string>
-
 #include <fmt/format.h>
-/*
-//#include <spdlog/spdlog.h>
-#ifdef SPDLOG_FMT_EXTERNAL
-//#include <fmt/ostream.h>
-#else
-#include <spdlog/fmt/fmt.h>
-//#include <spdlog/fmt/ostr.h>
-#endif
-*/
-//using namespace CPU;
-//using namespace CPUTest;
+
+
 namespace CPUTest
 {
   using namespace CPU;
+
+TEST_CASE("Show instructions loaded", "[.debug][.print]")
+{
+  MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
+
+  Bus bus;
+
+  bus.cpu.executioner.printInstructions();
+
+  SUCCEED("1 + 2 = 1");
+}
+
 TEST_CASE("Initialization Tests", "[init]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
@@ -27,24 +29,22 @@ TEST_CASE("Initialization Tests", "[init]")
 
   SECTION("Processor Status Flags Initialized Correctly")
   {
-    /*
-      C = Carry Bit
-      Z = Zero
-      I = Disable Interrupts
-      D = Decimal Mode (unused in this implementation)
-      B = Break
-      U = Unused
-      V = Overflow
-      N = Negative
-    */
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::C) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::Z) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::I) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::D) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::B) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::U) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::V) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::N) == 0);
+    // C = Carry Bit
+    // Z = Zero
+    // I = Disable Interrupts
+    // D = Decimal Mode (unused in this implementation)
+    // B = Break
+    // U = Unused
+    // V = Overflow
+    // N = Negative
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 0);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 0);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 0);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.B) == 0);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.U) == 0);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == 0);
+    REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 0);
   }
 
   SECTION("Processor Registers Initialized Correctly")
@@ -159,7 +159,6 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
     }
   }
 
-#ifdef DECIMAL_MODE
   SECTION("ADC Accumulator Correct When In BDC Mode")
   {
     auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
@@ -200,7 +199,6 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
   }
-#endif
 
   SECTION("ADC Carry Correct When Not In BDC Mode")
   {
@@ -245,7 +243,6 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
     }
   }
 
-#ifdef DECIMAL_MODE
   SECTION("ADC Carry Correct When In BDC Mode")
   {
     auto [accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue] = 
@@ -277,7 +274,6 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
     }
   }
-#endif
 
   SECTION("ADC Zero Flag Correct When Not In BDC Mode")
   {
@@ -1169,7 +1165,7 @@ TEST_CASE("CLD - Clear Decimal Flag", "[opcode][cld]")
   {
     bus.cpu.reset();
 
-    uint8_t program[] = {0xF9, 0xD8};
+    uint8_t program[] = {0xF8, 0xD8};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.LoadProgram(0x00, program, n, 0x00);
 
@@ -2111,7 +2107,8 @@ TEST_CASE("JMP - Jump to New Location", "[opcode][jmp]")
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x08, 4));
   }
 
-  SECTION("Indirect Wraps Correct If MSB IS FF")
+#ifndef EMULATE65C02
+  SECTION("Indirect Wraps Correct If MSB IS FF (6502 only)")
   {
     bus.cpu.reset();
 
@@ -2125,6 +2122,7 @@ TEST_CASE("JMP - Jump to New Location", "[opcode][jmp]")
     bus.cpu.tick();
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0203, 4));
   }
+#endif
 }
 
 TEST_CASE("JSR - Jump to SubRoutine")
@@ -3444,7 +3442,6 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
     }
   }
 
-#ifdef DECIMAL_MODE
   SECTION("SBC Accumulator Correct When In BDC Mode", "[opcode][sbc]")
   {
     auto [accumulatorInitialValue, amountToSubtract, setCarryFlag, expectedValue] = 
@@ -3487,7 +3484,6 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
     }
   }
-#endif
 
   SECTION("SBC Overflow Correct When Not In BDC Mode")
   {
@@ -3536,7 +3532,6 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
     }
   }
 
-#ifdef DECIMAL_MODE
   SECTION("SBC Overflow Correct When In BDC Mode")
   {
     /// @todo Fix so the commented tests work
@@ -3580,7 +3575,6 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == expectedValue);
     }
   }
-#endif
 
   SECTION("SBC Carry Correct")
   {
@@ -4938,7 +4932,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x06, 5}, // ASL Zero Page
       {0x16, 6}, // ASL Zero Page X
       {0x0E, 6}, // ASL Absolute
+#if defined(EMULATE65C02)
+      {0x1E, 6}, // ASL Absolute X
+#else
       {0x1E, 7}, // ASL Absolute X
+#endif
       {0x24, 3}, // BIT Zero Page
       {0x2C, 4}, // BIT Absolute
       {0x00, 7}, // BRK Implied
@@ -5005,7 +5003,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x46, 5}, // LSR Zero Page
       {0x56, 6}, // LSR Zero Page X
       {0x4E, 6}, // LSR Absolute
+#if defined(EMULATE65C02)
+      {0x5E, 6}, // LSR Absolute X
+#else
       {0x5E, 7}, // LSR Absolute X
+#endif
       {0xEA, 2}, // NOP Implied
       {0x09, 2}, // ORA Immediate
       {0x05, 3}, // ORA Zero Page
@@ -5023,12 +5025,20 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x26, 5}, // ROL Zero Page
       {0x36, 6}, // ROL Zero Page X
       {0x2E, 6}, // ROL Absolute
+#if defined(EMULATE65C02)
+      {0x3E, 6}, // ROL Absolute X
+#else
       {0x3E, 7}, // ROL Absolute X
+#endif
       {0x6A, 2}, // ROR Accumulator
       {0x66, 5}, // ROR Zero Page
       {0x76, 6}, // ROR Zero Page X
       {0x6E, 6}, // ROR Absolute
+#if defined(EMULATE65C02)
+      {0x7E, 6}, // ROR Absolute X
+#else
       {0x7E, 7}, // ROR Absolute X
+#endif
       {0x40, 6}, // RTI Implied
       {0x60, 6}, // RTS Implied
       {0xE9, 2}, // SBC Immediate
@@ -5061,6 +5071,82 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x8A, 2}, // TXA Implied
       {0x9A, 2}, // TXS Implied
       {0x98, 2}, // TYA Implied
+#if defined(ILLEGAL)
+      {0x4B, 2}, // ALR Immediate
+      {0x0B, 2}, // ANC Immediate
+      {0x2B, 2}, // ANC2 Immediate
+      {0x8B, 2}, // ANE Immediate (Highly Unstable, Magic Constant)
+      {0x6B, 2}, // ARR Immediate
+
+      {0xC7, 5}, // DCP Zero Page
+      {0xD7, 6}, // DCP Zero Page X
+      {0xCF, 6}, // DCP Absolute
+      {0xDF, 7}, // DCP Absolute X
+      {0xDB, 7}, // DCP Absolute Y
+      {0xC3, 8}, // DCP Indirect X
+      {0xD3, 8}, // DCP Indirect Y
+
+      {0xE7, 5}, // ISC Zero Page
+      {0xF7, 6}, // ISC Zero Page X
+      {0xEF, 6}, // ISC Absolute
+      {0xFF, 7}, // ISC Absolute X
+      {0xFB, 7}, // ISC Absolute Y
+      {0xE3, 8}, // ISC Indirect X
+      {0xF3, 8}, // ISC Indirect Y
+
+      {0xBB, 4}, // LAS Absolute Y
+
+      {0xA7, 3}, // LAX Zero Page
+      {0xB7, 4}, // LAX Zero Page Y
+      {0xAF, 4}, // LAX Absolute
+      {0xBF, 4}, // LAX Absolute Y
+      {0xA3, 6}, // LAX Indirect X
+      {0xB3, 5}, // LAX Indirect Y
+
+      {0xAB, 2}, // LXA Immediate (Highly Unstable, Magic Constant)
+
+      {0x67, 5}, // RRA Zero Page
+      {0x77, 6}, // RRA Zero Page X
+      {0x6F, 6}, // RRA Absolute
+      {0x7F, 7}, // RRA Absolute X
+      {0x7B, 7}, // RRA Absolute Y
+      {0x63, 8}, // RRA Indirect X
+      {0x73, 8}, // RRA Indirect Y
+
+      {0x87, 3}, // SAX Zero Page
+      {0x97, 4}, // SAX Zero Page Y
+      {0x8F, 4}, // SAX Absolute
+      {0x83, 6}, // SAX Indirect X
+
+      {0xCB, 2}, // SBX Immediate
+
+      {0x9F, 5}, // SHA Absolute Y (Unstable)
+      {0x93, 6}, // SHA Indirect Y (Unstable)
+
+      {0x9E, 5}, // SHX Absolute Y (Unstable)
+
+      {0x9C, 5}, // SHY Absolute X (Unstable)
+
+      {0x07, 5}, // SLO Zero Page
+      {0x17, 6}, // SLO Zero Page X
+      {0x0F, 6}, // SLO Absolute
+      {0x1F, 7}, // SLO Absolute X
+      {0x1B, 7}, // SLO Absolute Y
+      {0x03, 8}, // SLO Indirect X
+      {0x13, 8}, // SLO Indirect Y
+
+      {0x47, 5}, // SRE Zero Page
+      {0x57, 6}, // SRE Zero Page X
+      {0x4F, 6}, // SRE Absolute
+      {0x5F, 7}, // SRE Absolute X
+      {0x5B, 7}, // SRE Absolute Y
+      {0x43, 8}, // SRE Indirect X
+      {0x53, 8}, // SRE Indirect Y
+
+      {0x9B, 5}, // TAS Absolute Y
+
+      {0xEB, 2}, // USBC Immediate
+#endif
     }));
 
     SECTION(
@@ -5069,15 +5155,15 @@ TEST_CASE("Cycle Tests", "[cycle]")
     ) {
       bus.cpu.reset();
 
-      uint8_t program[]= {operation, 0x00};
+      uint8_t program[] = {operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
 
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5103,7 +5189,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(%d) works",
+      fmt::format("Check if {:s}({:}) works",
       bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
       bus.cpu.reset();
@@ -5115,10 +5201,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5136,7 +5222,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(%d) works",
+      fmt::format("Check if {:s}({:}) works",
       bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
       bus.cpu.reset();
@@ -5148,10 +5234,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5169,7 +5255,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(%d) works",
+      fmt::format("Check if {:s}({:}) works",
       bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
       bus.cpu.reset();
@@ -5180,10 +5266,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5195,7 +5281,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(%d) works",
+      fmt::format("Check if {:s}({:}) works",
       bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
       bus.cpu.reset();
@@ -5208,10 +5294,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5223,7 +5309,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(%d) works",
+      fmt::format("Check if {:s}({:}) works",
       bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
       bus.cpu.reset();
@@ -5236,10 +5322,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5270,10 +5356,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5285,7 +5371,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(%d) works",
+      fmt::format("Check if {:s}({:}) works",
       bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
       bus.cpu.reset();
@@ -5298,10 +5384,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5313,7 +5399,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(%d) works",
+      fmt::format("Check if {:s}({:}) works",
       bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
       bus.cpu.reset();
@@ -5326,10 +5412,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5360,10 +5446,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5375,7 +5461,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(%d) works",
+      fmt::format("Check if {:s}({:}) works",
       bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
       bus.cpu.reset();
@@ -5388,10 +5474,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5403,7 +5489,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
     }));
 
     SECTION(
-      fmt::format("Check if {:s}(%d) works",
+      fmt::format("Check if {:s}({:}) works",
       bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
       bus.cpu.reset();
@@ -5416,10 +5502,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5449,10 +5535,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5478,10 +5564,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5507,10 +5593,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5541,10 +5627,10 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 
@@ -5552,7 +5638,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
   {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
       {0xEA, 2}, // NOP Implied
-#ifdef ILLEGAL
+#if defined(ILLEGAL)
       {0x1A, 2}, // NOP Implied
       {0x3A, 2}, // NOP Implied
       {0x5A, 2}, // NOP Implied
@@ -5593,11 +5679,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.LoadProgram(0x0000, program, n, 0x00);
 
-      uint8_t startingNumberOfCycles = bus.cpu.cycle_count;
+      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
 
       bus.cpu.tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.cycle_count, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
     }
   }
 }

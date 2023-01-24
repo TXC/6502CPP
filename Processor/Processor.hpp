@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 #include <spdlog/spdlog.h>
-#ifdef SPDLOG_FMT_EXTERNAL
+#if defined(SPDLOG_FMT_EXTERNAL)
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #else
@@ -35,16 +35,20 @@ namespace CPU
   private:
     // Linkage to the communications bus
     Bus* bus = nullptr;
-    bool jammed = 0x00;
+    bool jammed = 0;
 
   public:
     // Linkage to the instructions
     Executioner executioner;
 
-    uint8_t  opcode = 0x00;     // Is the instruction byte
-    uint8_t  extra_cycles = 0;  // Number of extra cycles that has been added
-    uint8_t  cycle_count = 0;   // Counts how many cycles the instruction has remaining
-    uint32_t clock_count = 0;   // A global accumulation of the number of clocks
+    // Is the instruction byte
+    uint8_t  opcode = 0x00;
+    // Number of extra cycles that has been added
+    uint8_t  extra_cycles = 0;
+    // Counts how many cycles the instruction has done
+    uint8_t  cycle_count = 0;
+    // Operation/Tick cycle
+    uint32_t operation_cycle = 0;
 
     // When true, process interrupt
     bool _previousInterrupt = false;
@@ -244,7 +248,7 @@ namespace CPU
 
   public:
     uint8_t GetCpuSpeed() { return cpuspeed; };
-    void SetCpuSpeed(uint8_t nSpeed) { cpuspeed = nSpeed; };
+    void    SetCpuSpeed(uint8_t nSpeed) { cpuspeed = nSpeed; };
 
   public:
     uint8_t readMemory(uint16_t a);

@@ -6,17 +6,20 @@
 #include <string>
 #include <map>
 #include <iostream>
-#ifdef SPDLOG_FMT_EXTERNAL
+#include <ostream>
+#include <vector>
+#include <exception>
+#include <stdexcept>
+
+#if defined(SPDLOG_FMT_EXTERNAL)
 #include <fmt/format.h>
 //#include <fmt/ostream.h>
 #else
 #include <spdlog/fmt/fmt.h>
 //#include <spdlog/fmt/ostr.h>
 #endif
-#include <stdexcept>
-#include <vector>
 
-#ifdef DEBUG
+#if defined(DEBUG)
 #include <execinfo.h>
 #include <dlfcn.h>
 #include <cxxabi.h>
@@ -48,17 +51,6 @@ namespace CPU
     return false;
   }
 
-  template<typename ... Args>
-  std::string string_format( const std::string& format, Args ... args )
-  {
-    int size_s = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
-    if( size_s <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
-    auto size = static_cast<size_t>( size_s );
-    std::unique_ptr<char[]> buf( new char[ size ] );
-    std::snprintf( buf.get(), size, format.c_str(), args ... );
-    return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
-  }
-
   // A convenient utility to convert variables into
   // hex strings because "modern C++"'s method with 
   // streams is atrocious
@@ -73,6 +65,7 @@ namespace CPU
     return s;
   };
 
+#if defined(DEBUG)
   template <typename T = std::string>
   std::string Backtrace(int skip = 1)
   {
@@ -104,7 +97,6 @@ namespace CPU
     return trace_buf.str();
   }
 
-#ifdef DEBUG
   // this function will re-throw the current exception, nested inside a
   // new one. If the std::current_exception is derived from logic_error, 
   // this function will throw a logic_error. Otherwise it will throw a

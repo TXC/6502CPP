@@ -10,7 +10,7 @@ LIST(APPEND CMAKE_MODULE_PATH
   ${PROJECT_SOURCE_DIR}/CMake
 )
 
-#include(${PROJECT_SOURCE_DIR}/CMake/BuildSimulator.cmake)
+include(${PROJECT_SOURCE_DIR}/CMake/BuildSimulator.cmake)
 #include(${PROJECT_SOURCE_DIR}/CMake/BuildImGuiDemo.cmake)
 include(${PROJECT_SOURCE_DIR}/CMake/BuildDemo.cmake)
 

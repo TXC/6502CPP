@@ -1,5 +1,7 @@
-#include "Bus.hpp"
-#include "Processor.hpp"
+#include <Bus.hpp>
+#include <Processor.hpp>
+
+#include <fmt/format.h>
 
 #include <iostream>
 #include <sstream>
@@ -39,6 +41,7 @@ int main()
   for (uint8_t i = 0; i <= 30; i++)
   {
     bus.cpu.tick();
+    fmt::print("Tick Tock: {}\n", i);
   }
 
   return 0;
