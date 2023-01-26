@@ -39,6 +39,23 @@ TARGET_SOURCES(${APP_NAME} PRIVATE
         Processor.cpp
 )
 
+SOURCE_GROUP(${APP_NAME} FILES
+  Bus.cpp
+  Bus.hpp
+  Exceptions.hpp
+  Executioner.cpp
+  Executioner.hpp
+  Formatters.hpp
+  Instructions.cpp
+  #Instructions.hpp
+  Logger.cpp
+  Logger.hpp
+  Processor.cpp
+  Processor.hpp
+  Singleton.hpp
+  Types.hpp
+)
+
 TARGET_COMPILE_FEATURES(${APP_NAME} PUBLIC cxx_std_20)
 
 TARGET_INCLUDE_DIRECTORIES(${APP_NAME} PUBLIC

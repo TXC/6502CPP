@@ -7,7 +7,7 @@ PROJECT(
   LANGUAGES CXX
 )
 
-SET(APP_NAME tests)
+SET(APP_NAME ProcessorTests)
 
 INCLUDE(Common)
 
@@ -25,7 +25,7 @@ set_compiler_version(
 )
 message(STATUS "CMAKE_CXX_STANDARD: ${CMAKE_CXX_STANDARD}")
 
-TARGET_SOURCES(tests
+TARGET_SOURCES(${APP_NAME}
   PUBLIC  MainTest.hpp
           ProcessorTests.hpp
           FunctionalProcessorTests.hpp
@@ -35,12 +35,28 @@ TARGET_SOURCES(tests
           FunctionalProcessorTests.cpp
 )
 
+SOURCE_GROUP(${APP_NAME} FILES
+  MainTest.cpp
+  MainTest.hpp
+  ProcessorTests.cpp
+  ProcessorTests.hpp
+  FunctionalProcessorTests.cpp
+  FunctionalProcessorTests.hpp
+  FunctionalTests/6502_cycle_test.bin
+  FunctionalTests/6502_cycle_test.lst
+  FunctionalTests/6502_functional_test_test.bin
+  FunctionalTests/6502_functional_test_test.lst
+  FunctionalTests/6502_interrupt_test.bin
+  FunctionalTests/6502_interrupt_test.lst
+  FunctionalTests/cycle_test_data.csv
+)
+
 OPTION(ENABLE_TEST "Enable Tests" ON)
 
 SET(TestDataDirectory "${CMAKE_CURRENT_SOURCE_DIR}/FunctionalTests/" CACHE PATH "Path to directory where binary test files can be found")
 
 IF(DEFINED TestDataDirectory AND IS_DIRECTORY ${TestDataDirectory})
-  TARGET_COMPILE_DEFINITIONS(tests PRIVATE TESTDIR=${TestDataDirectory})
+  TARGET_COMPILE_DEFINITIONS(${APP_NAME} PRIVATE TESTDIR=${TestDataDirectory})
 ELSEIF(DEFINED TestDataDirectory AND NOT IS_DIRECTORY ${TestDataDirectory})
   MESSAGE(SEND_ERROR "[ TESTDIR ] - Path not found - ${TestDataDirectory}")
 ENDIF()

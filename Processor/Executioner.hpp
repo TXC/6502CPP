@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cstdint>
 
 #if defined(SPDLOG_FMT_EXTERNAL)
 #include <fmt/format.h>

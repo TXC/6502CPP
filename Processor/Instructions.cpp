@@ -1,5 +1,8 @@
 //#include "Instructions.hpp"
 #include "Executioner.hpp"
+#include <cstdint>
+#include <string>
+
 
 namespace CPU
 {

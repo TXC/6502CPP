@@ -1,0 +1,321 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F957BD4A2980321200B03470 /* ProcessorTests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F957BD422980321100B03470 /* ProcessorTests.cpp */; };
+		F957BD4B2980321200B03470 /* TestData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F957BD472980321100B03470 /* TestData.cpp */; };
+		F957BD4C2980321200B03470 /* FunctionalProcessorTests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F957BD482980321100B03470 /* FunctionalProcessorTests.cpp */; };
+		F957BD4D2980321200B03470 /* MainTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F957BD492980321200B03470 /* MainTest.cpp */; };
+		F957BDEE2980461B00B03470 /* libProcessor.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = F957BDED2980461B00B03470 /* libProcessor.dylib */; };
+		F957BDEF2980461B00B03470 /* libProcessor.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = F957BDED2980461B00B03470 /* libProcessor.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F957BD36298031C700B03470 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		F957BDF02980461B00B03470 /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				F957BDEF2980461B00B03470 /* libProcessor.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		F957BD38298031C700B03470 /* Processor Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Processor Tests"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F957BD422980321100B03470 /* ProcessorTests.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ProcessorTests.cpp; sourceTree = "<group>"; };
+		F957BD432980321100B03470 /* FunctionalTests */ = {isa = PBXFileReference; lastKnownFileType = folder; path = FunctionalTests; sourceTree = "<group>"; };
+		F957BD442980321100B03470 /* MainTest.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MainTest.hpp; sourceTree = "<group>"; };
+		F957BD452980321100B03470 /* ProcessorTests.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ProcessorTests.hpp; sourceTree = "<group>"; };
+		F957BD462980321100B03470 /* FunctionalProcessorTests.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FunctionalProcessorTests.hpp; sourceTree = "<group>"; };
+		F957BD472980321100B03470 /* TestData.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TestData.cpp; sourceTree = "<group>"; };
+		F957BD482980321100B03470 /* FunctionalProcessorTests.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FunctionalProcessorTests.cpp; sourceTree = "<group>"; };
+		F957BD492980321200B03470 /* MainTest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MainTest.cpp; sourceTree = "<group>"; };
+		F957BDED2980461B00B03470 /* libProcessor.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; path = libProcessor.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F957BD35298031C700B03470 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F957BDEE2980461B00B03470 /* libProcessor.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F957BD2F298031C700B03470 = {
+			isa = PBXGroup;
+			children = (
+				F957BD482980321100B03470 /* FunctionalProcessorTests.cpp */,
+				F957BD462980321100B03470 /* FunctionalProcessorTests.hpp */,
+				F957BD432980321100B03470 /* FunctionalTests */,
+				F957BD492980321200B03470 /* MainTest.cpp */,
+				F957BD442980321100B03470 /* MainTest.hpp */,
+				F957BD422980321100B03470 /* ProcessorTests.cpp */,
+				F957BD452980321100B03470 /* ProcessorTests.hpp */,
+				F957BD472980321100B03470 /* TestData.cpp */,
+				F957BD39298031C700B03470 /* Products */,
+				F957BDEC2980461B00B03470 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		F957BD39298031C700B03470 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F957BD38298031C700B03470 /* Processor Tests */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F957BDEC2980461B00B03470 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F957BDED2980461B00B03470 /* libProcessor.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F957BD37298031C700B03470 /* Processor Tests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F957BD3F298031C700B03470 /* Build configuration list for PBXNativeTarget "Processor Tests" */;
+			buildPhases = (
+				F957BD34298031C700B03470 /* Sources */,
+				F957BD35298031C700B03470 /* Frameworks */,
+				F957BD36298031C700B03470 /* CopyFiles */,
+				F957BDF02980461B00B03470 /* Embed Libraries */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Processor Tests";
+			productName = "Processor Tests";
+			productReference = F957BD38298031C700B03470 /* Processor Tests */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F957BD30298031C700B03470 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1420;
+				TargetAttributes = {
+					F957BD37298031C700B03470 = {
+						CreatedOnToolsVersion = 14.2;
+					};
+				};
+			};
+			buildConfigurationList = F957BD33298031C700B03470 /* Build configuration list for PBXProject "Processor Tests" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = F957BD2F298031C700B03470;
+			productRefGroup = F957BD39298031C700B03470 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F957BD37298031C700B03470 /* Processor Tests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F957BD34298031C700B03470 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F957BD4A2980321200B03470 /* ProcessorTests.cpp in Sources */,
+				F957BD4C2980321200B03470 /* FunctionalProcessorTests.cpp in Sources */,
+				F957BD4D2980321200B03470 /* MainTest.cpp in Sources */,
+				F957BD4B2980321200B03470 /* TestData.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F957BD3D298031C700B03470 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "/usr/local/include/**";
+				LIBRARY_SEARCH_PATHS = "/usr/local/lib/**";
+				MACOSX_DEPLOYMENT_TARGET = 13.1;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		F957BD3E298031C700B03470 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "/usr/local/include/**";
+				LIBRARY_SEARCH_PATHS = "/usr/local/lib/**";
+				MACOSX_DEPLOYMENT_TARGET = 13.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		F957BD40298031C700B03470 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_ASSET_PATHS = "FunctionalProcessorTests.hpp MainTest.hpp ProcessorTests.hpp MainTest.cpp TestData.cpp FunctionalProcessorTests.cpp ProcessorTests.cpp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		F957BD41298031C700B03470 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_ASSET_PATHS = "FunctionalProcessorTests.hpp MainTest.hpp ProcessorTests.hpp MainTest.cpp TestData.cpp FunctionalProcessorTests.cpp ProcessorTests.cpp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F957BD33298031C700B03470 /* Build configuration list for PBXProject "Processor Tests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F957BD3D298031C700B03470 /* Debug */,
+				F957BD3E298031C700B03470 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F957BD3F298031C700B03470 /* Build configuration list for PBXNativeTarget "Processor Tests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F957BD40298031C700B03470 /* Debug */,
+				F957BD41298031C700B03470 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F957BD30298031C700B03470 /* Project object */;
+}

@@ -159,7 +159,7 @@ int main(int, char**)
 
             if (show_memorymap_window)
             {
-                std::map<uint16_t, CPU::Bus::MEMORYMAP> memorymap = cpuBus.memoryDump(0x100, 0x1FF);
+                auto memorymap = cpuBus.memoryDump(0x100, 0x1FF);
                 ImGui::Begin("Memory Map", &show_memorymap_window);
 
                 if (ImGui::BeginTable("memorymap", 17))
@@ -183,43 +183,43 @@ int main(int, char**)
                     ImGui::TableSetupColumn("0F", ImGuiTableColumnFlags_WidthFixed);
                     ImGui::TableHeadersRow();
 
-                    for (const auto& [key, it] : memorymap)
+                    for (int n = 0; n < memorymap.size() ; ++n)
                     {
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Offset);
+                        ImGui::Text("%02X", memorymap[n].Offset);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos00);
+                        ImGui::Text("%02X", memorymap[n].Pos00);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos01);
+                        ImGui::Text("%02X", memorymap[n].Pos01);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos02);
+                        ImGui::Text("%02X", memorymap[n].Pos02);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos03);
+                        ImGui::Text("%02X", memorymap[n].Pos03);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos04);
+                        ImGui::Text("%02X", memorymap[n].Pos04);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos05);
+                        ImGui::Text("%02X", memorymap[n].Pos05);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos06);
+                        ImGui::Text("%02X", memorymap[n].Pos06);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos07);
+                        ImGui::Text("%02X", memorymap[n].Pos07);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos08);
+                        ImGui::Text("%02X", memorymap[n].Pos08);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos09);
+                        ImGui::Text("%02X", memorymap[n].Pos09);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos0A);
+                        ImGui::Text("%02X", memorymap[n].Pos0A);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos0B);
+                        ImGui::Text("%02X", memorymap[n].Pos0B);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos0C);
+                        ImGui::Text("%02X", memorymap[n].Pos0C);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos0D);
+                        ImGui::Text("%02X", memorymap[n].Pos0D);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos0E);
+                        ImGui::Text("%02X", memorymap[n].Pos0E);
                         ImGui::TableNextColumn();
-                        ImGui::Text("%02X", it.Pos0F);
+                        ImGui::Text("%02X", memorymap[n].Pos0F);
                     }
                     ImGui::EndTable();
                 }

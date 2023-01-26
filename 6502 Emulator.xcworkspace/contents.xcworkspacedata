@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:includes/imgui/imgui.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Processor/Processor.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Simulator/../ProcessorTests/Processor Tests.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:/Users/txc/Projects/CPP/Simulator/Simulator.xcodeproj">
+   </FileRef>
+</Workspace>
