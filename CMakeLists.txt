@@ -1,6 +1,10 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
 
 PROJECT(6502_Emulator VERSION 1.0.0 DESCRIPTION "6502 Emulator" LANGUAGES CXX)
+IF(APPLE)
+  ENABLE_LANGUAGE(OBJC)
+  ENABLE_LANGUAGE(OBJCXX)
+ENDIF()
 
 # Determine if thisproject is built as a subproject (using add_subdirectory)
 # or if it is the master project.
@@ -12,6 +16,7 @@ IF (NOT DEFINED MASTER_PROJECT)
   ENDIF ()
 ENDIF ()
 
+# Only affects CMake
 OPTION(VERBOSE "Enable verbosity" OFF)
 
 #
@@ -87,14 +92,10 @@ IF(LINUX OR APPLE)
   LIST(APPEND CMAKE_PREFIX_PATH "/usr/local/include")
 ENDIF()
 
+ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/includes)
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/Processor)
-
-IF(NOT EXISTS ${PROJECT_SOURCE_DIR}/lib/imgui/imgui.h)
-  INCLUDE(${CMAKE_SOURCE_DIR}/CMake/GetImgui.cmake)
-ENDIF()
 
 SOURCE_GROUP(TREE includes FILES includes/)
 
-ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/includes)
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/ProcessorTests)
-ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/Simulator)
+ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/UserInterfaces)

@@ -5,7 +5,8 @@
 #include <map>
 #include <cstdint>
 
-#if defined(SPDLOG_FMT_EXTERNAL)
+#include <spdlog/spdlog.h>
+#if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #else
@@ -240,12 +241,12 @@ namespace CPU
     // I capture all "missing/illegal" opcodes with this function.
     void opXXX();
 
-#if defined(EMULATE65C02)
+#if defined EMULATE65C02
     void opSTP();
     void opWAI();
 #endif
 
-#if defined(ILLEGAL)
+#if defined ILLEGAL
     // Illegal opcodes
     void opALR();
     void opANC();

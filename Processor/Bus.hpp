@@ -4,7 +4,7 @@
 
 #include <array>
 #include <map>
-#if defined(SPDLOG_FMT_EXTERNAL)
+#if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #else

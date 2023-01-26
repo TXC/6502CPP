@@ -20,21 +20,18 @@ ADD_LIBRARY(${APP_NAME}::${APP_NAME} ALIAS ${APP_NAME})
 
 TARGET_SOURCES(${APP_NAME} INTERFACE
   FILE_SET HEADERS
-  FILES Bus.hpp
+  FILES 
+        Bus.hpp
         Exceptions.hpp
         Executioner.hpp
         Formatters.hpp
-        #Instructions.hpp
         Logger.hpp
         Processor.hpp
         Singleton.hpp
         Types.hpp
-)
-
-TARGET_SOURCES(${APP_NAME} PRIVATE
+  PRIVATE
         Bus.cpp
         Executioner.cpp
-        Logger.cpp
         Instructions.cpp
         Processor.cpp
 )
@@ -47,8 +44,6 @@ SOURCE_GROUP(${APP_NAME} FILES
   Executioner.hpp
   Formatters.hpp
   Instructions.cpp
-  #Instructions.hpp
-  Logger.cpp
   Logger.hpp
   Processor.cpp
   Processor.hpp

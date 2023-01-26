@@ -1,9 +1,10 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
 
-PROJECT(
-  6502_Emulator_3rdPartyLib
-  DESCRIPTION "6502 Emulator Third Party Lib"
-)
+IF(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.h)
+  MESSAGE(STATUS "ImGui Not Found! Downloading...")
+  INCLUDE(${CMAKE_SOURCE_DIR}/CMake/GetImgui.cmake)
+  MESSAGE(STATUS "Done!")
+ENDIF()
 
-#include(${PROJECT_SOURCE_DIR}/imgui)
-#include(${PROJECT_SOURCE_DIR}/metal-cpp)
+ADD_SUBDIRECTORY(imgui)
+#ADD_SUBDIRECTORY(metal-cpp)

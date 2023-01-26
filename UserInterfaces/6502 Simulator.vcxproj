@@ -12,14 +12,19 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
-    <ProjectGuid>{DDDB4BDE-2F8E-48B2-BC9C-774561DA2B15}</ProjectGuid>
+    <ProjectGuid>{405658F1-F3B6-4ABA-8D7B-ED218D4A3EA1}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -31,37 +36,23 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup>
-    <LinkIncremental>true</LinkIncremental>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)\out\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>out\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Platform)'=='x64'">
+  <ItemDefinitionGroup>
     <ClCompile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="FunctionalProcessorTests.cpp" />
-    <ClCompile Include="MainTest.cpp" />
-    <ClCompile Include="ProcessorTests.cpp" />
-    <ClCompile Include="TestData.cpp" />
+    <ClCompile Include="Demo/Demo.cpp" />
+    <ClCompile Include="ImGuiDemo/ImGuiDemo.mm" />
+    <ClCompile Include="Simulator/Simulator.mm" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FunctionalProcessorTests.hpp" />
-    <ClInclude Include="MainTest.hpp" />
-    <ClInclude Include="ProcessorTests.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="functionaltests\6502_cycle_test.bin" />
-    <None Include="functionaltests\6502_functional_test.bin" />
-    <None Include="functionaltests\6502_interrupt_test.bin" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Processor\6502 Processor.vcxproj">
-      <Project>{b81bf482-c04a-4a83-8af8-ed570c5ea9dd}</Project>
-    </ProjectReference>
+    <ClCompile Include="Simulator/Simulator.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

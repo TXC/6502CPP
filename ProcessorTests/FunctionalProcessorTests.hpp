@@ -23,7 +23,7 @@ namespace CPUTest
     {
       std::fstream fp;
 
-#if defined(TESTDIR)
+#if defined TESTDIR
       std::filesystem::path filepath = std::string(STRINGIZE(TESTDIR));
 #else
       std::filesystem::path filepath = std::filesystem::current_path();

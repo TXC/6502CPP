@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <spdlog/spdlog.h>
-#if defined(SPDLOG_FMT_EXTERNAL)
+#if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #else
@@ -250,7 +250,7 @@ namespace CPU
   {
     if (jammed)
     {
-#if defined(LOGMODE)
+#if defined LOGMODE
       Logger::log()->error("JAMMED");
 #endif
       return;
@@ -270,7 +270,7 @@ namespace CPU
     {
       //UpdateMemoryMap();
 
-#if defined(LOGMODE)
+#if defined LOGMODE
       disassemble(reg.PC);
       Logger::log()->info(
         "{:>10d}:{:02X} OP: 0x{:02X} / {}:{} {: <17s} {}",
@@ -322,7 +322,7 @@ namespace CPU
     // Always set the unused status flag bit to 1
     SetFlag(U, true);
 
-#if defined(LOGMODE)
+#if defined LOGMODE
     // This logger dumps every cycle the entire processor state for analysis.
     // This can be used for debugging the emulation, but has little utility
     // during emulation. Its also very slow, so only use if you have to.
@@ -365,7 +365,7 @@ namespace CPU
   // Returns the value of a specific bit of the status register
   uint8_t Processor::GetFlag(FLAGS6502 f)
   {
-//#if defined(DEBUG)
+//#if defined DEBUG
 //    Logger::log()->debug("GetFlag - Current: 0x{:02X} {} ", reg.SR, DecodeFlag(reg.SR));
 //#endif
     //return ((status & f) > 0) ? 1 : 0;
@@ -700,7 +700,7 @@ namespace CPU
   {
     extra_cycles = (extra_cycles + 1);
 
-//#if defined(DEBUG)
+//#if defined DEBUG
 //    Logger::log()->debug(
 //      "addExtraCycle: {} - incrementCycle: {} - {}",
 //      executioner.getOperation(opcode), incCycleCount, reg
@@ -717,7 +717,7 @@ namespace CPU
   // Increment Cycle Count
   void Processor::incrementCycleCount()
   {
-//#if defined(DEBUG)
+//#if defined DEBUG
 //    Logger::log()->debug(
 //      "incrementCycleCount: {} - Current Cycle: {} - {}",
 //      executioner.getOperation(opcode), cycle_count, reg
@@ -946,7 +946,7 @@ namespace CPU
 
   void Processor::disassemble(uint16_t addr)
   {
-#if defined(LOGMODE)
+#if defined LOGMODE
     Processor::DISASSEMBLY CD = setDisassembly(addr);
     Logger::log()->info("{} {}", CD, reg);
 #endif
@@ -954,7 +954,7 @@ namespace CPU
 
   void Processor::disassemble(uint16_t nStart, uint16_t nStop)
   {
-#if defined(LOGMODE)
+#if defined LOGMODE
     uint16_t addr = nStart;
   //Logger::log()->info("disassemble: nStart: ${:04X} nStop: ${:04X}", nStart, nStop);
 

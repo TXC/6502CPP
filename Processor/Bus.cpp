@@ -2,7 +2,7 @@
 #include "Types.hpp"
 #include "Logger.hpp"
 #include <iostream>
-#if defined(SPDLOG_FMT_EXTERNAL)
+#if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
 #else
 #include <spdlog/fmt/fmt.h>
@@ -14,7 +14,7 @@ namespace CPU
 
   void handler(int sig)
   {
-#if defined(DEBUG)
+#if defined DEBUG
     std::cout << "DEBUG MODE ACTIVE!" << std::endl;
 #endif
     switch(sig)
@@ -40,7 +40,7 @@ namespace CPU
       default:
         std::cout << "Unknown Fault Detected." << std::endl;
     }
-#if defined(DEBUG)
+#if defined DEBUG
     std::cout << "Printing Backtrace:" << std::endl
               << Backtrace() << std::endl;
 #endif
@@ -70,7 +70,7 @@ namespace CPU
     catch (const std::exception& e)
     {
       std::cout << "std::exception :" << e.what() << std::endl;
-#if defined(DEBUG)
+#if defined DEBUG
       print_exception(e);
 #endif
     }
@@ -114,7 +114,7 @@ namespace CPU
 
   void Bus::dump(uint16_t offset)
   {
-#if defined(LOGMODE)
+#if defined LOGMODE
     Logger::log()->info("Actual ADDR: ${:04X}", offset);
 
     uint16_t offsetStart = offset & 0xFFF0;
@@ -125,7 +125,7 @@ namespace CPU
 
   void Bus::dump(uint16_t offsetStart, uint16_t offsetStop)
   {
-#if defined(LOGMODE)
+#if defined LOGMODE
     Logger::log()->info("MEMORY LOG FOR: ${:04X} - ${:04X}", offsetStart, offsetStop);
     Logger::log()->info(" ADDR 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
 

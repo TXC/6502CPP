@@ -36,7 +36,7 @@ void handler(int sig)
     default:
       std::cout << "Unknown Fault Detected." << std::endl;
   }
-#if defined(DEBUG)
+#if defined DEBUG
   std::cout << "Printing Backtrace:" << std::endl
             << CPU::Backtrace() << std::endl;
 #endif

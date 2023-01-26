@@ -9,7 +9,7 @@
 #include <fmt/format.h>
 /*
 #include <spdlog/spdlog.h>
-#if defined(SPDLOG_FMT_EXTERNAL)
+#if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
 #else
 #include <spdlog/fmt/fmt.h>

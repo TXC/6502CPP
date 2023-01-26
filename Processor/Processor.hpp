@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 #include <spdlog/spdlog.h>
-#if defined(SPDLOG_FMT_EXTERNAL)
+#if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #else

@@ -11,7 +11,7 @@
 #include <exception>
 #include <stdexcept>
 
-#if defined(SPDLOG_FMT_EXTERNAL)
+#if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
 //#include <fmt/ostream.h>
 #else
@@ -19,7 +19,7 @@
 //#include <spdlog/fmt/ostr.h>
 #endif
 
-#if defined(DEBUG)
+#if defined DEBUG
 #include <execinfo.h>
 #include <dlfcn.h>
 #include <cxxabi.h>
@@ -65,7 +65,7 @@ namespace CPU
     return s;
   };
 
-#if defined(DEBUG)
+#if defined DEBUG
   template <typename T = std::string>
   std::string Backtrace(int skip = 1)
   {

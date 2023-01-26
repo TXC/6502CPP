@@ -4932,7 +4932,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x06, 5}, // ASL Zero Page
       {0x16, 6}, // ASL Zero Page X
       {0x0E, 6}, // ASL Absolute
-#if defined(EMULATE65C02)
+#if defined EMULATE65C02
       {0x1E, 6}, // ASL Absolute X
 #else
       {0x1E, 7}, // ASL Absolute X
@@ -5003,7 +5003,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x46, 5}, // LSR Zero Page
       {0x56, 6}, // LSR Zero Page X
       {0x4E, 6}, // LSR Absolute
-#if defined(EMULATE65C02)
+#if defined EMULATE65C02
       {0x5E, 6}, // LSR Absolute X
 #else
       {0x5E, 7}, // LSR Absolute X
@@ -5025,7 +5025,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x26, 5}, // ROL Zero Page
       {0x36, 6}, // ROL Zero Page X
       {0x2E, 6}, // ROL Absolute
-#if defined(EMULATE65C02)
+#if defined EMULATE65C02
       {0x3E, 6}, // ROL Absolute X
 #else
       {0x3E, 7}, // ROL Absolute X
@@ -5034,7 +5034,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x66, 5}, // ROR Zero Page
       {0x76, 6}, // ROR Zero Page X
       {0x6E, 6}, // ROR Absolute
-#if defined(EMULATE65C02)
+#if defined EMULATE65C02
       {0x7E, 6}, // ROR Absolute X
 #else
       {0x7E, 7}, // ROR Absolute X
@@ -5071,7 +5071,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x8A, 2}, // TXA Implied
       {0x9A, 2}, // TXS Implied
       {0x98, 2}, // TYA Implied
-#if defined(ILLEGAL)
+#if defined ILLEGAL
       {0x4B, 2}, // ALR Immediate
       {0x0B, 2}, // ANC Immediate
       {0x2B, 2}, // ANC2 Immediate
@@ -5082,7 +5082,9 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0xD7, 6}, // DCP Zero Page X
       {0xCF, 6}, // DCP Absolute
       {0xDF, 7}, // DCP Absolute X
+#if !defined EMULATE65C02
       {0xDB, 7}, // DCP Absolute Y
+#endif
       {0xC3, 8}, // DCP Indirect X
       {0xD3, 8}, // DCP Indirect Y
 
@@ -5118,8 +5120,9 @@ TEST_CASE("Cycle Tests", "[cycle]")
       {0x8F, 4}, // SAX Absolute
       {0x83, 6}, // SAX Indirect X
 
+#if !defined EMULATE65C02
       {0xCB, 2}, // SBX Immediate
-
+#endif
       {0x9F, 5}, // SHA Absolute Y (Unstable)
       {0x93, 6}, // SHA Indirect Y (Unstable)
 
@@ -5638,7 +5641,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
   {
     auto [operation, numberOfCyclesUsed] = GENERATE( table<uint8_t, uint8_t>({
       {0xEA, 2}, // NOP Implied
-#if defined(ILLEGAL)
+#if defined ILLEGAL
       {0x1A, 2}, // NOP Implied
       {0x3A, 2}, // NOP Implied
       {0x5A, 2}, // NOP Implied

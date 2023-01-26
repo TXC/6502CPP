@@ -49,8 +49,8 @@ See Also
 ]===]
 FUNCTION(set_compiler_version)
   set(options)
-  set(oneValueArgs)
-  set(multiValueArgs TARGET)
+  set(oneValueArgs TARGET)
+  set(multiValueArgs)
   
   IF(CMAKE_C_COMPILER)
     LIST(APPEND oneValueArgs C_STANDARD)
@@ -68,38 +68,52 @@ FUNCTION(set_compiler_version)
     )
   ENDIF(CMAKE_CXX_COMPILER)
   
-  IF(CMAKE_OBJC_COMPILER)
+  IF(APPLE AND CMAKE_OBJC_COMPILER)
     LIST(APPEND oneValueArgs OBJC_STANDARD)
     LIST(APPEND options
       OBJC_STANDARD_REQUIRED
       OBJC_EXTENSIONS
     )
-  ENDIF(CMAKE_OBJC_COMPILER)
+  ENDIF()
   
-  IF(CMAKE_OBJCXX_COMPILER)
+  IF(APPLE AND CMAKE_OBJCXX_COMPILER)
     LIST(APPEND oneValueArgs OBJCXX_STANDARD)
     LIST(APPEND options
       OBJCXX_STANDARD_REQUIRED
       OBJCXX_EXTENSIONS
     )
-  ENDIF(CMAKE_OBJCXX_COMPILER)
+  ENDIF()
+
+  #MESSAGE(STATUS "options:        ${options}")
+  #MESSAGE(STATUS "oneValueArgs:   ${oneValueArgs}")
+  #MESSAGE(STATUS "multiValueArgs: ${multiValueArgs}")
 
   cmake_parse_arguments("SCV" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  SET(SCV_T ${SCV_TARGET})
 
   # prefer the environment variable OBJC or CC
   FOREACH(var C CXX OBJC OBJCXX)
     IF(CMAKE_${var}_COMPILER AND DEFINED "SCV_${var}_STANDARD")
 
-      MESSAGE(STATUS "<< ${PROJECT_NAME} >> Setting ${var} Standard: ${SCV_${var}_STANDARD}")
-
       SET("CMAKE_${var}_STANDARD" "${SCV_${var}_STANDARD}" PARENT_SCOPE)
       SET("CMAKE_${var}_STANDARD_REQUIRED" "${SCV_${var}_STANDARD_REQUIRED}" PARENT_SCOPE)
       SET("CMAKE_${var}_EXTENSIONS" "${SCV_${var}_EXTENSIONS}" PARENT_SCOPE)
 
-      SET_PROPERTY(DIRECTORY PROPERTY ${var}_STANDARD )
-      SET_PROPERTY(DIRECTORY PROPERTY ${var}_STANDARD_REQUIRED )
-      SET_PROPERTY(DIRECTORY PROPERTY ${var}_EXTENSIONS )
-      SET_PROPERTY(DIRECTORY APPEND PROPERTY LINKER_LANGUAGE "${var}")
+      IF(TARGET "${SCV_T}")
+        MESSAGE(STATUS "<< ${PROJECT_NAME}::${SCV_T} >> Setting ${var} Standard: ${SCV_${var}_STANDARD}")
+
+        SET_PROPERTY(TARGET "${SCV_T}" PROPERTY "${var}_STANDARD" "${SCV_${var}_STANDARD}")
+        SET_PROPERTY(TARGET "${SCV_T}" PROPERTY "${var}_STANDARD_REQUIRED" "${SCV_${var}_STANDARD_REQUIRED}")
+        SET_PROPERTY(TARGET "${SCV_T}" PROPERTY "${var}_EXTENSIONS" "${SCV_${var}_EXTENSIONS}" )
+        #SET_PROPERTY(TARGET "${SCV_T}" APPEND PROPERTY LINKER_LANGUAGE "${var}")
+      ELSE()
+        MESSAGE(STATUS "<< ${PROJECT_NAME} >> Setting ${var} Standard On DIRECTORY: ${SCV_${var}_STANDARD}")
+        SET_PROPERTY(DIRECTORY PROPERTY "${var}_STANDARD" "${SCV_${var}_STANDARD}")
+        SET_PROPERTY(DIRECTORY PROPERTY "${var}_STANDARD_REQUIRED" "${SCV_${var}_STANDARD_REQUIRED}")
+        SET_PROPERTY(DIRECTORY PROPERTY "${var}_EXTENSIONS" "${SCV_${var}_EXTENSIONS}" )
+        #SET_PROPERTY(DIRECTORY APPEND PROPERTY LINKER_LANGUAGE "${var}")
+      ENDIF()
     ENDIF()
   ENDFOREACH()
 ENDFUNCTION()
@@ -213,7 +227,7 @@ MACRO(common_set_target_properties)
       MACOSX_BUNDLE_SHORT_VERSION_STRING ""
       MACOSX_BUNDLE_LONG_VERSION_STRING ""
       ##MACOSX_BUNDLE_ICON_FILE icon.icns
-      MACOSX_BUNDLE_INFO_PLIST "${PROJECT_SOURCE_DIR}/CMake/MacOSXBundleInfo.plist.in"
+      MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/CMake/MacOSXBundleInfo.plist.in"
     )
   ELSEIF(WIN32)
     ADD_EXECUTABLE(${APP_NAME})
@@ -227,3 +241,29 @@ MACRO(common_set_target_properties)
     )
   ENDIF()
 ENDMACRO()
+
+#SET(TARGETSDK iPhoneOS4.1.sdk)
+#SET(CMAKE_OSX_SYSROOT /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/${TARGETSDK})
+#[=======================================================================[
+.. code-block:: cmake
+
+  add_framework(<framework name> <target>)
+
+#]=======================================================================]
+macro(ADD_FRAMEWORK fwname appname)
+  SET(APPLE_PLATFORM "MacOSX")
+  #SET(APPLE_SDK)
+  SET(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/${APPLE_PLATFORM}.platform/Developer/SDKs/${APPLE_PLATFORM}.sdk")
+  find_library(FRAMEWORK_${fwname}
+      NAMES ${fwname}
+      PATHS ${CMAKE_OSX_SYSROOT}/System/Library
+      PATH_SUFFIXES Frameworks
+      NO_DEFAULT_PATH)
+  if( ${FRAMEWORK_${fwname}} STREQUAL FRAMEWORK_${fwname}-NOTFOUND)
+      MESSAGE(ERROR ": Framework ${fwname} not found")
+  else()
+      TARGET_LINK_LIBRARIES(${appname} INTERFACE ${FRAMEWORK_${fwname}})
+      ADD_DEFINITIONS("-iframework ${FRAMEWORK_${fwname}}")
+      MESSAGE(STATUS "Framework ${fwname} found at ${FRAMEWORK_${fwname}}")
+  endif()
+endmacro(ADD_FRAMEWORK)
