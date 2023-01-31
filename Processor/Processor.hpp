@@ -1,11 +1,15 @@
 #pragma once
 
 #include "Executioner.hpp"
+//#include "Formatters.hpp"
+//#include "Logger.hpp"
 
 #include <vector>
 #include <map>
 #include <memory>
+#include <cstdint>
 #include <string>
+#include <iostream>
 #include <spdlog/spdlog.h>
 #if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
@@ -35,7 +39,7 @@ namespace CPU
   private:
     // Linkage to the communications bus
     Bus* bus = nullptr;
-    bool jammed = 0;
+    bool jammed = false;
 
   public:
     // Linkage to the instructions
@@ -71,7 +75,12 @@ namespace CPU
     // Performs the next step on the processor
     void tick();
     // Set flag that CPU is in a "jammed" state, and requires reset.
-    void setJammed();
+    void setJammed() {
+      jammed = true;
+    };
+    bool getJammed() {
+      return jammed;
+    };
 
     // Indicates the current instruction has completed by returning true. This is
     // a utility function to enable "step-by-step" execution, without manually 
@@ -79,15 +88,15 @@ namespace CPU
     bool complete();
 
     // Load program
-    void LoadProgram(uint16_t offset, std::string program);
-    void LoadProgram(uint16_t offset, std::string program, uint16_t initialProgramCounter);
-    void LoadProgram(uint16_t offset, uint8_t program[], size_t programSize);
-    void LoadProgram(uint16_t offset, uint8_t program[], size_t programSize, uint16_t initialProgramCounter);
+    void loadProgram(uint16_t offset, std::string program);
+    void loadProgram(uint16_t offset, std::string program, uint16_t initialProgramCounter);
+    void loadProgram(uint16_t offset, uint8_t program[], size_t programSize);
+    void loadProgram(uint16_t offset, uint8_t program[], size_t programSize, uint16_t initialProgramCounter);
 
   // Bus Connectivity
   public:
     // Link this CPU to a communications bus
-    void ConnectBus(Bus* n) { bus = n; }
+    void connectBus(Bus* n) { bus = n; }
 
     // Dump 16 bytes of RAM 0x???0 -> 0x???F to logfile
     void dumpRam(uint16_t offset);
@@ -162,7 +171,7 @@ namespace CPU
           .Y = 0x00,
           .SP = 0xFD,
           .PC = 0x0000,
-          .SR = 0x00 | FLAGS6502::U | FLAGS6502::B
+          .SR = (0x00 | FLAGS6502::U | FLAGS6502::B)
         };
       }
 
@@ -214,10 +223,10 @@ namespace CPU
     };
 
     // Convenience functions to access status register
-    uint8_t     GetFlag(FLAGS6502 f);
-    void        SetFlag(FLAGS6502 f, bool v);
-    std::string DecodeFlag(uint8_t flag);
-    uint8_t     DecodeFlag(uint8_t flag, FLAGS6502 f);
+    uint8_t     getFlag(FLAGS6502 f);
+    void        setFlag(FLAGS6502 f, bool v);
+    std::string decodeFlag(uint8_t flag);
+    uint8_t     decodeFlag(uint8_t flag, FLAGS6502 f);
 
   // DISASSEMBLER Functions
   public:
@@ -225,46 +234,187 @@ namespace CPU
     std::map<uint16_t, DISASSEMBLY> getDisassembly(uint16_t nStart, uint16_t nStop);
     // Produces a map of strings, with keys equivalent to instruction start locations
     // in memory, for the specified address range
-    void disassemble(uint16_t addr);
-    void disassemble(uint16_t nStart, uint16_t nStop);
+    void     disassemble(uint16_t addr);
+    void     disassemble(uint16_t nStart, uint16_t nStop);
 
   public:
-    uint8_t PeekStack();
-    void    PokeStack(uint8_t value);
-    uint8_t PopStack();
-    void    PushStack(uint8_t value);
-    void    DumpStack(uint8_t nRows);
-    void    DumpStack();
-    void    DumpStackAtPointer();
+    // Peek Stack Pointer (No change on cycle)
+    uint8_t  peekStack() {
+      return readMemoryWithoutCycle(reg.SP + 0x100);
+    };
+    // Poke Stack Pointer (No change on cycle)
+    void     pokeStack(uint8_t value) {
+      writeMemoryWithoutCycle(reg.SP + 0x100, value);
+    };
+    // Pop Stack (Change on cycle (+2 cycles) & stackpointer)
+    uint8_t  popStack() {
+      incrementStackPointer();
+      return readMemory(reg.SP + 0x100);
+    };
+    // Pop Stack (Change on cycle & stackpointer)
+    void     pushStack(uint8_t value) {
+      writeMemory(reg.SP + 0x100, value);
+      decrementStackPointer();
+    };
+
+
+    void      dumpStack(uint8_t nRows);
+    void      dumpStack();
+    void      dumpStackAtPointer();
+    void      setRegister(REGISTER6502 f, uint8_t v);
+    void      setRegisterAC(uint8_t v) {
+      if (jammed)
+      {
+        return;
+      }
+
+      uint8_t newValue = v & 0xFF;
+      reg.AC = newValue;
+    };
+    void      setRegisterX(uint8_t v) {
+      if (jammed)
+      {
+        return;
+      }
+
+      uint8_t newValue = v & 0xFF;
+      reg.X = newValue;
+    };
+    void      setRegisterY(uint8_t v) {
+      if (jammed)
+      {
+        return;
+      }
+
+      uint8_t newValue = v & 0xFF;
+      reg.Y = newValue;
+    };
+    void      setRegisterSP(uint8_t v) {
+      if (jammed)
+      {
+        return;
+      }
+
+      uint8_t newValue = v & 0xFF;
+      reg.SP = newValue;
+    };
+    void      setRegisterSR(uint8_t v) {
+      if (jammed)
+      {
+        return;
+      }
+
+      uint8_t newValue = v & 0xFF;
+      reg.SR = newValue;
+    };
+    void      setProgramCounter(uint16_t v) {
+      if (jammed)
+      {
+        std::cout << "CPU is JAMMED!" << std::endl;
+        return;
+      }
+
+      std::cout << "Setting new address: " << v << std::endl;
+      uint16_t newValue = v & 0xFFFF;
+      reg.PC = newValue;
+    };
+
+    uint8_t   getRegister(REGISTER6502 f);
+    uint8_t   getRegisterAC() {
+      if (jammed)
+      {
+        return 0xFF;
+      }
+
+      return reg.AC;
+    };
+    uint8_t   getRegisterX() {
+      if (jammed)
+      {
+        return 0xFF;
+      }
+
+      return reg.X;
+    };
+    uint8_t   getRegisterY() {
+      if (jammed)
+      {
+        return 0xFF;
+      }
+
+      return reg.Y;
+    };
+    uint8_t   getRegisterSP() {
+      if (jammed)
+      {
+        return 0xFF;
+      }
+
+      return reg.SP;
+    };
+    uint8_t   getRegisterSR() {
+      if (jammed)
+      {
+        return 0xFF;
+      }
+
+      return reg.SR;
+    };
+    uint16_t  getProgramCounter() {
+      if (jammed)
+      {
+        return 0xFFFF;
+      }
+
+      return reg.PC & 0xFFFF;
+    };
+
+    uint16_t  incrementProgramCounter() {
+      reg.PC = (reg.PC + 1) & 0xFFFF;
+      return reg.PC;
+    };
+    uint16_t  decrementProgramCounter() {
+      reg.PC = (reg.PC - 1) & 0xFFFF;
+      return reg.PC;
+    };
+    uint8_t   incrementStackPointer() {
+      reg.SP = (reg.SP + 1) & 0xFF;
+      return reg.SP;
+    };
+    uint8_t   decrementStackPointer() {
+      reg.SP = (reg.SP - 1) & 0xFF;
+      return reg.SP;
+    };
 
   public:
-    void    setRegister(REGISTER6502 f, uint8_t v);
-    uint8_t getRegister(REGISTER6502 f);
-
-  private:
-    uint8_t cpuspeed = 0; // CPU Speed
-    uint8_t GetLogModValue();
-    uint16_t GetSleepValue();
+    int cpuspeed = 0; // CPU Speed
+    uint8_t  getLogModValue();
+    uint16_t getSleepValue();
+    int      getCpuSpeed() { return cpuspeed; };
+    void     setCpuSpeed(int nSpeed) { cpuspeed = nSpeed; };
 
   public:
-    uint8_t GetCpuSpeed() { return cpuspeed; };
-    void    SetCpuSpeed(uint8_t nSpeed) { cpuspeed = nSpeed; };
+    uint8_t  getOpCode() {
+      return opcode;
+    };
+    uint8_t  getExtraCycles() {
+      return extra_cycles;
+    };
+    uint8_t  getCycleCount() {
+      return cycle_count;
+    };
+    uint32_t getOperationCycleCount() {
+      return operation_cycle;
+    };
 
   public:
-    uint8_t readMemory(uint16_t a);
-    void    writeMemory(uint16_t a, uint8_t d);
-    uint8_t readMemoryWithoutCycle(uint16_t a);
-    void    writeMemoryWithoutCycle(uint16_t a, uint8_t d);
+    uint8_t  readMemory(uint16_t a);
+    void     writeMemory(uint16_t a, uint8_t d);
+    uint8_t  readMemoryWithoutCycle(uint16_t a);
+    void     writeMemoryWithoutCycle(uint16_t a, uint8_t d);
 
   public:
     void     addExtraCycle(bool incCycleCount = true);
     void     incrementCycleCount();
-    uint16_t incrementProgramCounter();
-    uint16_t decrementProgramCounter();
-    void     setProgramCounter(uint16_t value);
-    uint16_t getProgramCounter();
-    uint8_t  incrementStackPointer();
-    uint8_t  decrementStackPointer();
-
   };
-}
+};

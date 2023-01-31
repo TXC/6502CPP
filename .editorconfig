@@ -14,5 +14,5 @@ max_line_length = 120
 [Makefile]
 indent_style = tab
 
-[*.{c,h,cpp,hpp}]
+[*.{c,h,cpp,hpp,m,mm}]
 indent_size = 2

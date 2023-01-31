@@ -16,7 +16,7 @@ TEST_CASE("Show instructions loaded", "[.debug][.print]")
 
   Bus bus;
 
-  bus.cpu.executioner.printInstructions();
+  bus.cpu->executioner.printInstructions();
 
   SUCCEED("1 + 2 = 1");
 }
@@ -37,36 +37,36 @@ TEST_CASE("Initialization Tests", "[init]")
     // U = Unused
     // V = Overflow
     // N = Negative
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 0);
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 0);
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 0);
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.B) == 0);
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.U) == 0);
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == 0);
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 0);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 0);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == 0);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->I) == 0);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->D) == 0);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->B) == 0);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->U) == 0);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->V) == 0);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->N) == 0);
   }
 
   SECTION("Processor Registers Initialized Correctly")
   {
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.X), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.Y), 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.opcode, 2) == hex(0x00, 2));
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0000, 4));
+    REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu->getRegisterX(), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu->getRegisterY(), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu->getOpCode(), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0x0000, 4));
   }
 
   SECTION("Stack Pointer Initialized Correctly")
   {
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(0x00, 2));
+    REQUIRE(hex(bus.cpu->getRegisterSP(), 2) == hex(0x00, 2));
   }
 
   SECTION("ProgramCounter Correct When Program Loaded")
   {
     uint8_t program[] = {0x01};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x01);
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 2) == hex(0x01, 2));
+    bus.cpu->loadProgram(0x0000, program, n, 0x01);
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 2) == hex(0x01, 2));
   }
 
 #ifndef ILLEGAL
@@ -74,30 +74,30 @@ TEST_CASE("Initialization Tests", "[init]")
   {
     uint8_t program[] = {0xFF};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    REQUIRE_THROWS(bus.cpu.tick());
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
+    REQUIRE_THROWS(bus.cpu->tick());
   }
 #endif
 
   SECTION("Stack Pointer Initializes To Default Value After Reset")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(0xFD, 2));
+    REQUIRE(hex(bus.cpu->getRegisterSP(), 2) == hex(0xFD, 2));
   }
 
   SECTION("Processor Status Flags Initializes To Default Value After Reset")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::C) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::Z) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::I) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::D) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::B) == 1);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::U) == 1); // Always set
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::V) == 0);
-    REQUIRE(bus.cpu.GetFlag(Processor::FLAGS6502::N) == 0);
+    REQUIRE(bus.cpu->getFlag(Processor::FLAGS6502::C) == 0);
+    REQUIRE(bus.cpu->getFlag(Processor::FLAGS6502::Z) == 0);
+    REQUIRE(bus.cpu->getFlag(Processor::FLAGS6502::I) == 0);
+    REQUIRE(bus.cpu->getFlag(Processor::FLAGS6502::D) == 0);
+    REQUIRE(bus.cpu->getFlag(Processor::FLAGS6502::B) == 1);
+    REQUIRE(bus.cpu->getFlag(Processor::FLAGS6502::U) == 1); // Always set
+    REQUIRE(bus.cpu->getFlag(Processor::FLAGS6502::V) == 0);
+    REQUIRE(bus.cpu->getFlag(Processor::FLAGS6502::N) == 0);
   }
 }
 
@@ -131,31 +131,31 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       if (CarryFlagSet)
       { 
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
+        bus.cpu->tick();
       }
       else
       {
         uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -170,33 +170,33 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
     ) {
 
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       if (CarryFlagSet)
       { 
         uint8_t program[] = {0x38, 0xF8, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
+        bus.cpu->tick();
       }
       else
       {
         uint8_t program[] = {0xF8, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -215,31 +215,31 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       if (CarryFlagSet)
       { 
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
+        bus.cpu->tick();
       }
       else
       {
         uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedValue);
     }
   }
 
@@ -255,23 +255,23 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
     ) {
 
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xF8, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedValue);
     }
   }
 
@@ -287,21 +287,21 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -321,21 +321,21 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 
@@ -376,31 +376,31 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, CarryFlagSet, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       if (CarryFlagSet)
       { 
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
+        bus.cpu->tick();
       }
       else
       {
         uint8_t program[] = {0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->V) == expectedValue);
     }
   }
 }
@@ -424,21 +424,21 @@ TEST_CASE("AND - Compare Memory with Accumulator", "[opcode][and]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToAdd, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0x29, amountToAdd};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 }
@@ -465,21 +465,21 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), valueToShift, expectedValue, expectedLocation)
+      bus.cpu->executioner.getOperation(sectionOperation), valueToShift, expectedValue, expectedLocation)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, valueToShift, sectionOperation, expectedLocation};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
       if (sectionOperation == 0x0A)
       {
-        REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+        REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
       }
       else
       {
@@ -501,19 +501,19 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToShift, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToShift, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, valueToShift, 0x0A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedValue);
     }
   }
 
@@ -531,19 +531,19 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToShift, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToShift, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, valueToShift, 0x0A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 
@@ -559,20 +559,20 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToShift, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToShift, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, valueToShift, 0x0A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 }
@@ -587,30 +587,28 @@ TEST_CASE("BCC - Branch On Carry Clear", "[opcode][bcc]")
 
   SECTION("BCC Program Counter Correct")
   {
-    auto [programCounterInitalValue, programOffset, expectedValue] = 
-      GENERATE( table<uint16_t, uint8_t, uint16_t>({
-        {0x00, 0x01, 0x03},
-        {0x80, 0x80, 0x02},
-        {0x00, 0x03, 0x05},
-        {0x00, 0xFD, 0xFFFF},
-        {0x7D, 0x80, 0xFFFF},
-      })
-    );
+    auto [programCounterInitalValue, programOffset, expectedValue] = GENERATE( table<uint16_t, uint8_t, uint16_t>({
+      {0x00, 0x01, 0x03},
+      {0x80, 0x80, 0x02},
+      {0x00, 0x03, 0x05},
+      {0x00, 0xFD, 0xFFFF},
+      {0x7D, 0x80, 0xFFFF},
+    }));
 
     SECTION(
       fmt::format("Check if {:s}(0x{:04X}, 0x{:02X}, 0x{:04X}) works",
-      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+      bus.cpu->executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0x90, programOffset};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
-      bus.cpu.dumpRam(0x0000);
+      bus.cpu->loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(programCounterInitalValue, 4));
+      bus.cpu->dumpRam(0x0000);
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
 }
@@ -636,18 +634,18 @@ TEST_CASE("BCS - Branch on Carry Set", "[opcode][bcs]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
-      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+      bus.cpu->executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0x38, 0xB0, programOffset};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
+      bus.cpu->loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu->getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
 }
@@ -676,18 +674,18 @@ TEST_CASE("BEQ - Branch on Zero Set", "[opcode][beq]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+      bus.cpu->executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, 0x00, 0xF0, programOffset};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
+      bus.cpu->loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu->getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
 }
@@ -717,18 +715,18 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, valueToTest, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, valueToTest, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, operation, 0x06, 0x00, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedResult);
     }
   }
 
@@ -773,19 +771,19 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, valueToTest, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, valueToTest, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, operation, 0x06, 0x00, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->V) == expectedResult);
     }
   }
 
@@ -806,18 +804,18 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, valueToTest, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, valueToTest, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, operation, 0x06, 0x00, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedResult);
     }
   }
 }
@@ -843,18 +841,18 @@ TEST_CASE("BMI - Branch if Negative Set", "[opcode][bmi]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
-      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+      bus.cpu->executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, 0x80, 0x30, programOffset};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
+      bus.cpu->loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu->getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
 }
@@ -882,18 +880,18 @@ TEST_CASE("BNE - Branch On Result Not Zero", "[opcode][bne]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
-      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+      bus.cpu->executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, 0x01, 0xD0, programOffset};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
+      bus.cpu->loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu->getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
 }
@@ -919,18 +917,18 @@ TEST_CASE("BPL - Branch if Negative Clear", "[opcode][bpl]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
-      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+      bus.cpu->executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, 0x79, 0x10, programOffset};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
+      bus.cpu->loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu->getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
 }
@@ -944,30 +942,30 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
 
   SECTION("BRK Program Counter Set To Address At Break Vector Address")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {operation};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
-    REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
+    REQUIRE(bus.cpu->getProgramCounter() == 0x00);
     bus.write(0xFFFE, 0xBC);
     bus.write(0xFFFF, 0xCD);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.getProgramCounter() == 0xCDBC);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getProgramCounter() == 0xCDBC);
   }
 
   SECTION("BRK Program Counter Stack Correct")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0xABCD, program, n, 0xABCD);
+    bus.cpu->loadProgram(0xABCD, program, n, 0xABCD);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-    bus.cpu.tick();
+    bus.cpu->tick();
 
     REQUIRE(hex(bus.read(stackLocation + (0x0100 - 0)), 2) == hex(0xAB, 2));
     REQUIRE(hex(bus.read(stackLocation + (0x0100 - 1)), 2) == hex(0xCF, 2));
@@ -975,16 +973,16 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
 
   SECTION("BRK Stack Pointer Correct")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0xABCD, program, n, 0xABCD);
+    bus.cpu->loadProgram(0xABCD, program, n, 0xABCD);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
-    bus.cpu.tick();
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(stackLocation - 3, 2));
+    REQUIRE(hex(bus.cpu->getRegisterSP(), 2) == hex(stackLocation - 3, 2));
   }
 
   SECTION("BRK Stack Set Flag Operations Correctly")
@@ -999,20 +997,20 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
 
     DYNAMIC_SECTION(
       fmt::format("Check if {:s}(0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0x58, sectionOperation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+      uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       REQUIRE(hex(bus.read(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
     }
@@ -1030,21 +1028,21 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
 
     DYNAMIC_SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0x58, 0xA9, accumulatorValue, 0x69, memoryValue, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+      uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       REQUIRE(hex(bus.read(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
     }
@@ -1074,17 +1072,17 @@ TEST_CASE("BVC - Branch if Overflow Clear", "[opcode][bvc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
-      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+      bus.cpu->executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0x50, programOffset};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
-      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
+      bus.cpu->loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      REQUIRE(bus.cpu->getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
 }
@@ -1110,24 +1108,24 @@ TEST_CASE("BVS - Branch if Overflow Set", "[opcode][bvs]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:04X}) works",
-      bus.cpu.executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
+      bus.cpu->executioner.getOperation(operation), programCounterInitalValue, programOffset, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       //std::string program;
       //fmt::format_to(std::back_inserter(program), "A9 01 69 7F 70 {:02X}", programOffset);
-      //bus.cpu.LoadProgram(programCounterInitalValue, program, programCounterInitalValue);
+      //bus.cpu->loadProgram(programCounterInitalValue, program, programCounterInitalValue);
 
       uint8_t program[] = {0xA9, 0x01, 0x69, 0x7F, 0x70, programOffset};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
+      bus.cpu->loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
 
-      REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
+      REQUIRE(bus.cpu->getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
 }
@@ -1142,14 +1140,14 @@ TEST_CASE("CLC - Clear Carry Flag", "[opcode][clc]")
 
   SECTION("CLC Carry Flag Cleared Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x18};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 0);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 0);
   }
 }
 
@@ -1163,16 +1161,16 @@ TEST_CASE("CLD - Clear Decimal Flag", "[opcode][cld]")
 
   SECTION("CLD Carry Flag Set And Cleared Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xF8, 0xD8};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 0);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->D) == 0);
   }
 }
 
@@ -1186,14 +1184,14 @@ TEST_CASE("CLI - Clear Interrupt Flag", "[opcode][cli]")
 
   SECTION("CLI Interrupt Flag Cleared Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x58};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 0);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getFlag(bus.cpu->I) == 0);
   }
 }
 
@@ -1207,14 +1205,14 @@ TEST_CASE("CLV - Clear Overflow Flag", "[opcode][clv]")
 
   SECTION("CLV Overflow Flag Cleared Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xB8};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == 0);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getFlag(bus.cpu->V) == 0);
   }
 }
 
@@ -1239,19 +1237,19 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0xC9, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedResult);
     }
   }
 
@@ -1269,19 +1267,19 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0xC9, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedResult);
     }
   }
 
@@ -1299,19 +1297,19 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0xC9, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedResult);
     }
   }
 }
@@ -1337,19 +1335,19 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, accumulatorValue, 0xE0, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedResult);
     }
   }
 
@@ -1367,19 +1365,19 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, accumulatorValue, 0xE0, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedResult);
     }
   }
 
@@ -1397,19 +1395,19 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, accumulatorValue, 0xE0, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedResult);
     }
   }
 }
@@ -1435,19 +1433,19 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA0, accumulatorValue, 0xC0, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedResult);
     }
   }
 
@@ -1465,19 +1463,19 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA0, accumulatorValue, 0xC0, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedResult);
     }
   }
 
@@ -1495,19 +1493,19 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA0, accumulatorValue, 0xC0, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x00, program, n, 0x00);
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      bus.cpu->loadProgram(0x00, program, n, 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedResult);
     }
   }
 }
@@ -1529,15 +1527,15 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xC6, 0x03, 0x00, initialMemoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
+      bus.cpu->tick();
       REQUIRE(bus.read(0x0003, false) == expectedValue);
     }
   }
@@ -1552,16 +1550,16 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xC6, 0x03, 0x00, initialMemoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -1575,17 +1573,17 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xC6, 0x03, 0x00, initialMemoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -1607,19 +1605,19 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x00);
+      REQUIRE(bus.cpu->getRegisterX() == 0x00);
 
       uint8_t program[] = {0xA2, initialMemoryValue, 0xCA};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getRegisterX() == expectedValue);
     }
   }
 
@@ -1633,17 +1631,17 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, initialMemoryValue, 0xCA};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -1657,17 +1655,17 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, initialMemoryValue, 0xCA};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -1689,19 +1687,19 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x00);
+      REQUIRE(bus.cpu->getRegisterY() == 0x00);
 
       uint8_t program[] = {0xA0, initialMemoryValue, 0x88};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.Y), 2) == hex(expectedValue, 2));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterY(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -1715,17 +1713,17 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA0, initialMemoryValue, 0x88};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -1739,17 +1737,17 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA0, initialMemoryValue, 0x88};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -1774,17 +1772,17 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x49, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedResult);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getRegisterAC() == expectedResult);
     }
   }
 
@@ -1799,17 +1797,17 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x49, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedResult);
     }
   }
 
@@ -1822,17 +1820,17 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x49, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedResult);
     }
   }
 }
@@ -1854,15 +1852,15 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xE6, 0x03, 0x00, initialMemoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
+      bus.cpu->tick();
       REQUIRE(bus.read(0x0003, false) == expectedValue);
     }
   }
@@ -1877,16 +1875,16 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xE6, 0x03, 0x00, initialMemoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -1900,17 +1898,17 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xE6, 0x03, 0x00, initialMemoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -1934,17 +1932,17 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, initialMemoryValue, 0xE8};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getRegisterX() == expectedValue);
     }
   }
 
@@ -1958,17 +1956,17 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, initialMemoryValue, 0xE8};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -1982,17 +1980,17 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, initialMemoryValue, 0xE8};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -2014,17 +2012,17 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA0, initialMemoryValue, 0xC8};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getRegisterY() == expectedValue);
     }
   }
 
@@ -2038,17 +2036,17 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA0, initialMemoryValue, 0xC8};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -2062,17 +2060,17 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), initialMemoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), initialMemoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA0, initialMemoryValue, 0xC8};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -2085,42 +2083,42 @@ TEST_CASE("JMP - Jump to New Location", "[opcode][jmp]")
 
   SECTION("Program Counter Set Correctly After Jump")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x4C, 0x08, 0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x08, 4));
+    bus.cpu->tick();
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0x08, 4));
   }
 
   SECTION("Program Counter Set Correctly After Indirect Jump")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x6C, 0x03, 0x00, 0x08, 0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x08, 4));
+    bus.cpu->tick();
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0x08, 4));
   }
 
 #ifndef EMULATE65C02
   SECTION("Indirect Wraps Correct If MSB IS FF (6502 only)")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x6C, 0xFF, 0x01, 0x08, 0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
     bus.write(0x01FE, 0x6C);
     bus.write(0x01FF, 0x03);
     bus.write(0x0100, 0x02);
 
-    bus.cpu.tick();
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0203, 4));
+    bus.cpu->tick();
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0x0203, 4));
   }
 #endif
 }
@@ -2133,14 +2131,14 @@ TEST_CASE("JSR - Jump to SubRoutine")
 
   SECTION("Stack Loads Correct Value")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x20, 0xCC, 0xCC};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0xBBAA, program, n, 0xBBAA);
+    bus.cpu->loadProgram(0xBBAA, program, n, 0xBBAA);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
-    bus.cpu.tick();
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
+    bus.cpu->tick();
 
     REQUIRE(hex(bus.read(stackLocation + 0x0100), 4) == hex(0xBB, 4));
     REQUIRE(hex(bus.read(stackLocation + 0x0100 - 1), 4) == hex(0xAC, 4));
@@ -2148,28 +2146,28 @@ TEST_CASE("JSR - Jump to SubRoutine")
 
   SECTION("Program Counter Correct")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x20, 0xCC, 0xCC};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
-    bus.cpu.tick();
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0xCCCC, 4));
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0xCCCC, 4));
   }
 
   SECTION("Stack Pointer Correct")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x20, 0xCC, 0xCC};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0xBBAA, program, n, 0xBBAA);
+    bus.cpu->loadProgram(0xBBAA, program, n, 0xBBAA);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
-    bus.cpu.tick();
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 4) == hex(stackLocation - 2, 4));
+    REQUIRE(hex(bus.cpu->getRegisterSP(), 4) == hex(stackLocation - 2, 4));
   }
 }
 
@@ -2183,16 +2181,16 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
 
   SECTION("LDA Accumulator Has Correct Value")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
-    REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+    REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
     uint8_t program[] = {0xA9, 0x03};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x03);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getRegisterAC() == 0x03);
   }
 
   SECTION("LDA Zero Set Correctly")
@@ -2206,18 +2204,18 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, valueToLoad};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -2232,18 +2230,18 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, valueToLoad};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -2262,16 +2260,16 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
 
     Bus bus;
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
-    REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x00);
+    REQUIRE(bus.cpu->getRegisterX() == 0x00);
 
     uint8_t program[] = {0xA2, 0x03};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x03);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getRegisterX() == 0x03);
   }
 
   SECTION("LDX Zero Set Correctly")
@@ -2283,18 +2281,18 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x00);
+      REQUIRE(bus.cpu->getRegisterX() == 0x00);
 
       uint8_t program[] = {0xA2, valueToLoad};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -2309,18 +2307,18 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.X) == 0x00);
+      REQUIRE(bus.cpu->getRegisterX() == 0x00);
 
       uint8_t program[] = {0xA2, valueToLoad};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -2335,16 +2333,16 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
 
   SECTION("LDY Y-Register Has Correct Value")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
-    REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x00);
+    REQUIRE(bus.cpu->getRegisterY() == 0x00);
 
     uint8_t program[] = {0xA0, 0x03};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x03);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getRegisterY() == 0x03);
   }
 
   SECTION("LDY Zero Set Correctly")
@@ -2356,18 +2354,18 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
 
     DYNAMIC_SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x00);
+      REQUIRE(bus.cpu->getRegisterY() == 0x00);
 
       uint8_t program[] = {0xA0, valueToLoad};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -2384,18 +2382,18 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == 0x00);
+      REQUIRE(bus.cpu->getRegisterY() == 0x00);
 
       uint8_t program[] = {0xA0, valueToLoad};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -2419,22 +2417,22 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, carryBitSet)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, carryBitSet)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t carryOperation = carryBitSet ? 0x38 : 0x18;
 
       uint8_t program[] = {carryOperation, 0xA9, accumulatorValue, 0x4A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 0);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == 0);
     }
   }
 
@@ -2447,19 +2445,19 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x4A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -2472,19 +2470,19 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x4A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedValue);
     }
   }
 
@@ -2503,22 +2501,22 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), valueToShift, expectedValue, expectedLocation)
+      bus.cpu->executioner.getOperation(operation), valueToShift, expectedValue, expectedLocation)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, valueToShift, operation, expectedLocation};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       uint8_t actualValue;
       if (operation == 0x4A)
       {
-        actualValue = bus.cpu.getRegister(bus.cpu.AC);
+        actualValue = bus.cpu->getRegisterAC();
       }
       else
       {
@@ -2550,19 +2548,19 @@ TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x09, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -2576,19 +2574,19 @@ TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x09, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -2604,19 +2602,19 @@ TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x09, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -2633,12 +2631,12 @@ TEST_CASE("PHA - Push Accumulator Onto Stack", "[opcode][pha]")
   {
     uint8_t program[] = {0xA9, 0x03, 0x48};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
     REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(0x03, 2));
   }
@@ -2647,28 +2645,28 @@ TEST_CASE("PHA - Push Accumulator Onto Stack", "[opcode][pha]")
   {
     uint8_t program[] = {0xA9, 0x03, 0x48};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(stackLocation - 1, 2));
+    REQUIRE(hex(bus.cpu->getRegisterSP(), 2) == hex(stackLocation - 1, 2));
   }
 
   SECTION("Stack Pointer Has Correct Value When Wrapping")
   {
     uint8_t program[] = {0x9A, 0x48};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(0xFF, 2));
+    REQUIRE(hex(bus.cpu->getRegisterSP(), 2) == hex(0xFF, 2));
   }
 }
 
@@ -2692,20 +2690,20 @@ TEST_CASE("PHP - Push Flags Onto Stack", "[opcode][php]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), expectedValue)
+      bus.cpu->executioner.getOperation(operation), expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0x58, operation, 0x08};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+      uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
     }
@@ -2723,20 +2721,20 @@ TEST_CASE("PHP - Push Flags Onto Stack", "[opcode][php]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0x58, 0xA9, accumulatorValue, 0x69, memoryValue, 0x08};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      uint8_t stackLocation = bus.cpu->getRegisterSP();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
     }
@@ -2744,17 +2742,17 @@ TEST_CASE("PHP - Push Flags Onto Stack", "[opcode][php]")
 
   SECTION("PHP Stack Pointer Has Correct Value")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x08};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-    bus.cpu.tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(stackLocation - 1, 2));
+    REQUIRE(hex(bus.cpu->getRegisterSP(), 2) == hex(stackLocation - 1, 2));
   }
 }
 
@@ -2768,15 +2766,15 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
 
   SECTION("PLA Accumulator Has Correct Value")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA9, 0x03, 0x48, 0xA9, 0x00, 0x68};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x03, 2));
+    REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(0x03, 2));
   }
 
   SECTION("PLA Zero Flag Has Correct Value", "[opcode][pla]")
@@ -2791,20 +2789,20 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedResult)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, valueToLoad, 0x48, 0x68};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      //uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      //uint8_t stackLocation = bus.cpu->getRegisterSP();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedResult);
     }
   }
 
@@ -2820,20 +2818,20 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedResult)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, valueToLoad, 0x48, 0x68};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      //uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      //uint8_t stackLocation = bus.cpu->getRegisterSP();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedResult);
     }
   }
 }
@@ -2850,102 +2848,102 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA9, 0x01, 0x48, 0x28};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 1);
   }
 
   SECTION("Zero Flag Set Correctly")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA9, 0x02, 0x48, 0x28};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == 1);
   }
 
   SECTION("Decimal Flag Set Correctly")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA9, 0x08, 0x48, 0x28};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->D) == 1);
   }
 
   SECTION("Interrupt Flag Set Correctly")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA9, 0x04, 0x48, 0x28};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->I) == 1);
   }
 
   SECTION("Overflow Flag Set Correctly")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA9, 0x40, 0x48, 0x28};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->V) == 1);
   }
 
   SECTION("Negative Flag Set Correctly")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA9, 0x80, 0x48, 0x28};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->N) == 1);
   }
 }
 
@@ -2969,18 +2967,18 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x2A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedResult);
     }
   }
 
@@ -2995,20 +2993,20 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
 
     SECTION(
       fmt::format("Check if {:s}({}, {}) works",
-      bus.cpu.executioner.getOperation(operation), carryFlagSet, expectedResult)
+      bus.cpu->executioner.getOperation(operation), carryFlagSet, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t carryOperation = carryFlagSet ? 0x38 : 0x18;
 
       uint8_t program[] = {carryOperation, 0x2A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedResult);
     }
   }
 
@@ -3023,18 +3021,18 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x2A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedResult);
     }
   }
 
@@ -3053,23 +3051,23 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), valueToRotate, expectedValue, expectedLocation)
+      bus.cpu->executioner.getOperation(operation), valueToRotate, expectedValue, expectedLocation)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
       uint8_t program[] = {0xA9, valueToRotate, operation, expectedLocation};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       uint8_t actualResult;
       if (operation == 0x2A)
       {
-        actualResult = bus.cpu.getRegister(bus.cpu.AC);
+        actualResult = bus.cpu->getRegisterAC();
       }
       else
       {
@@ -3102,21 +3100,21 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, carryBitSet, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, carryBitSet, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t carryOperation = carryBitSet ? 0x38 : 0x18;
 
       uint8_t program[] = {carryOperation, 0xA9, accumulatorValue, 0x6A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 
@@ -3133,21 +3131,21 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, carryBitSet, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, carryBitSet, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t carryOperation = carryBitSet ? 0x38 : 0x18;
 
       uint8_t program[] = {carryOperation, 0xA9, accumulatorValue, 0x6A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedResult);
     }
   }
 
@@ -3162,18 +3160,18 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, expectedResult)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorValue, 0x6A};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedResult);
     }
   }
 
@@ -3192,23 +3190,23 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), valueToRotate, expectedValue, expectedLocation)
+      bus.cpu->executioner.getOperation(operation), valueToRotate, expectedValue, expectedLocation)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getProgramCounter() == 0x00);
+      REQUIRE(bus.cpu->getProgramCounter() == 0x00);
 
       uint8_t program[] = {0xA9, valueToRotate, operation, expectedLocation};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       uint8_t actualResult;
       if (operation == 0x6A)
       {
-        actualResult = bus.cpu.getRegister(bus.cpu.AC);
+        actualResult = bus.cpu->getRegisterAC();
       }
       else
       {
@@ -3228,119 +3226,119 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
 
   SECTION("Program Counter Correct")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0xABCD, program, n, 0xABCD);
+    bus.cpu->loadProgram(0xABCD, program, n, 0xABCD);
 
     //The Reset Vector Points to 0x0000 by default, so load the RTI instruction there.
     bus.write(0x00, 0x40);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0xABCF, 4));
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0xABCF, 4));
   }
 
   SECTION("Carry Flag Set Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
     uint8_t program[] = {0xA9, 0x01, 0x48, 0x40};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 1);
   }
 
   SECTION("Zero Flag Set Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
     uint8_t program[] = {0xA9, 0x02, 0x48, 0x40};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == 1);
   }
 
   SECTION("Interrupt Flag Set Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
     uint8_t program[] = {0xA9, 0x04, 0x48, 0x40};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->I) == 1);
   }
 
   SECTION("Decimal Flag Set Correctly")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
     uint8_t program[] = {0xA9, 0x08, 0x48, 0x40};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->D) == 1);
   }
 
   SECTION("Overflow Flag Set Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     //Load Accumulator and Transfer to Stack, Clear Accumulator, and Return from Interrupt
     //uint8_t program[] = {0xA9, 0x40, 0x48, 0x28};
     uint8_t program[] = {0xA9, 0x40, 0x48, 0x40};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->V) == 1);
   }
 
   SECTION("Negative Flag Set Correctly")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA9, 0x80, 0x48, 0x28};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
+    REQUIRE(bus.cpu->getFlag(bus.cpu->N) == 1);
     }
 }
 
@@ -3352,33 +3350,33 @@ TEST_CASE("RTS - Return from SubRoutine", "[opcode][rts]")
 
   SECTION("Program Counter Has Correct Value")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x20, 0x04, 0x00, 0x00, 0x60};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x03, 4));
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0x03, 4));
   }
 
   SECTION("Stack Pointer Has Correct Value")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x60};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0xBBAA, program, n, 0xBBAA);
+    bus.cpu->loadProgram(0xBBAA, program, n, 0xBBAA);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-    bus.cpu.tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 4) == hex((stackLocation + 2) & 0x00FF, 4));
+    REQUIRE(hex(bus.cpu->getRegisterSP(), 4) == hex((stackLocation + 2) & 0x00FF, 4));
   }
 }
 
@@ -3414,31 +3412,31 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
 
     DYNAMIC_SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       if (CarryFlagSet)
       { 
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
+        bus.cpu->tick();
       }
       else
       {
         uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getRegisterAC() == expectedValue);
     }
   }
 
@@ -3456,32 +3454,32 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, setCarryFlag, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, setCarryFlag, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       if (setCarryFlag)
       { 
         uint8_t program[] = {0x38, 0xF8, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
+        bus.cpu->tick();
       }
       else
       {
         uint8_t program[] = {0xF8, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -3504,31 +3502,31 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       if (CarryFlagSet)
       { 
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
+        bus.cpu->tick();
       }
       else
       {
         uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->V) == expectedValue);
     }
   }
 
@@ -3548,31 +3546,31 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, CarryFlagSet, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       if (CarryFlagSet)
       { 
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
+        bus.cpu->tick();
       }
       else
       {
         uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
-        bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+        bus.cpu->loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.V) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->V) == expectedValue);
     }
   }
 
@@ -3589,21 +3587,21 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == expectedValue);
     }
   }
 
@@ -3620,21 +3618,21 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 
@@ -3651,21 +3649,21 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, expectedValue)
+      bus.cpu->executioner.getOperation(operation), accumulatorInitialValue, amountToSubtract, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(accumulatorInitialValue, 2));
+      bus.cpu->tick();
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      bus.cpu->tick();
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 }
@@ -3680,14 +3678,14 @@ TEST_CASE("SEC - Set Carry Flag", "[opcode][sec]")
 
   SECTION("SEC Carry Flag Set Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x38};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 1);
   }
 }
 
@@ -3701,14 +3699,14 @@ TEST_CASE("Set Decimal Mode", "[opcode][sed]")
 
   SECTION("SED Decimal Mode Set Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xF8};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.D) == 1);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getFlag(bus.cpu->D) == 1);
   }
 }
 
@@ -3722,14 +3720,14 @@ TEST_CASE("SEI - Set Interrupt Flag", "[opcode][sei]")
 
   SECTION("SEI Interrupt Flag Set Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0x78};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    REQUIRE(bus.cpu.GetFlag(bus.cpu.I) == 1);
+    bus.cpu->tick();
+    REQUIRE(bus.cpu->getFlag(bus.cpu->I) == 1);
   }
 }
 
@@ -3743,14 +3741,14 @@ TEST_CASE("STA - Store Accumulator In Memory", "[opcode][sta]")
 
   SECTION("STA Memory Has Correct Value")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA9, 0x03, 0x85, 0x05};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
     REQUIRE(hex(bus.read(0x05), 2) == hex(0x03, 2));
   }
@@ -3766,14 +3764,14 @@ TEST_CASE("STX - Set Memory To X", "[opcode][stx]")
 
   SECTION("STX Memory Has Correct Value")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA2, 0x03, 0x86, 0x05};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
     REQUIRE(hex(bus.read(0x05), 2) == hex(0x03, 2));
   }
@@ -3789,14 +3787,14 @@ TEST_CASE("STY - Set Memory To Y", "[opcode][sty]")
 
   SECTION("STY Memory Has Correct Value")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA0, 0x03, 0x84, 0x05};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
     REQUIRE(hex(bus.read(0x05), 2) == hex(0x03, 2));
   }
@@ -3823,9 +3821,9 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), transferFrom, transferTo)
+      bus.cpu->executioner.getOperation(sectionOperation), transferFrom, transferTo)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t loadOperation;
       switch (transferFrom)
@@ -3843,21 +3841,21 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
 
       uint8_t program[] = {loadOperation, 0x03, sectionOperation};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       switch (transferFrom)
       {
         case ProcessorTests::Accumulator:
-          REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x03, 2));
+          REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(0x03, 2));
           break;
         case ProcessorTests::XRegister:
-          REQUIRE(hex(bus.cpu.getRegister(bus.cpu.X), 2) == hex(0x03, 2));
+          REQUIRE(hex(bus.cpu->getRegisterX(), 2) == hex(0x03, 2));
           break;
         case ProcessorTests::YRegister:
-          REQUIRE(hex(bus.cpu.getRegister(bus.cpu.Y), 2) == hex(0x03, 2));
+          REQUIRE(hex(bus.cpu->getRegisterY(), 2) == hex(0x03, 2));
           break;
       }
     }
@@ -3890,9 +3888,9 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
 
     DYNAMIC_SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), value, transferFrom, expectedResult)
+      bus.cpu->executioner.getOperation(operation), value, transferFrom, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t loadOperation;
       switch (transferFrom)
@@ -3910,12 +3908,12 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
 
       uint8_t program[] = {loadOperation, value, operation};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedResult);
     }
   }
 
@@ -3938,9 +3936,9 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
 
     DYNAMIC_SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), value, transferFrom, expectedResult)
+      bus.cpu->executioner.getOperation(operation), value, transferFrom, expectedResult)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t loadOperation;
       switch (transferFrom)
@@ -3958,12 +3956,12 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
 
       uint8_t program[] = {loadOperation, value, operation};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedResult);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedResult);
     }
   }
 }
@@ -3978,18 +3976,18 @@ TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
 
   SECTION("TSX XRegister Set Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xBA};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    uint8_t stackLocation = bus.cpu.getRegister(bus.cpu.SP);
+    uint8_t stackLocation = bus.cpu->getRegisterSP();
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.X), 2) == hex(stackLocation, 2));
+    REQUIRE(hex(bus.cpu->getRegisterX(), 2) == hex(stackLocation, 2));
   }
 
   SECTION("TSX Negative Set Correctly")
@@ -4005,20 +4003,20 @@ TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, valueToLoad, 0x9A, 0xBA};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == expectedValue);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == expectedValue);
     }
   }
 
@@ -4034,20 +4032,20 @@ TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, expectedValue)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA2, valueToLoad, 0x9A, 0xBA};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == expectedValue);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == expectedValue);
     }
   }
 }
@@ -4062,16 +4060,16 @@ TEST_CASE("TXS - Transfer X Register to Stack Pointer", "[opcode][txs]")
 
   SECTION("TXS Stack Pointer Set Correctly")
   {
-    bus.cpu.reset();
+    bus.cpu->reset();
 
     uint8_t program[] = {0xA2, 0xAA, 0x9A};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x00, program, n, 0x00);
+    bus.cpu->loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getRegister(bus.cpu.SP), 2) == hex(0xAA, 2));
+    REQUIRE(hex(bus.cpu->getRegisterSP(), 2) == hex(0xAA, 2));
   }
 }
 
@@ -4098,19 +4096,19 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, sectionOperation, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
+      REQUIRE(bus.cpu->getRegisterAC() == expectedValue);
     }
   }
 
@@ -4127,19 +4125,19 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, sectionOperation, 0x05, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
+      REQUIRE(bus.cpu->getRegisterAC() == expectedValue);
     }
   }
 
@@ -4156,20 +4154,20 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA2, 0x01, sectionOperation, 0x06, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
+      REQUIRE(bus.cpu->getRegisterAC() == expectedValue);
     }
   }
 
@@ -4186,19 +4184,19 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, sectionOperation, 0x06, 0x00, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
+      REQUIRE(bus.cpu->getRegisterAC() == expectedValue);
     }
   }
 
@@ -4215,20 +4213,20 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA2, 0x09, sectionOperation, 0xff, 0xff, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
+      REQUIRE(bus.cpu->getRegisterAC() == expectedValue);
     }
   }
 
@@ -4245,20 +4243,20 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA2, 0x01, sectionOperation, 0x07, 0x00, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == expectedValue);
+      REQUIRE(bus.cpu->getRegisterAC() == expectedValue);
     }
   }
 
@@ -4275,20 +4273,20 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA0, 0x01, sectionOperation, 0x07, 0x00, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -4305,20 +4303,20 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA0, 0x09, sectionOperation, 0xff, 0xff, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -4335,20 +4333,20 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA6, 0x06, sectionOperation, 0x01, 0x06, 0x9, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -4365,20 +4363,20 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA6, 0x06, sectionOperation, 0xff, 0x08, 0x9, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -4395,20 +4393,20 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, accumulatorInitialValue, 0xA0, 0x01, sectionOperation, 0x07, 0x00, 0x08, 0x00, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -4425,20 +4423,20 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
+      bus.cpu->executioner.getOperation(sectionOperation), accumulatorInitialValue, valueToTest, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {0xA9, accumulatorInitialValue, 0xA0, 0x0A, sectionOperation, 0x07, 0x00, 0xFF, 0xFF, valueToTest};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
 }
@@ -4462,24 +4460,24 @@ TEST_CASE("Index Address Tests", "[address][index]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, testXRegister)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, testXRegister)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {operation, 0x03, 0x00, valueToLoad};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       if (testXRegister)
       {
-        REQUIRE(bus.cpu.getRegister(bus.cpu.X) == valueToLoad);
+        REQUIRE(bus.cpu->getRegisterX() == valueToLoad);
       }
       else
       {
-        REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == valueToLoad);
+        REQUIRE(bus.cpu->getRegisterY() == valueToLoad);
       }
     }
   }
@@ -4493,27 +4491,27 @@ TEST_CASE("Index Address Tests", "[address][index]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, testXRegister)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, testXRegister)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t XRegister = testXRegister ? 0xA0 : 0xA2;
 
       uint8_t program[]= {XRegister, 0xFF, operation, 0x06, 0x00, valueToLoad};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       if (testXRegister)
       {
-        REQUIRE(bus.cpu.getRegister(bus.cpu.X) == valueToLoad);
+        REQUIRE(bus.cpu->getRegisterX() == valueToLoad);
       }
       else
       {
-        REQUIRE(bus.cpu.getRegister(bus.cpu.Y) == valueToLoad);
+        REQUIRE(bus.cpu->getRegisterY() == valueToLoad);
       }
     }
   }
@@ -4527,24 +4525,24 @@ TEST_CASE("Index Address Tests", "[address][index]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, testXRegister)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, testXRegister)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {operation, 0x04, 0x00, 0x00, valueToLoad};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       if (testXRegister)
       {
-        REQUIRE(hex(bus.cpu.getRegister(bus.cpu.X), 2) == hex(valueToLoad, 2));
+        REQUIRE(hex(bus.cpu->getRegisterX(), 2) == hex(valueToLoad, 2));
       }
       else
       {
-        REQUIRE(hex(bus.cpu.getRegister(bus.cpu.Y), 2) == hex(valueToLoad, 2));
+        REQUIRE(hex(bus.cpu->getRegisterY(), 2) == hex(valueToLoad, 2));
       }
     }
   }
@@ -4568,9 +4566,9 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), mode)
+      bus.cpu->executioner.getOperation(operation), mode)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t loadOperation;
       switch (mode)
@@ -4588,14 +4586,14 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
 
       uint8_t program[]= {loadOperation, 0xFF, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == 0);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 1);
     }
   }
 
@@ -4610,9 +4608,9 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, mode)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, mode)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t loadOperation;
       switch (mode)
@@ -4630,14 +4628,14 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
 
       uint8_t program[]= {loadOperation, accumulatorValue, operation, 0x04, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == 0);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 1);
     }
   }
 
@@ -4652,9 +4650,9 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, mode)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, mode)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t loadOperation;
       switch (mode)
@@ -4672,14 +4670,14 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
 
       uint8_t program[]= {loadOperation, accumulatorValue, operation, 0x05, 0x00, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == 0);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 1);
     }
   }
 
@@ -4692,9 +4690,9 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, addressWraps)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, addressWraps)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       std::vector<uint8_t> program;
       if (addressWraps) {
@@ -4703,16 +4701,16 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
         program = {0xA9, accumulatorValue, 0xA6, 0x06, operation, 0x01, 0x06, 0x9, 0x00, memoryValue};
       }
 
-      bus.cpu.LoadProgram(0x0000, program.data(), program.size(), 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program.data(), program.size(), 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == 0);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 1);
     }
   }
 
@@ -4725,9 +4723,9 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), accumulatorValue, memoryValue, addressWraps)
+      bus.cpu->executioner.getOperation(operation), accumulatorValue, memoryValue, addressWraps)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       std::vector<uint8_t> program;
       if (addressWraps) {
@@ -4736,16 +4734,16 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
         program = {0xA9, accumulatorValue, 0x84, 0x06, operation, 0x07, 0x01, 0x08, 0x00, memoryValue};
       }
 
-      bus.cpu.LoadProgram(0x0000, program.data(), program.size(), 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program.data(), program.size(), 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.Z) == 0);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.N) == 1);
-      REQUIRE(bus.cpu.GetFlag(bus.cpu.C) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->Z) == 0);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->N) == 1);
+      REQUIRE(bus.cpu->getFlag(bus.cpu->C) == 1);
     }
   }
 }
@@ -4769,15 +4767,15 @@ TEST_CASE("Decrement/Increment Address Tests", "[address][inc][dec]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), memoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), memoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {operation, 0x02, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       REQUIRE(hex(bus.read(0x02, true), 2) == hex(expectedValue, 2));
     }
@@ -4794,15 +4792,15 @@ TEST_CASE("Decrement/Increment Address Tests", "[address][inc][dec]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}) works",
-      bus.cpu.executioner.getOperation(operation), memoryValue, expectedValue)
+      bus.cpu->executioner.getOperation(operation), memoryValue, expectedValue)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {operation, 0x03, 0x00, memoryValue};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       REQUIRE(hex(bus.read(0x03, true), 2) == hex(expectedValue, 2));
     }
@@ -4830,9 +4828,9 @@ TEST_CASE("Store In Memory Address Tests", "[storage][address]")
 
     SECTION(
       fmt::format("Check if {:s}({}) works",
-      bus.cpu.executioner.getOperation(operation), mode)
+      bus.cpu->executioner.getOperation(operation), mode)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t loadOperation;
       switch (mode)
@@ -4850,10 +4848,10 @@ TEST_CASE("Store In Memory Address Tests", "[storage][address]")
 
       uint8_t program[]= {loadOperation, 0x04, operation, 0x00, 0x05};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       REQUIRE(hex(bus.read(0x04, true), 2) == hex(0x05, 2));
     }
@@ -4871,9 +4869,9 @@ TEST_CASE("Store In Memory Address Tests", "[storage][address]")
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, {}) works",
-      bus.cpu.executioner.getOperation(operation), valueToLoad, mode)
+      bus.cpu->executioner.getOperation(operation), valueToLoad, mode)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t loadOperation;
       switch (mode)
@@ -4891,10 +4889,10 @@ TEST_CASE("Store In Memory Address Tests", "[storage][address]")
 
       uint8_t program[]= {loadOperation, valueToLoad, operation, 0x04};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       REQUIRE(hex(bus.read(0x04, true), 2) == hex(valueToLoad, 2));
     }
@@ -4906,7 +4904,6 @@ TEST_CASE("Cycle Tests", "[cycle]")
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
   Bus bus;
-
   //uint8_t operation = 0x0A;
 
   SECTION("NumberOfCyclesRemaining Correct After Operations That Do Not Wrap")
@@ -5154,19 +5151,19 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[] = {operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5193,21 +5190,21 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA6, 0x06, operation, 0xff, 0xff, 0x00, 0x03};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5226,21 +5223,21 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA4, 0x06, operation, 0xff, 0xff, 0x00, 0x03};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5259,20 +5256,20 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA0, 0x04, operation, 0x05, 0x08, 0xFF, 0xFF, 0x03};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      bus.cpu.tick();
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5285,22 +5282,22 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0x38, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x00, 2));
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(0x00, 2));
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5313,22 +5310,22 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0x18, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x00, 2));
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(0x00, 2));
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5343,9 +5340,9 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:d}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed, isCarrySet, wrapRight)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed, isCarrySet, wrapRight)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t carryOperation = isCarrySet ? 0x38 : 0x18;
       uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
@@ -5353,16 +5350,16 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
       uint8_t program[]= {carryOperation, operation, amountToMove, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
-      REQUIRE(hex(bus.cpu.getRegister(bus.cpu.AC), 2) == hex(0x00, 2));
+      bus.cpu->loadProgram(initialAddress, program, n, initialAddress);
+      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(0x00, 2));
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5375,22 +5372,22 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, 0x00, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5403,22 +5400,22 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, 0x01, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5433,9 +5430,9 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:d}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed, isZeroSet, wrapRight)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed, isZeroSet, wrapRight)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t newAccumulatorValue = isZeroSet ? 0x00 : 0x01;
       uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
@@ -5443,16 +5440,16 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
       uint8_t program[]= {0xA9, newAccumulatorValue, operation, amountToMove, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(initialAddress, program, n, initialAddress);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5465,22 +5462,22 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, 0x80, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5493,22 +5490,22 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, 0x79, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5523,9 +5520,9 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:d}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed, isNegativeSet, wrapRight)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed, isNegativeSet, wrapRight)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t newAccumulatorValue = isNegativeSet ? 0x80 : 0x79;
       uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
@@ -5533,15 +5530,15 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
       uint8_t program[]= {0xA9, newAccumulatorValue, operation, amountToMove, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
-      bus.cpu.tick();
+      bus.cpu->loadProgram(initialAddress, program, n, initialAddress);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5554,23 +5551,23 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:d}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, 0x01, 0x69, 0x7F, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5583,23 +5580,23 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:d}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {0xA9, 0x01, 0x69, 0x01, operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-      REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
+      REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5614,9 +5611,9 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:d}, {}, {}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed, isOverflowSet, wrapRight)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed, isOverflowSet, wrapRight)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t newAccumulatorValue = isOverflowSet ? 0x7F : 0x00;
       uint16_t initialAddress = wrapRight ? 0xFFF0 : 0x00;
@@ -5624,16 +5621,16 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
       uint8_t program[]= {0xA9, newAccumulatorValue, 0x69, 0x01, operation, amountToMove, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(initialAddress, program, n, initialAddress);
+      bus.cpu->loadProgram(initialAddress, program, n, initialAddress);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu->tick();
+      bus.cpu->tick();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
-      bus.cpu.tick();
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 
@@ -5674,19 +5671,19 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
     SECTION(
       fmt::format("Check if {:s}({:d}) works",
-      bus.cpu.executioner.getOperation(operation), numberOfCyclesUsed)
+      bus.cpu->executioner.getOperation(operation), numberOfCyclesUsed)
     ) {
-      bus.cpu.reset();
+      bus.cpu->reset();
 
       uint8_t program[]= {operation, 0x00};
       size_t n = sizeof(program) / sizeof(program[0]);
-      bus.cpu.LoadProgram(0x0000, program, n, 0x00);
+      bus.cpu->loadProgram(0x0000, program, n, 0x00);
 
-      uint8_t startingNumberOfCycles = bus.cpu.operation_cycle;
+      uint8_t startingNumberOfCycles = bus.cpu->getOperationCycleCount();
 
-      bus.cpu.tick();
+      bus.cpu->tick();
 
-      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.operation_cycle, 4));
+      REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu->getOperationCycleCount(), 4));
     }
   }
 }
@@ -5697,84 +5694,84 @@ TEST_CASE("Program Counter Tests", "[programcounter][pc]")
 
   Bus bus;
 
-  bus.cpu.reset();
-  REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0000, 4));
+  bus.cpu->reset();
+  REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0x0000, 4));
 
   SECTION("Branch On Negative Set Program Counter Correct When NoBranch Occurs")
   {
     uint8_t program[]= {0xA9, 0x80, 0x10};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
+    REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
     //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-    bus.cpu.tick();
-    uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    uint16_t currentProgramCounter = bus.cpu->getProgramCounter();
+    bus.cpu->tick();
 
-    REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu.getProgramCounter(), 4));
+    REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu->getProgramCounter(), 4));
   }
 
   SECTION("Branch On Negative Clear Program Counter Correct When NoBranch Occurs")
   {
     uint8_t program[]= {0xA9, 0x79, 0x30};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    REQUIRE(bus.cpu.getRegister(bus.cpu.AC) == 0x00);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
+    REQUIRE(bus.cpu->getRegisterAC() == 0x00);
 
     //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-    bus.cpu.tick();
-    uint8_t currentProgramCounter = bus.cpu.getProgramCounter();
-    bus.cpu.tick();
+    bus.cpu->tick();
+    uint16_t currentProgramCounter = bus.cpu->getProgramCounter();
+    bus.cpu->tick();
 
-    REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu.getProgramCounter(), 4));
+    REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu->getProgramCounter(), 4));
   }
 
   SECTION("Branch On Overflow Set Program Counter Correct When NoBranch Occurs")
   {
     uint8_t program[]= {0xA9, 0x01, 0x69, 0x01, 0x70, 0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    REQUIRE(bus.cpu.getProgramCounter() == 0x0000);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
+    REQUIRE(bus.cpu->getProgramCounter() == 0x0000);
 
     //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-    bus.cpu.tick();
-    bus.cpu.tick();
-    uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    uint16_t currentProgramCounter = bus.cpu->getProgramCounter();
 
-    bus.cpu.tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu.getProgramCounter(), 4));
+    REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu->getProgramCounter(), 4));
   }
 
   SECTION("Branch On Overflow Clear Program Counter Correct When NoBranch Occurs")
   {
     uint8_t program[]= {0xA9, 0x01, 0x69, 0x7F, 0x50, 0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0x0000, program, n, 0x00);
-    REQUIRE(bus.cpu.getProgramCounter() == 0x0000);
+    bus.cpu->loadProgram(0x0000, program, n, 0x00);
+    REQUIRE(bus.cpu->getProgramCounter() == 0x0000);
 
     // Get the number of cycles after the register has been
     // loaded, so we can isolate the operation under test
-    bus.cpu.tick();
-    bus.cpu.tick();
-    uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
+    bus.cpu->tick();
+    bus.cpu->tick();
+    uint16_t currentProgramCounter = bus.cpu->getProgramCounter();
 
-    bus.cpu.tick();
+    bus.cpu->tick();
 
-    REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu.getProgramCounter(), 4));
+    REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu->getProgramCounter(), 4));
   }
 
   SECTION("Program Counter Wraps Correctly")
   {
     uint8_t program[] = {0x38};
     size_t n = sizeof(program) / sizeof(program[0]);
-    bus.cpu.LoadProgram(0xFFFF, program, n, 0xFFFF);
+    bus.cpu->loadProgram(0xFFFF, program, n, 0xFFFF);
 
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0xFFFF, 4));
-    bus.cpu.tick();
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0xFFFF, 4));
+    bus.cpu->tick();
 
-    REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0000, 4));
+    REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(0x0000, 4));
   }
 }
 };

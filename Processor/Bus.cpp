@@ -14,9 +14,6 @@ namespace CPU
 
   void handler(int sig)
   {
-#if defined DEBUG
-    std::cout << "DEBUG MODE ACTIVE!" << std::endl;
-#endif
     switch(sig)
     {
       case SIGABRT:
@@ -50,10 +47,11 @@ namespace CPU
 
   Bus::Bus()
   {
+#if defined DEBUG
+    std::cout << "DEBUG MODE ACTIVE!" << std::endl;
+#endif
     try
     {
-      Logger log;
-
       signal(SIGABRT, handler);
       signal(SIGFPE, handler);
       signal(SIGILL, handler);
@@ -62,7 +60,7 @@ namespace CPU
       signal(SIGTERM, handler);
 
       // Connect CPU to communication bus
-      cpu.ConnectBus(this);
+      cpu->connectBus(this);
       
       // Clear RAM contents, just in case :P
       reset();

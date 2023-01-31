@@ -25,7 +25,7 @@ namespace CPU
     ~Executioner();
 
   public:
-    void ConnectCpu(Processor* n) { cpu = n; }
+    void connectCpu(Processor* n) { cpu = n; }
 
     void breakOperation(bool isBreak, uint16_t vector);
     void branchOperation(bool performBranch);

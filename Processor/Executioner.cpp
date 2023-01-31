@@ -36,14 +36,17 @@ namespace CPU
 
   void Executioner::reset()
   {
-    // Get address to set program counter to
+    // get address to set program counter to
     addr_abs = 0xFFFC;
 
     uint16_t newPc = (cpu->readMemory(addr_abs + 1) << 8) | cpu->readMemory(addr_abs + 0);
 
-    // Set it
+    fmt::print("Program Counter Reset: {:04X}\n", newPc);
+
+    // set it
     cpu->setProgramCounter(newPc);
 
+    fmt::print("Program Counter Set: {:04X}\n", newPc);
     // Clear internal helper variables
     addr_rel = 0x0000;
     addr_abs = 0x0000;
@@ -258,7 +261,7 @@ namespace CPU
 // Operand is always AC
   void Executioner::addrACC()
   {
-    fetched = cpu->getRegister(cpu->AC);
+    fetched = cpu->getRegisterAC();
 
 #if defined DEBUG
     Logger::log()->debug(
@@ -334,7 +337,7 @@ namespace CPU
     addr_abs = cpu->readMemory(cpu->getProgramCounter());
     cpu->incrementCycleCount();
 
-    addr_abs += cpu->getRegister(cpu->X);
+    addr_abs += cpu->getRegisterX();
 
     cpu->incrementProgramCounter();
     addr_abs &= 0x00FF;
@@ -360,7 +363,7 @@ namespace CPU
     addr_abs = cpu->readMemory(cpu->getProgramCounter());
     cpu->incrementCycleCount();
 
-    addr_abs += cpu->getRegister(cpu->Y);
+    addr_abs += cpu->getRegisterY();
 
     cpu->incrementProgramCounter();
     addr_abs &= 0x00FF;
@@ -464,7 +467,7 @@ namespace CPU
 
 
     addr_abs = (hi << 8) | lo;
-    addr_abs += cpu->getRegister(cpu->X);
+    addr_abs += cpu->getRegisterX();
 
 #if defined DEBUG
     Logger::log()->debug(
@@ -523,7 +526,7 @@ namespace CPU
     cpu->incrementProgramCounter();
 
     addr_abs = (hi << 8) | lo;
-    addr_abs += cpu->getRegister(cpu->Y);
+    addr_abs += cpu->getRegisterY();
 
 #if defined DEBUG
     Logger::log()->debug(
@@ -624,7 +627,7 @@ namespace CPU
     cpu->incrementProgramCounter();
     cpu->incrementCycleCount();
 
-    uint8_t x = cpu->getRegister(cpu->X);
+    uint8_t x = cpu->getRegisterX();
     uint16_t lo = cpu->readMemory((uint16_t)(t + (uint16_t)(size_t)x) & 0x00FF);
     uint16_t hi = cpu->readMemory((uint16_t)(t + (uint16_t)(size_t)x + 1) & 0x00FF);
 
@@ -660,7 +663,7 @@ namespace CPU
     uint16_t hi = cpu->readMemory((t + 1) & 0x00FF);
 
     addr_abs = (hi << 8) | lo;
-    addr_abs += cpu->getRegister(cpu->Y);
+    addr_abs += cpu->getRegisterY();
 
 #if defined DEBUG
     Logger::log()->debug(
@@ -751,30 +754,30 @@ namespace CPU
     cpu->dumpRam(cpu->getProgramCounter()-1);
 #endif
 
-    cpu->PokeStack((pc >> 8) & 0x00FF);
+    cpu->pokeStack((pc >> 8) & 0x00FF);
     cpu->decrementStackPointer();
     cpu->incrementCycleCount();
 
-    cpu->PokeStack(pc & 0x00FF);
+    cpu->pokeStack(pc & 0x00FF);
     cpu->decrementStackPointer();
     cpu->incrementCycleCount();
 
     if (isBreak)
     {
-      cpu->SetFlag(cpu->B, true);
+      cpu->setFlag(cpu->B, true);
     }
     else
     {
-      cpu->SetFlag(cpu->B, false);
+      cpu->setFlag(cpu->B, false);
     }
 
-    cpu->PokeStack(cpu->getRegister(cpu->SR));
+    cpu->pokeStack(cpu->getRegisterSR());
     cpu->decrementStackPointer();
     cpu->incrementCycleCount();
 
-    cpu->SetFlag(cpu->I, true);
+    cpu->setFlag(cpu->I, true);
 #if defined EMULATE65C02
-    cpu->SetFlag(cpu->D, true);
+    cpu->setFlag(cpu->D, true);
 #endif
 
     uint16_t newPc = (cpu->readMemory(vector + 1) << 8) | cpu->readMemory(vector);
@@ -784,7 +787,7 @@ namespace CPU
 //#endif
 
 #if defined DEBUG
-    cpu->DumpStackAtPointer();
+    cpu->dumpStackAtPointer();
 #endif
 
     cpu->setProgramCounter(newPc);
@@ -868,38 +871,38 @@ namespace CPU
     // Grab the data that we are adding to the accumulator
     fetch();
 
-    uint8_t current = cpu->getRegister(cpu->AC);
+    uint8_t current = cpu->getRegisterAC();
 
-    if (cpu->GetFlag(cpu->D))
+    if (cpu->getFlag(cpu->D))
     {
-      uint8_t d0 = (fetched & 0x0F) + (current & 0x0F) + (uint8_t)cpu->GetFlag(cpu->C);
+      uint8_t d0 = (fetched & 0x0F) + (current & 0x0F) + (uint8_t)cpu->getFlag(cpu->C);
       uint8_t d1 = (fetched >> 4) + (current >> 4) + (d0 > 9 ? 1 : 0);
 
       temp = d0 % 10 | (d1 % 10 << 4);
 
-      cpu->SetFlag(cpu->C, d1 > 9);
+      cpu->setFlag(cpu->C, d1 > 9);
     }
     else
     {
       // Add is performed in 16-bit domain for emulation to capture any
       // carry bit, which will exist in bit 8 of the 16-bit word
-      temp = (uint16_t)current + (uint16_t)fetched + (uint16_t)cpu->GetFlag(cpu->C);
+      temp = (uint16_t)current + (uint16_t)fetched + (uint16_t)cpu->getFlag(cpu->C);
 
       // The signed Overflow flag is set based on all that up there! :D
-      cpu->SetFlag(cpu->V, (~((uint16_t)fetched ^ (uint16_t)current) & ((uint16_t)temp ^ (uint16_t)current)) & 0x80);
+      cpu->setFlag(cpu->V, (~((uint16_t)fetched ^ (uint16_t)current) & ((uint16_t)temp ^ (uint16_t)current)) & 0x80);
 
-      cpu->SetFlag(cpu->C, temp > 255);
+      cpu->setFlag(cpu->C, temp > 255);
       temp = temp & 0x00FF;
     }
 
     // The Zero flag is set if the result is 0
-    cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0);
+    cpu->setFlag(cpu->Z, (temp & 0x00FF) == 0);
 
     // The negative flag is set to the most significant bit of the result
-    cpu->SetFlag(cpu->N, (temp & 0x80) > 0);
+    cpu->setFlag(cpu->N, (temp & 0x80) > 0);
 
     // Load the result into the accumulator (it's 8-bit dont forget!)
-    cpu->setRegister(cpu->AC, (uint8_t)(temp & 0x00FF));
+    cpu->setRegisterAC((uint8_t)(temp & 0x00FF));
   }
 
 
@@ -932,18 +935,18 @@ namespace CPU
   {
     fetch();
 
-    uint8_t current = cpu->getRegister(cpu->AC);
+    uint8_t current = cpu->getRegisterAC();
     uint16_t value = 0x00;
 
-    if (cpu->GetFlag(cpu->D))
+    if (cpu->getFlag(cpu->D))
     {
-      int8_t d0 = (current & 0x0F) - (fetched & 0x0F) - (cpu->GetFlag(cpu->C) ? 0 : 1);
+      int8_t d0 = (current & 0x0F) - (fetched & 0x0F) - (cpu->getFlag(cpu->C) ? 0 : 1);
       int8_t d1 = (current >> 4) - (fetched >> 4) - (d0 < 0 ? 1 : 0);
 
       value = (d0 < 0 ? 10 + d0 : d0) | ((d1 < 0 ? 10 + d1 : d1) << 4);
-      cpu->setRegister(cpu->AC, (uint8_t)(value & 0xFF));
+      cpu->setRegisterAC((uint8_t)(value & 0xFF));
 
-      cpu->SetFlag(cpu->C, d1 < 0);
+      cpu->setFlag(cpu->C, d1 < 0);
     }
     else
     {
@@ -953,16 +956,16 @@ namespace CPU
       uint16_t bottom = ((uint16_t)fetched) ^ 0x00FF;
 
       // Notice this is exactly the same as addition from here!
-      value = (uint16_t)current + bottom + (uint16_t)cpu->GetFlag(cpu->C);
+      value = (uint16_t)current + bottom + (uint16_t)cpu->getFlag(cpu->C);
 
-      cpu->SetFlag(cpu->V, (value ^ (uint16_t)current) & (value ^ bottom) & 0x0080);
-      cpu->SetFlag(cpu->C, value & 0xFF00);
+      cpu->setFlag(cpu->V, (value ^ (uint16_t)current) & (value ^ bottom) & 0x0080);
+      cpu->setFlag(cpu->C, value & 0xFF00);
 
-      cpu->setRegister(cpu->AC, (uint8_t)(value & 0xFF));
+      cpu->setRegisterAC((uint8_t)(value & 0xFF));
     }
 
-    cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0);
-    cpu->SetFlag(cpu->N, value & 0x0080);
+    cpu->setFlag(cpu->Z, (value & 0x00FF) == 0);
+    cpu->setFlag(cpu->N, value & 0x0080);
   }
 
 
@@ -971,7 +974,7 @@ namespace CPU
   // 1) Fetch the data you are working with
   // 2) Perform calculation
   // 3) Store the result in desired place
-  // 4) Set Flags of the status register
+  // 4) set Flags of the status register
   // 5) Return if instruction has potential to require additional 
   //    clock cycle
 
@@ -981,10 +984,10 @@ namespace CPU
   void Executioner::opAND()
   {
     fetch();
-    uint8_t value = (cpu->getRegister(cpu->AC) & fetched);
-    cpu->setRegister(cpu->AC, value);
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    uint8_t value = (cpu->getRegisterAC() & fetched);
+    cpu->setRegisterAC(value);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
   }
 
 
@@ -1005,13 +1008,13 @@ namespace CPU
     }
 
     uint16_t value = (uint16_t)fetched << 1;
-    cpu->SetFlag(cpu->C, (value & 0xFF00) > 0);
-    cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setFlag(cpu->C, (value & 0xFF00) > 0);
+    cpu->setFlag(cpu->Z, (value & 0x00FF) == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
 
     if (getAddressModeName() == "ACC")
     {
-      cpu->setRegister(cpu->AC, (uint8_t)(value & 0x00FF));
+      cpu->setRegisterAC((uint8_t)(value & 0x00FF));
     }
     else
     {
@@ -1031,15 +1034,15 @@ namespace CPU
   // Function:    if(C == 0) pc = address 
   void Executioner::opBCC()
   {
-    branchOperation(cpu->GetFlag(cpu->C) == 0);
+    branchOperation(cpu->getFlag(cpu->C) == 0);
   }
 
 
-  // Instruction: Branch if Carry Set
+  // Instruction: Branch if Carry set
   // Function:    if(C == 1) pc = address
   void Executioner::opBCS()
   {
-    branchOperation(cpu->GetFlag(cpu->C) == 1);
+    branchOperation(cpu->getFlag(cpu->C) == 1);
   }
 
 
@@ -1047,7 +1050,7 @@ namespace CPU
   // Function:    if(Z == 1) pc = address
   void Executioner::opBEQ()
   {
-    branchOperation(cpu->GetFlag(cpu->Z) == 1);
+    branchOperation(cpu->getFlag(cpu->Z) == 1);
   }
 
 
@@ -1058,11 +1061,11 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = (cpu->getRegister(cpu->AC) & fetched);
+    uint8_t value = (cpu->getRegisterAC() & fetched);
 
-    cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->N, fetched & (1 << 7));
-    cpu->SetFlag(cpu->V, fetched & (1 << 6));
+    cpu->setFlag(cpu->Z, (value & 0xFF) == 0x00);
+    cpu->setFlag(cpu->N, fetched & (1 << 7));
+    cpu->setFlag(cpu->V, fetched & (1 << 6));
   }
 
 
@@ -1070,7 +1073,7 @@ namespace CPU
   // Function:    if(N == 1) pc = address
   void Executioner::opBMI()
   {
-    branchOperation(cpu->GetFlag(cpu->N) == 1);
+    branchOperation(cpu->getFlag(cpu->N) == 1);
   }
 
 
@@ -1078,7 +1081,7 @@ namespace CPU
   // Function:    if(Z == 0) pc = address
   void Executioner::opBNE()
   {
-    branchOperation(cpu->GetFlag(cpu->Z) == 0);
+    branchOperation(cpu->getFlag(cpu->Z) == 0);
   }
 
 
@@ -1086,7 +1089,7 @@ namespace CPU
   // Function:    if(N == 0) pc = address
   void Executioner::opBPL()
   {
-    branchOperation(cpu->GetFlag(cpu->N) == 0);
+    branchOperation(cpu->getFlag(cpu->N) == 0);
   }
 
 
@@ -1102,15 +1105,15 @@ namespace CPU
   // Function:    if(V == 0) pc = address
   void Executioner::opBVC()
   {
-    branchOperation(cpu->GetFlag(cpu->V) == 0);
+    branchOperation(cpu->getFlag(cpu->V) == 0);
   }
 
 
-  // Instruction: Branch if Overflow Set
+  // Instruction: Branch if Overflow set
   // Function:    if(V == 1) pc = address
   void Executioner::opBVS()
   {
-    branchOperation(cpu->GetFlag(cpu->V) == 1);
+    branchOperation(cpu->getFlag(cpu->V) == 1);
   }
 
 
@@ -1118,7 +1121,7 @@ namespace CPU
   // Function:    C = 0
   void Executioner::opCLC()
   {
-    cpu->SetFlag(cpu->C, false);
+    cpu->setFlag(cpu->C, false);
     cpu->incrementCycleCount();
   }
 
@@ -1127,7 +1130,7 @@ namespace CPU
   // Function:    D = 0
   void Executioner::opCLD()
   {
-    cpu->SetFlag(cpu->D, false);
+    cpu->setFlag(cpu->D, false);
     cpu->incrementCycleCount();
   }
 
@@ -1136,7 +1139,7 @@ namespace CPU
   // Function:    I = 0
   void Executioner::opCLI()
   {
-    cpu->SetFlag(cpu->I, false);
+    cpu->setFlag(cpu->I, false);
     cpu->incrementCycleCount();
   }
 
@@ -1145,7 +1148,7 @@ namespace CPU
   // Function:    V = 0
   void Executioner::opCLV()
   {
-    cpu->SetFlag(cpu->V, false);
+    cpu->setFlag(cpu->V, false);
     cpu->incrementCycleCount();
   }
 
@@ -1156,10 +1159,10 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = (cpu->getRegister(cpu->AC) - fetched);
-    cpu->SetFlag(cpu->C, cpu->getRegister(cpu->AC) >= fetched);
-    cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
-    cpu->SetFlag(cpu->N, value & 0x0080);
+    uint8_t value = (cpu->getRegisterAC() - fetched);
+    cpu->setFlag(cpu->C, cpu->getRegisterAC() >= fetched);
+    cpu->setFlag(cpu->Z, (value & 0x00FF) == 0x0000);
+    cpu->setFlag(cpu->N, value & 0x0080);
   }
 
 
@@ -1170,10 +1173,10 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = (cpu->getRegister(cpu->X) - fetched);
-    cpu->SetFlag(cpu->C, cpu->getRegister(cpu->X) >= fetched);
-    cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
-    cpu->SetFlag(cpu->N, value & 0x0080);
+    uint8_t value = (cpu->getRegisterX() - fetched);
+    cpu->setFlag(cpu->C, cpu->getRegisterX() >= fetched);
+    cpu->setFlag(cpu->Z, (value & 0x00FF) == 0x0000);
+    cpu->setFlag(cpu->N, value & 0x0080);
   }
 
 
@@ -1184,10 +1187,10 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = (cpu->getRegister(cpu->Y) - fetched);
-    cpu->SetFlag(cpu->C, cpu->getRegister(cpu->Y) >= fetched);
-    cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
-    cpu->SetFlag(cpu->N, value & 0x0080);
+    uint8_t value = (cpu->getRegisterY() - fetched);
+    cpu->setFlag(cpu->C, cpu->getRegisterY() >= fetched);
+    cpu->setFlag(cpu->Z, (value & 0x00FF) == 0x0000);
+    cpu->setFlag(cpu->N, value & 0x0080);
   }
 
 
@@ -1200,8 +1203,8 @@ namespace CPU
 
     cpu->writeMemory(addr_abs, fetched & 0x00FF);
     temp = fetched - 1;
-    cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
-    cpu->SetFlag(cpu->N, temp & 0x0080);
+    cpu->setFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
+    cpu->setFlag(cpu->N, temp & 0x0080);
 
     cpu->writeMemory(addr_abs, temp & 0x00FF);
 
@@ -1217,11 +1220,11 @@ namespace CPU
   // Flags Out:   N, Z
   void Executioner::opDEX()
   {
-    uint8_t value = cpu->getRegister(cpu->X);
+    uint8_t value = cpu->getRegisterX();
     --value;
-    cpu->setRegister(cpu->X, value);
-    cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setRegisterX(value);
+    cpu->setFlag(cpu->Z, (value & 0xFF) == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
 
     cpu->incrementCycleCount();
   }
@@ -1232,11 +1235,11 @@ namespace CPU
   // Flags Out:   N, Z
   void Executioner::opDEY()
   {
-    uint8_t value = cpu->getRegister(cpu->Y);
+    uint8_t value = cpu->getRegisterY();
     --value;
-    cpu->setRegister(cpu->Y, value);
-    cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setRegisterY(value);
+    cpu->setFlag(cpu->Z, (value & 0xFF) == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
 
     cpu->incrementCycleCount();
   }
@@ -1249,10 +1252,10 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = cpu->getRegister(cpu->AC) ^ fetched;
-    cpu->setRegister(cpu->AC, value);
-    cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    uint8_t value = cpu->getRegisterAC() ^ fetched;
+    cpu->setRegisterAC(value);
+    cpu->setFlag(cpu->Z, (value & 0xFF) == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
   }
 
 
@@ -1266,8 +1269,8 @@ namespace CPU
     cpu->writeMemory(addr_abs, fetched & 0x00FF);
     temp = fetched + 1;
 
-    cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
-    cpu->SetFlag(cpu->N, temp & 0x0080);
+    cpu->setFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
+    cpu->setFlag(cpu->N, temp & 0x0080);
 
     cpu->writeMemory(addr_abs, temp & 0x00FF);
 
@@ -1283,11 +1286,11 @@ namespace CPU
   // Flags Out:   N, Z
   void Executioner::opINX()
   {
-    uint8_t value = cpu->getRegister(cpu->X);
+    uint8_t value = cpu->getRegisterX();
     ++value;
-    cpu->setRegister(cpu->X, value);
-    cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setRegisterX(value);
+    cpu->setFlag(cpu->Z, (value & 0xFF) == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
 
     cpu->incrementCycleCount();
   }
@@ -1298,11 +1301,11 @@ namespace CPU
   // Flags Out:   N, Z
   void Executioner::opINY()
   {
-    uint8_t value = cpu->getRegister(cpu->Y);
+    uint8_t value = cpu->getRegisterY();
     ++value;
-    cpu->setRegister(cpu->Y, value);
-    cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setRegisterY(value);
+    cpu->setFlag(cpu->Z, (value & 0xFF) == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
 
     cpu->incrementCycleCount();
   }
@@ -1325,11 +1328,11 @@ namespace CPU
 
     uint16_t pc = cpu->getProgramCounter();
 
-    cpu->PokeStack((pc >> 8) & 0x00FF);
+    cpu->pokeStack((pc >> 8) & 0x00FF);
     cpu->incrementCycleCount();
     cpu->decrementStackPointer();
 
-    cpu->PushStack(pc & 0x00FF);
+    cpu->pushStack(pc & 0x00FF);
 
     cpu->setProgramCounter(addr_abs);
   }
@@ -1342,9 +1345,9 @@ namespace CPU
   {
     fetch();
 
-    cpu->setRegister(cpu->AC, fetched);
-    cpu->SetFlag(cpu->Z, fetched == 0x00);
-    cpu->SetFlag(cpu->N, fetched & 0x80);
+    cpu->setRegisterAC(fetched);
+    cpu->setFlag(cpu->Z, fetched == 0x00);
+    cpu->setFlag(cpu->N, fetched & 0x80);
   }
 
 
@@ -1355,9 +1358,9 @@ namespace CPU
   {
     fetch();
 
-    cpu->setRegister(cpu->X, fetched);
-    cpu->SetFlag(cpu->Z, fetched == 0x00);
-    cpu->SetFlag(cpu->N, fetched & 0x80);
+    cpu->setRegisterX(fetched);
+    cpu->setFlag(cpu->Z, fetched == 0x00);
+    cpu->setFlag(cpu->N, fetched & 0x80);
   }
 
 
@@ -1368,9 +1371,9 @@ namespace CPU
   {
     fetch();
 
-    cpu->setRegister(cpu->Y, fetched);
-    cpu->SetFlag(cpu->Z, fetched == 0x00);
-    cpu->SetFlag(cpu->N, fetched & 0x80);
+    cpu->setRegisterY(fetched);
+    cpu->setFlag(cpu->Z, fetched == 0x00);
+    cpu->setFlag(cpu->N, fetched & 0x80);
   }
 
 
@@ -1390,17 +1393,17 @@ namespace CPU
       cpu->writeMemory(addr_abs, fetched & 0x00FF);
     }
 
-    cpu->SetFlag(cpu->C, fetched & 0x0001);
+    cpu->setFlag(cpu->C, fetched & 0x0001);
     temp = fetched >> 1;
-    cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
-    cpu->SetFlag(cpu->N, temp & 0x0080);
+    cpu->setFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
+    cpu->setFlag(cpu->N, temp & 0x0080);
 
 
     uint8_t value = temp & 0x00FF;
 
     if (getAddressModeName() == "ACC")
     {
-      cpu->setRegister(cpu->AC, value);
+      cpu->setRegisterAC(value);
     }
     else
     {
@@ -1431,10 +1434,10 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = cpu->getRegister(cpu->AC) | fetched;
-    cpu->setRegister(cpu->AC, value);
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    uint8_t value = cpu->getRegisterAC() | fetched;
+    cpu->setRegisterAC(value);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
   }
 
 
@@ -1442,10 +1445,10 @@ namespace CPU
   // Function:    A -> stack
   void Executioner::opPHA()
   {
-    uint8_t ac = cpu->getRegister(cpu->AC);
-    cpu->PushStack(ac);
+    uint8_t ac = cpu->getRegisterAC();
+    cpu->pushStack(ac);
     cpu->incrementCycleCount();
-    Logger::log()->debug("OP {} - newSR: {} {: >56}", getOperation(), cpu->DecodeFlag(ac), cpu->reg);
+    Logger::log()->debug("OP {} - newSR: {} {: >56}", getOperation(), cpu->decodeFlag(ac), cpu->reg);
   }
 
 
@@ -1454,9 +1457,9 @@ namespace CPU
   // Note:        Break flag is set to 1 before push
   void Executioner::opPHP()
   {
-    uint8_t status = cpu->getRegister(cpu->SR) | cpu->B | cpu->U;
+    uint8_t status = cpu->getRegisterSR() | cpu->B | cpu->U;
 
-    cpu->PushStack(status);
+    cpu->pushStack(status);
     cpu->incrementCycleCount();
   }
 
@@ -1466,11 +1469,11 @@ namespace CPU
   // Flags Out:   N, Z
   void Executioner::opPLA()
   {
-    uint8_t value = cpu->PopStack();
+    uint8_t value = cpu->popStack();
     cpu->incrementCycleCount();
-    cpu->setRegister(cpu->AC, value);
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setRegisterAC(value);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
     cpu->incrementCycleCount();
   }
 
@@ -1479,10 +1482,10 @@ namespace CPU
   // Function:    Status <- stack
   void Executioner::opPLP()
   {
-    cpu->setRegister(cpu->SR, cpu->PopStack());
+    cpu->setRegisterSR(cpu->popStack());
     cpu->incrementCycleCount();
 
-    cpu->SetFlag(cpu->U, 1);
+    cpu->setFlag(cpu->U, 1);
     cpu->incrementCycleCount();
   }
 
@@ -1503,14 +1506,14 @@ namespace CPU
       cpu->writeMemory(addr_abs, fetched & 0x00FF);
     }
 
-    temp = (uint16_t)(fetched << 1) | cpu->GetFlag(cpu->C);
-    cpu->SetFlag(cpu->C, temp & 0xFF00);
-    cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
-    cpu->SetFlag(cpu->N, temp & 0x0080);
+    temp = (uint16_t)(fetched << 1) | cpu->getFlag(cpu->C);
+    cpu->setFlag(cpu->C, temp & 0xFF00);
+    cpu->setFlag(cpu->Z, (temp & 0x00FF) == 0x0000);
+    cpu->setFlag(cpu->N, temp & 0x0080);
 
     if (getAddressModeName() == "ACC")
     {
-      cpu->setRegister(cpu->AC, (uint8_t)(temp & 0x00FF));
+      cpu->setRegisterAC((uint8_t)(temp & 0x00FF));
     }
     else
     {
@@ -1542,14 +1545,14 @@ namespace CPU
       cpu->writeMemory(addr_abs, fetched & 0x00FF);
     }
 
-    temp = (uint16_t)(cpu->GetFlag(cpu->C) << 7) | (fetched >> 1);
-    cpu->SetFlag(cpu->C, fetched & 0x01);
-    cpu->SetFlag(cpu->Z, (temp & 0x00FF) == 0x00);
-    cpu->SetFlag(cpu->N, temp & 0x0080);
+    temp = (uint16_t)(cpu->getFlag(cpu->C) << 7) | (fetched >> 1);
+    cpu->setFlag(cpu->C, fetched & 0x01);
+    cpu->setFlag(cpu->Z, (temp & 0x00FF) == 0x00);
+    cpu->setFlag(cpu->N, temp & 0x0080);
 
     if (getAddressModeName() == "ACC")
     {
-      cpu->setRegister(cpu->AC, (uint8_t)(temp & 0x00FF));
+      cpu->setRegisterAC((uint8_t)(temp & 0x00FF));
     }
     else
     {
@@ -1575,15 +1578,15 @@ namespace CPU
     cpu->incrementStackPointer();
     cpu->incrementCycleCount();
 
-    uint8_t newSR = cpu->PeekStack();
+    uint8_t newSR = cpu->peekStack();
     cpu->incrementCycleCount();
 
-    cpu->setRegister(cpu->SR, newSR & ~cpu->B & ~cpu->U);
+    cpu->setRegisterSR(newSR & ~cpu->B & ~cpu->U);
 
-    uint16_t pcLo = cpu->PopStack();
+    uint16_t pcLo = cpu->popStack();
 
     cpu->incrementStackPointer();
-    uint16_t pcHi = cpu->PeekStack() << 8;
+    uint16_t pcHi = cpu->peekStack() << 8;
     
     uint16_t newPc = (pcHi | pcLo);
     cpu->incrementCycleCount();
@@ -1598,7 +1601,7 @@ namespace CPU
   void Executioner::opRTS()
   {
     cpu->incrementCycleCount();
-    uint16_t newPc = cpu->PopStack() | (cpu->PopStack() << 8);
+    uint16_t newPc = cpu->popStack() | (cpu->popStack() << 8);
 
     cpu->incrementCycleCount();
     cpu->setProgramCounter(newPc);
@@ -1609,29 +1612,29 @@ namespace CPU
   }
 
 
-  // Instruction: Set Carry Flag
+  // Instruction: set Carry Flag
   // Function:    C = 1
   void Executioner::opSEC()
   {
-    cpu->SetFlag(cpu->C, true);
+    cpu->setFlag(cpu->C, true);
     cpu->incrementCycleCount();
   }
 
 
-  // Instruction: Set Decimal Flag
+  // Instruction: set Decimal Flag
   // Function:    D = 1
   void Executioner::opSED()
   {
-    cpu->SetFlag(cpu->D, true);
+    cpu->setFlag(cpu->D, true);
     cpu->incrementCycleCount();
   }
 
 
-  // Instruction: Set Interrupt Flag / Enable Interrupts
+  // Instruction: set Interrupt Flag / Enable Interrupts
   // Function:    I = 1
   void Executioner::opSEI()
   {
-    cpu->SetFlag(cpu->I, true);
+    cpu->setFlag(cpu->I, true);
     cpu->incrementCycleCount();
   }
 
@@ -1640,7 +1643,7 @@ namespace CPU
   // Function:    M = A
   void Executioner::opSTA()
   {
-    cpu->writeMemory(addr_abs, cpu->getRegister(cpu->AC));
+    cpu->writeMemory(addr_abs, cpu->getRegisterAC());
 
     std::vector<std::string> affectedAddrModes;
     affectedAddrModes.push_back("ABX");
@@ -1658,7 +1661,7 @@ namespace CPU
   // Function:    M = X
   void Executioner::opSTX()
   {
-    cpu->writeMemory(addr_abs, cpu->getRegister(cpu->X));
+    cpu->writeMemory(addr_abs, cpu->getRegisterX());
   }
 
 
@@ -1666,7 +1669,7 @@ namespace CPU
   // Function:    M = Y
   void Executioner::opSTY()
   {
-    cpu->writeMemory(addr_abs, cpu->getRegister(cpu->Y));
+    cpu->writeMemory(addr_abs, cpu->getRegisterY());
   }
 
 
@@ -1677,11 +1680,11 @@ namespace CPU
   {
     cpu->incrementCycleCount();
 
-    uint8_t value = cpu->getRegister(cpu->AC);
-    cpu->setRegister(cpu->X, value);
+    uint8_t value = cpu->getRegisterAC();
+    cpu->setRegisterX(value);
 
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
   }
 
 
@@ -1692,11 +1695,11 @@ namespace CPU
   {
     cpu->incrementCycleCount();
 
-    uint8_t value = cpu->getRegister(cpu->AC);
-    cpu->setRegister(cpu->Y, value);
+    uint8_t value = cpu->getRegisterAC();
+    cpu->setRegisterY(value);
 
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
   }
 
 
@@ -1705,11 +1708,11 @@ namespace CPU
   // Flags Out:   N, Z
   void Executioner::opTSX()
   {
-    uint8_t value = cpu->getRegister(cpu->SP);
-    cpu->setRegister(cpu->X, value);
+    uint8_t value = cpu->getRegisterSP();
+    cpu->setRegisterX(value);
 
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
     cpu->incrementCycleCount();
   }
 
@@ -1720,11 +1723,11 @@ namespace CPU
   void Executioner::opTXA()
   {
     cpu->incrementCycleCount();
-    uint8_t value = cpu->getRegister(cpu->X);
-    cpu->setRegister(cpu->AC, value);
+    uint8_t value = cpu->getRegisterX();
+    cpu->setRegisterAC(value);
 
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
   }
 
 
@@ -1732,8 +1735,8 @@ namespace CPU
   // Function:    stack pointer = X
   void Executioner::opTXS()
   {
-    uint8_t value = cpu->getRegister(cpu->X);
-    cpu->setRegister(cpu->SP, value);
+    uint8_t value = cpu->getRegisterX();
+    cpu->setRegisterSP(value);
     cpu->incrementCycleCount();
   }
 
@@ -1745,10 +1748,10 @@ namespace CPU
   {
     cpu->incrementCycleCount();
 
-    uint8_t value = cpu->getRegister(cpu->Y);
-    cpu->setRegister(cpu->AC, value);
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    uint8_t value = cpu->getRegisterY();
+    cpu->setRegisterAC(value);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
   }
 
 #if defined EMULATE65C02
@@ -1774,12 +1777,12 @@ namespace CPU
   {
     fetch();
 
-    temp = cpu->getRegister(cpu->AC) & fetched;
-    cpu->setRegister(cpu->AC, (uint8_t)(temp >> 1));
+    temp = cpu->getRegisterAC() & fetched;
+    cpu->setRegisterAC((uint8_t)(temp >> 1));
 
-    cpu->SetFlag(cpu->Z, temp == 0x00);
-    cpu->SetFlag(cpu->N, temp & 0x80);
-    cpu->SetFlag(cpu->C, temp & 0x0001);
+    cpu->setFlag(cpu->Z, temp == 0x00);
+    cpu->setFlag(cpu->N, temp & 0x80);
+    cpu->setFlag(cpu->C, temp & 0x0001);
   }
 
 
@@ -1791,12 +1794,12 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = cpu->getRegister(cpu->AC) & fetched;
-    cpu->setRegister(cpu->AC, value);
+    uint8_t value = cpu->getRegisterAC() & fetched;
+    cpu->setRegisterAC(value);
 
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
-    cpu->SetFlag(cpu->C, (value & 0xFF00) > 0);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
+    cpu->setFlag(cpu->C, (value & 0xFF00) > 0);
   }
 
   // Instruction: AND oper + set C as ROL
@@ -1808,12 +1811,12 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = cpu->getRegister(cpu->AC) & fetched;
-    cpu->setRegister(cpu->AC, value);
+    uint8_t value = cpu->getRegisterAC() & fetched;
+    cpu->setRegisterAC(value);
 
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
-    cpu->SetFlag(cpu->C, value & 0xFF00);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
+    cpu->setFlag(cpu->C, value & 0xFF00);
   }
 
 
@@ -1833,16 +1836,16 @@ namespace CPU
   {
     fetch();
 
-    uint8_t ac_value = cpu->getRegister(cpu->AC);
-    uint8_t x_value = cpu->getRegister(cpu->X);
+    uint8_t ac_value = cpu->getRegisterAC();
+    uint8_t x_value = cpu->getRegisterX();
 
 
     ac_value = (ac_value ^ magic_ANE) & x_value & fetched;
 
-    cpu->setRegister(cpu->AC, ac_value);
+    cpu->setRegisterAC(ac_value);
 
-    cpu->SetFlag(cpu->Z, (ac_value & 0x00FF) == 0x00);
-    cpu->SetFlag(cpu->N, ac_value & 0x0080);
+    cpu->setFlag(cpu->Z, (ac_value & 0x00FF) == 0x00);
+    cpu->setFlag(cpu->N, ac_value & 0x0080);
   }
 
 
@@ -1853,11 +1856,11 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = cpu->getRegister(cpu->AC);
-    uint8_t carry = cpu->GetFlag(cpu->C);
-    uint8_t tempSR = cpu->getRegister(cpu->SR);
+    uint8_t value = cpu->getRegisterAC();
+    uint8_t carry = cpu->getFlag(cpu->C);
+    uint8_t tempSR = cpu->getRegisterSR();
     tempSR &= ~(cpu->C | cpu->Z | cpu->V | cpu->N);
-    cpu->setRegister(cpu->SR, tempSR);
+    cpu->setRegisterSR(tempSR);
     uint8_t result;
 
     if (tempSR & carry)
@@ -1876,30 +1879,30 @@ namespace CPU
         result = (result & 0x0F) + (value & 0xF0) + (result & 0xF0) + 0x10;
       }
 
-      cpu->SetFlag(cpu->Z, ((value + fetched + carry) & 0x00FF) == 0x00);
-      cpu->SetFlag(cpu->N, result & 0x0080);
-      cpu->SetFlag(cpu->V, ((value ^ result) & 0x80) && !((value ^ result) & 0x80));
+      cpu->setFlag(cpu->Z, ((value + fetched + carry) & 0x00FF) == 0x00);
+      cpu->setFlag(cpu->N, result & 0x0080);
+      cpu->setFlag(cpu->V, ((value ^ result) & 0x80) && !((value ^ result) & 0x80));
       if ((result & 0x1F0) > 0x90)
       {
         result += 0x60;
       }
-      cpu->SetFlag(cpu->C, result & 0xFF0);
+      cpu->setFlag(cpu->C, result & 0xFF0);
     }
     else
     {
       result = value + fetched;
-      cpu->SetFlag(cpu->C, ((result & 0x80) >> 7));
-      cpu->SetFlag(cpu->V, ((result & 0x40) >> 6) ^ ((result & 0x80) >> 7));
+      cpu->setFlag(cpu->C, ((result & 0x80) >> 7));
+      cpu->setFlag(cpu->V, ((result & 0x40) >> 6) ^ ((result & 0x80) >> 7));
 
       result = (result >> 1) | (carry << 7);
-      cpu->SetFlag(cpu->Z, (result & 0x00FF) == 0x00);
-      cpu->SetFlag(cpu->N, result & 0x0080);
+      cpu->setFlag(cpu->Z, (result & 0x00FF) == 0x00);
+      cpu->setFlag(cpu->N, result & 0x0080);
 
     }
 
     if (getAddressModeName() == "IMP" || getAddressModeName() == "IMM")
     {
-      cpu->setRegister(cpu->AC, (uint8_t)(result & 0x00FF));
+      cpu->setRegisterAC((uint8_t)(result & 0x00FF));
     }
     else
     {
@@ -1915,17 +1918,17 @@ namespace CPU
   {
     fetch();
 
-    //uint8_t value = cpu->getRegister(cpu->AC);
+    //uint8_t value = cpu->getRegisterAC();
     //temp = fetched - 1;
 
     uint8_t result = (fetched + 0xFF) & 0xFF;
-    uint8_t diff = cpu->getRegister(cpu->AC) + (~result & 0xFF) + 1;
+    uint8_t diff = cpu->getRegisterAC() + (~result & 0xFF) + 1;
     cpu->incrementCycleCount();
 
     //cpu->writeMemory(addr_abs, temp & 0x00FF);
-    cpu->SetFlag(cpu->N, temp & 0x80);
-    cpu->SetFlag(cpu->Z, (temp & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->C, diff >> 8);
+    cpu->setFlag(cpu->N, temp & 0x80);
+    cpu->setFlag(cpu->Z, (temp & 0xFF) == 0x00);
+    cpu->setFlag(cpu->C, diff >> 8);
 
     if (getAddressModeName() == "ABX" || getAddressModeName() == "IZY")
     {
@@ -1962,14 +1965,13 @@ namespace CPU
   void Executioner::opLAS()
   {
     fetch();
-    uint8_t value = cpu->getRegister(cpu->SP);
-    uint8_t result = value & fetched;
-    cpu->setRegister(cpu->SP, result);
-    cpu->setRegister(cpu->AC, result);
-    cpu->setRegister(cpu->X, result);
+    uint8_t result = cpu->getRegisterSP() & fetched;
+    cpu->setRegisterSP(result);
+    cpu->setRegisterAC(result);
+    cpu->setRegisterX(result);
 
-    cpu->SetFlag(cpu->Z, (result & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->N, result & 0x80);
+    cpu->setFlag(cpu->Z, (result & 0xFF) == 0x00);
+    cpu->setFlag(cpu->N, result & 0x80);
   }
 
 
@@ -1980,11 +1982,11 @@ namespace CPU
   {
     fetch();
 
-    cpu->setRegister(cpu->AC, fetched);
-    cpu->setRegister(cpu->X, fetched);
+    cpu->setRegisterAC(fetched);
+    cpu->setRegisterX(fetched);
 
-    cpu->SetFlag(cpu->Z, (fetched & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->N, fetched & 0x80);
+    cpu->setFlag(cpu->Z, (fetched & 0xFF) == 0x00);
+    cpu->setFlag(cpu->N, fetched & 0x80);
   }
 
 
@@ -1997,13 +1999,13 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = (cpu->getRegister(cpu->AC) ^ magic_LXA) & fetched;
+    uint8_t value = (cpu->getRegisterAC() ^ magic_LXA) & fetched;
 
-    cpu->setRegister(cpu->AC, value);
-    cpu->setRegister(cpu->X, value);
+    cpu->setRegisterAC(value);
+    cpu->setRegisterX(value);
 
-    cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x0080);
+    cpu->setFlag(cpu->Z, (value & 0x00FF) == 0x00);
+    cpu->setFlag(cpu->N, value & 0x0080);
   }
 
 
@@ -2013,14 +2015,14 @@ namespace CPU
   void Executioner::opRLA()
   {
     fetch();
-    temp = (uint16_t)((fetched << 1) & 0xFF) | cpu->GetFlag(cpu->C);
-    uint8_t ac = cpu->getRegister(cpu->AC);
+    temp = (uint16_t)((fetched << 1) & 0xFF) | cpu->getFlag(cpu->C);
+    uint8_t ac = cpu->getRegisterAC();
     //cpu->writeMemory(addr_abs, temp & 0x00FF);
     ac &= temp;
     cpu->incrementCycleCount();
-    cpu->SetFlag(cpu->C, fetched >> 7);
-    cpu->SetFlag(cpu->N, ac & 0x80);
-    cpu->SetFlag(cpu->Z, (ac & 0xFF) == 0x00);
+    cpu->setFlag(cpu->C, fetched >> 7);
+    cpu->setFlag(cpu->N, ac & 0x80);
+    cpu->setFlag(cpu->Z, (ac & 0xFF) == 0x00);
 
     cpu->incrementCycleCount();
     if (getAddressModeName() == "ABX" || getAddressModeName() == "ABY" || getAddressModeName() == "IZY")
@@ -2038,9 +2040,9 @@ namespace CPU
   void Executioner::opRRA()
   {
     fetch();
-    temp = (uint16_t)(fetched << 1) | cpu->GetFlag(cpu->C);
+    temp = (uint16_t)(fetched << 1) | cpu->getFlag(cpu->C);
     cpu->writeMemory(addr_abs, temp & 0x00FF);
-    cpu->SetFlag(cpu->C, (fetched & 0xFF00) > 0);
+    cpu->setFlag(cpu->C, (fetched & 0xFF00) > 0);
     opADC();
   }
 
@@ -2054,10 +2056,10 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X);
+    uint8_t value = cpu->getRegisterAC() & cpu->getRegisterX();
     //cpu->writeMemory(addr_abs, value & 0x00FF);
-    cpu->SetFlag(cpu->Z, value == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    cpu->setFlag(cpu->Z, value == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
     //cpu->incrementCycleCount();
   }
 
@@ -2069,12 +2071,12 @@ namespace CPU
   {
     fetch();
 
-    uint8_t value = (cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X)) - fetched;
-    cpu->setRegister(cpu->X, value);
+    uint8_t value = (cpu->getRegisterAC() & cpu->getRegisterX()) - fetched;
+    cpu->setRegisterX(value);
     //x = ((uint16_t)a & (uint16_t)x) - (uint16_t)fetched;
-    cpu->SetFlag(cpu->C, value & 0xFF00);
-    cpu->SetFlag(cpu->Z, (value & 0x00FF) == 0x0000);
-    cpu->SetFlag(cpu->N, value & 0x0080);
+    cpu->setFlag(cpu->C, value & 0xFF00);
+    cpu->setFlag(cpu->Z, (value & 0x00FF) == 0x0000);
+    cpu->setFlag(cpu->N, value & 0x0080);
   }
 
 
@@ -2090,7 +2092,7 @@ namespace CPU
     //temp = ((uint16_t)a & (uint16_t)x) & (uint16_t)((addr_abs >> 8) + 1);
     //cpu->writeMemory(addr_abs, temp & 0x00FF);
 
-    uint16_t value = ((uint16_t)cpu->getRegister(cpu->AC) & (uint16_t)cpu->getRegister(cpu->X));
+    uint16_t value = (cpu->getRegisterAC() & cpu->getRegisterX());
     value &= (uint16_t)((addr_abs >> 8) + 1);
     cpu->writeMemory(addr_abs, (uint8_t)(temp & 0x00FF));
   }
@@ -2105,7 +2107,7 @@ namespace CPU
     //temp = ((uint16_t)x) & (uint16_t)((addr_abs >> 8) + 1);
     //cpu->writeMemory(addr_abs, temp & 0x00FF);
 
-    uint16_t value = ((uint16_t)cpu->getRegister(cpu->X) & (uint16_t)((addr_abs >> 8) + 1));
+    uint16_t value = (cpu->getRegisterX() & ((addr_abs >> 8) + 1));
     cpu->writeMemory(addr_abs, (uint8_t)(temp & 0x00FF));
   }
 
@@ -2119,7 +2121,7 @@ namespace CPU
     //temp = ((uint16_t)y) & (uint16_t)((addr_abs >> 8) + 1);
     //cpu->writeMemory(addr_abs, temp & 0x00FF);
 
-    uint16_t value = ((uint16_t)cpu->getRegister(cpu->Y) & (uint16_t)((addr_abs >> 8) + 1));
+    uint16_t value = (cpu->getRegisterY() & ((addr_abs >> 8) + 1));
     cpu->writeMemory(addr_abs, (uint8_t)(temp & 0x00FF));
   }
 
@@ -2131,14 +2133,14 @@ namespace CPU
   {
     fetch();
     temp = (uint16_t)fetched << 1;
-    cpu->SetFlag(cpu->C, (temp & 0xFF00) > 0);
+    cpu->setFlag(cpu->C, (temp & 0xFF00) > 0);
     cpu->writeMemory(addr_abs, temp & 0x00FF);
 
     cpu->incrementCycleCount();
     //a = a | fetched;
-    uint8_t value = cpu->getRegister(cpu->AC) | fetched;
-    cpu->SetFlag(cpu->Z, (value & 0xFF) == 0x00);
-    cpu->SetFlag(cpu->N, value & 0x80);
+    uint8_t value = cpu->getRegisterAC() | fetched;
+    cpu->setFlag(cpu->Z, (value & 0xFF) == 0x00);
+    cpu->setFlag(cpu->N, value & 0x80);
     if (getAddressModeName() == "ABX" || getAddressModeName() == "ABY" || getAddressModeName() == "IZY")
     {
       cpu->incrementCycleCount();
@@ -2153,29 +2155,29 @@ namespace CPU
   {
     fetch();
 
-    cpu->SetFlag(cpu->C, fetched & 0x0001);
+    cpu->setFlag(cpu->C, fetched & 0x0001);
     temp = fetched >> 1;
-    cpu->SetFlag(cpu->Z, (temp & 0xFF) == 0x0000);
-    cpu->SetFlag(cpu->N, temp & 0x80);
+    cpu->setFlag(cpu->Z, (temp & 0xFF) == 0x0000);
+    cpu->setFlag(cpu->N, temp & 0x80);
 
     uint8_t value = (uint8_t)(temp & 0xFF);
 
     if (getAddressModeName() == "IMP")
     {
-      cpu->setRegister(cpu->AC, value);
+      cpu->setRegisterAC(value);
     }
     else
     {
       cpu->writeMemory(addr_abs, value);
     }
-    //cpu->incrementCycleCount();
 
     if (getAddressModeName() == "ABX" || getAddressModeName() == "IZY" || getAddressModeName() == "ABY")
     {
       cpu->incrementCycleCount();
     }
+    cpu->incrementCycleCount();
 
-    cpu->setRegister(cpu->AC, value ^ fetched);
+    cpu->setRegisterAC(value ^ fetched);
   }
 
 
@@ -2185,8 +2187,8 @@ namespace CPU
   void Executioner::opTAS()
   {
     fetch();
-    uint8_t value = cpu->getRegister(cpu->AC) & cpu->getRegister(cpu->X);
-    cpu->setRegister(cpu->SP, value);
+    uint8_t value = cpu->getRegisterAC() & cpu->getRegisterX();
+    cpu->setRegisterSP(value);
 
     uint8_t h = (addr_abs >> 8);
     uint8_t h1 = cpu->readMemoryWithoutCycle(cpu->getProgramCounter() - 1);

@@ -13,38 +13,23 @@
 #endif
 #include <iostream>
 
-using Proc = CPU::Processor;
-using Exec = CPU::Executioner;
+template <> struct fmt::formatter<CPU::Bus::MEMORYMAP> : fmt::ostream_formatter {};
 
+template <> struct fmt::formatter<CPU::Executioner::tMode> : fmt::ostream_formatter {};
+template <> struct fmt::formatter<CPU::Executioner::OperationType> : fmt::ostream_formatter {};
 
-template <> struct fmt::formatter<CPU::Bus::MEMORYMAP> : ostream_formatter {};
-
-template <> struct fmt::formatter<Exec::tMode> : ostream_formatter {};
-template <> struct fmt::formatter<Exec::OperationType> : ostream_formatter {};
-
-template <> struct fmt::formatter<Proc::DISASSEMBLY> : ostream_formatter {};
-//template <> struct fmt::formatter<Proc::FLAGS6502> : ostream_formatter {};
-template <> struct fmt::formatter<Proc::REGISTER> : ostream_formatter {};
-
+template <> struct fmt::formatter<CPU::Processor::DISASSEMBLY> : fmt::ostream_formatter {};
+//template <> struct fmt::formatter<CPU::Processor::FLAGS6502> : fmt::ostream_formatter {};
+template <> struct fmt::formatter<CPU::Processor::REGISTER> : fmt::ostream_formatter {};
 
 /*
-template<> struct fmt::formatter<Proc::DISASSEMBLY> : fmt::formatter<std::string> {
-  template <typename FormatContext>
-  auto format(Proc::DISASSEMBLY const& input, FormatContext& ctx) -> decltype(ctx.out()) {
-    return format_to(
-      ctx.out(),
-      "{:02X} {:02X} {:02X} {:s} {:<30s}",
-      obj.OpCode, obj.LowAddress, obj.HighAddress,
-      obj.OpCodeString, obj.DisassemblyOutput
-    );
+template <> struct fmt::formatter<CPU::Bus::MEMORYMAP> {
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+      return ctx.end();
   }
-};
-*/
 
-/*
-template<> struct fmt::formatter<Proc::MEMORYMAP> : fmt::formatter<std::string> {
   template <typename FormatContext>
-  auto format(Proc::MEMORYMAP const& input, FormatContext& ctx) -> decltype(ctx.out()) {
+  auto format(CPU::Bus::MEMORYMAP const& input, FormatContext& ctx) -> decltype(ctx.out()) {
     return format_to(
       ctx.out(),
       "{:04X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
@@ -56,45 +41,89 @@ template<> struct fmt::formatter<Proc::MEMORYMAP> : fmt::formatter<std::string> 
     );
   }
 };
-*/
 
-/*
-template<> struct fmt::formatter<Proc::FLAGS6502> : fmt::formatter<std::string> {
+template <> struct fmt::formatter<CPU::Executioner::tMode> {
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+      return ctx.end();
+  }
+
   template <typename FormatContext>
-  auto format(Proc::FLAGS6502 const& input, FormatContext& ctx) -> decltype(ctx.out()) {
+  auto format(CPU::Executioner::tMode const& input, FormatContext& ctx) -> decltype(ctx.out()) {
+    return format_to(ctx.out(), "{}", input.name);
+  }
+};
+
+template <> struct fmt::formatter<CPU::Executioner::OperationType> {
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+      return ctx.end();
+  }
+
+  template <typename FormatContext>
+  auto format(CPU::Executioner::OperationType const& input, FormatContext& ctx) -> decltype(ctx.out()) {
     return format_to(
       ctx.out(),
-      "{:s}{:s}{:s}{:s}{:s}{:s}{:s}{:s}",
-      (((Proc::status & Proc::FLAGS6502::N) > 0) ? "N" : "."),
-      (((Proc::status & Proc::FLAGS6502::V) > 0) ? "V" : "."),
-      (((Proc::status & Proc::FLAGS6502::U) > 0) ? "U" : "."),
-      (((Proc::status & Proc::FLAGS6502::B) > 0) ? "B" : "."),
-      (((Proc::status & Proc::FLAGS6502::D) > 0) ? "D" : "."),
-      (((Proc::status & Proc::FLAGS6502::I) > 0) ? "I" : "."),
-      (((Proc::status & Proc::FLAGS6502::Z) > 0) ? "Z" : "."),
-      (((Proc::status & Proc::FLAGS6502::C) > 0) ? "C" : "."),
+      "{}:{} [{:d}]",
+      input.operate.name, input.addrmode.name, input.cycles
+    );
+  }
+};
+
+template <> struct fmt::formatter<CPU::Processor::DISASSEMBLY> {
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+      return ctx.end();
+  }
+
+  template <typename FormatContext>
+  auto format(CPU::Processor::DISASSEMBLY const& input, FormatContext& ctx) -> decltype(ctx.out()) {
+    return format_to(
+      ctx.out(),
+      "{:02X} {:02X} {:02X} {:s} {:<30s}",
+      input.OpCode, input.LowAddress, input.HighAddress,
+      input.OpCodeString, input.DisassemblyOutput
+    );
+  }
+};
+
+template <> struct fmt::formatter<CPU::Processor::REGISTER> {
+  constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+      return ctx.end();
+  }
+
+  template <typename FormatContext>
+  auto format(CPU::Processor::REGISTER const& input, FormatContext& ctx) -> decltype(ctx.out()) {
+    return format_to(
+      ctx.out(),
+      "PC:{:04X} {:<13s} A:{:02X} X:{:02X} Y:{:02X} {:s}{:s}{:s}{:s}{:s}{:s}{:s}{:s} STKP:{:02X}",
+      input.PC, "XXX", input.AC, input.X, input.Y,
+      (((input.SR & CPU::Processor::FLAGS6502::N) > 0) ? "N" : "."),
+      (((input.SR & CPU::Processor::FLAGS6502::V) > 0) ? "V" : "."),
+      (((input.SR & CPU::Processor::FLAGS6502::U) > 0) ? "U" : "."),
+      (((input.SR & CPU::Processor::FLAGS6502::B) > 0) ? "B" : "."),
+      (((input.SR & CPU::Processor::FLAGS6502::D) > 0) ? "D" : "."),
+      (((input.SR & CPU::Processor::FLAGS6502::I) > 0) ? "I" : "."),
+      (((input.SR & CPU::Processor::FLAGS6502::Z) > 0) ? "Z" : "."),
+      (((input.SR & CPU::Processor::FLAGS6502::C) > 0) ? "C" : "."),
+      input.SP
     );
   }
 };
 */
 
 /*
-template<> struct fmt::formatter<Proc::REGISTER> : fmt::formatter<std::string> {
+template <> struct fmt::formatter<CPU::Processor::FLAGS6502> {
   template <typename FormatContext>
-  auto format(Proc::REGISTER const& input, FormatContext& ctx) -> decltype(ctx.out()) {
+  auto format(CPU::Processor::FLAGS6502 const& input, FormatContext& ctx) -> decltype(ctx.out()) {
     return format_to(
       ctx.out(),
-      "PC:{:04X} {:<13s} A:{:02X} X:{:02X} Y:{:02X} {:s}{:s}{:s}{:s}{:s}{:s}{:s}{:s} STKP:{:02X}",
-      input.PC, "XXX", input.AC, input.X, input.Y,
-      (((input.SR & Proc::FLAGS6502::N) > 0) ? "N" : "."),
-      (((input.SR & Proc::FLAGS6502::V) > 0) ? "V" : "."),
-      (((input.SR & Proc::FLAGS6502::U) > 0) ? "U" : "."),
-      (((input.SR & Proc::FLAGS6502::B) > 0) ? "B" : "."),
-      (((input.SR & Proc::FLAGS6502::D) > 0) ? "D" : "."),
-      (((input.SR & Proc::FLAGS6502::I) > 0) ? "I" : "."),
-      (((input.SR & Proc::FLAGS6502::Z) > 0) ? "Z" : "."),
-      (((input.SR & Proc::FLAGS6502::C) > 0) ? "C" : "."),
-      input.SP
+      "{:s}{:s}{:s}{:s}{:s}{:s}{:s}{:s}",
+      (((input.N & CPU::Processor::FLAGS6502::N) > 0) ? "N" : "."),
+      (((input.V & CPU::Processor::FLAGS6502::V) > 0) ? "V" : "."),
+      (((input.U & CPU::Processor::FLAGS6502::U) > 0) ? "U" : "."),
+      (((input.B & CPU::Processor::FLAGS6502::B) > 0) ? "B" : "."),
+      (((input.D & CPU::Processor::FLAGS6502::D) > 0) ? "D" : "."),
+      (((input.I & CPU::Processor::FLAGS6502::I) > 0) ? "I" : "."),
+      (((input.Z & CPU::Processor::FLAGS6502::Z) > 0) ? "Z" : "."),
+      (((input.C & CPU::Processor::FLAGS6502::C) > 0) ? "C" : "."),
     );
   }
 };

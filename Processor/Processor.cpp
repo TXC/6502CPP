@@ -8,6 +8,7 @@
 
 #include <stdexcept>
 #include <sstream>
+#include <cstdint>
 #include <spdlog/spdlog.h>
 #if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
@@ -25,7 +26,7 @@ namespace CPU
   {
     // Assembles the translation table.
     // The table is one big initialiser list of initialiser lists...
-    executioner.ConnectCpu(this);
+    executioner.connectCpu(this);
   }
 
   Processor::~Processor()
@@ -33,7 +34,7 @@ namespace CPU
     // Destructor - has nothing to do
   }
 
-  void Processor::LoadProgram(uint16_t offset, std::string program)
+  void Processor::loadProgram(uint16_t offset, std::string program)
   {
     uint8_t converted[] = {};
     uint16_t pos = offset;
@@ -50,12 +51,12 @@ namespace CPU
       pos++;
     }
     size_t n = sizeof(converted) / sizeof(converted[0]);
-    LoadProgram(offset, converted, n);
+    loadProgram(offset, converted, n);
   }
 
-  void Processor::LoadProgram(uint16_t offset, std::string program, uint16_t initialProgramCounter)
+  void Processor::loadProgram(uint16_t offset, std::string program, uint16_t initialProgramCounter)
   {
-    LoadProgram(offset, program);
+    loadProgram(offset, program);
 
     setProgramCounter(initialProgramCounter);
 
@@ -66,11 +67,14 @@ namespace CPU
     writeMemoryWithoutCycle(0xFFFD, hi);
   }
 
-  void Processor::LoadProgram(uint16_t offset, uint8_t program[], size_t programSize)
+  void Processor::loadProgram(uint16_t offset, uint8_t program[], size_t programSize)
   {
+    std::cout << "Assigning CHAR" << std::endl;
     char errorMessage[100];
+    std::cout << "Loading ramsize" << std::endl;
     size_t ramSize = bus->ram.size();
 
+    std::cout << "Checking offset vs ram" << std::endl;
     if (offset > ramSize)
     {
       throw std::runtime_error(fmt::format(
@@ -79,6 +83,7 @@ namespace CPU
       ));
     }
 
+    std::cout << "Checking program vs ram & offset" << std::endl;
     if (programSize > (ramSize + offset))
     {
       throw std::runtime_error(fmt::format(
@@ -87,33 +92,48 @@ namespace CPU
       ));
     }
 
-    fmt::memory_buffer buffer;
+    //fmt::memory_buffer buffer;
 
+    std::cout << "Resetting ram" << std::endl;
     bus->reset();
-    uint16_t pos;
+    std::cout << "Assigning POS" << std::endl;
+    uint16_t pos = 0;
+    std::cout << "Dancing..." << std::endl;
     for (uint16_t i = 0; i < programSize; i++)
     {
-      fmt::format_to(std::back_inserter(buffer), "{:02X} ", program[i]);
+      //fmt::format_to(std::back_inserter(buffer), "{:02X} ", program[i]);
       pos = (offset + i);
       bus->ram[pos] = program[i];
     }
 
-    Logger::log()->info("** Loading Program: {}", fmt::to_string(buffer));
+    //Logger::log()->info("** Loading Program: {}", fmt::to_string(buffer));
 
+    std::cout << "Going to RESET" << std::endl;
     reset();
+    std::cout << "Setting SP" << std::endl;
     reg.SP = 0xFF;
   }
 
-  void Processor::LoadProgram(uint16_t offset, uint8_t program[], size_t programSize, uint16_t initialProgramCounter)
+  void Processor::loadProgram(uint16_t offset, uint8_t program[], size_t programSize, uint16_t initialProgramCounter)
   {
-    LoadProgram(offset, program, programSize);
+    std::cout << "Loading Program " << programSize << "bytes @ " << offset << std::endl;
+    loadProgram(offset, program, programSize);
+
+    std::cout << "Setting ProgramCounter @ " << initialProgramCounter << std::endl;
 
     setProgramCounter(initialProgramCounter);
+
+    std::cout << "Hi Byte:" << (initialProgramCounter & 0xFF) << std::endl;
+
     uint8_t lo = initialProgramCounter & 0xFF;
+
+    std::cout << "Lo Byte:" << ((initialProgramCounter >> 8) & 0xFF) << std::endl;
     uint8_t hi = (initialProgramCounter >> 8) & 0xFF;
 
-    writeMemoryWithoutCycle(0xFFFC, lo);
-    writeMemoryWithoutCycle(0xFFFD, hi);
+    std::cout << "Memory Write @ 0xFFFC : " << lo << std::endl;
+    writeMemoryWithoutCycle((uint16_t) 0xFFFC, lo);
+    std::cout << "Memory Write @ 0xFFFD : " << hi << std::endl;
+    writeMemoryWithoutCycle((uint16_t) 0xFFFD, hi);
   }
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -222,7 +242,7 @@ namespace CPU
   void Processor::irq()
   {
     // If interrupts aren't allowed
-    if (GetFlag(I) == 1)
+    if (getFlag(I) == 1)
     {
       return;
     }
@@ -264,14 +284,14 @@ namespace CPU
     // the translation table to get the relevant information about
     // how to implement the instruction
 
-    opcode = readMemory(reg.PC);
-    //Logger::log()->info("Processor::tick() PC: 0x{:04X} - OP: 0x{:02X}", reg.PC, opcode);
+    opcode = readMemory(getProgramCounter());
+    //Logger::log()->info("Processor::tick() PC: 0x{:04X} - OP: 0x{:02X}", getProgramCounter(), opcode);
     try
     {
       //UpdateMemoryMap();
 
 #if defined LOGMODE
-      disassemble(reg.PC);
+      disassemble(getProgramCounter());
       Logger::log()->info(
         "{:>10d}:{:02X} OP: 0x{:02X} / {}:{} {: <17s} {}",
         operation_cycle, cycle_count, opcode, executioner.getInstructionName(opcode), executioner.getAddressModeName(opcode),
@@ -280,7 +300,7 @@ namespace CPU
 #endif
 
       // Always set the unused status flag bit to 1
-      SetFlag(U, true);
+      setFlag(U, true);
 
       // Increment program counter, we read the opcode byte
       incrementProgramCounter();
@@ -320,7 +340,7 @@ namespace CPU
 
 
     // Always set the unused status flag bit to 1
-    SetFlag(U, true);
+    setFlag(U, true);
 
 #if defined LOGMODE
     // This logger dumps every cycle the entire processor state for analysis.
@@ -352,10 +372,6 @@ namespace CPU
     operation_cycle += cycle_count;
   }
 
-  void Processor::setJammed()
-  {
-    jammed = true;
-  }
 #pragma endregion EXTERNAL INPUTS
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -363,32 +379,23 @@ namespace CPU
 // FLAG FUNCTIONS
 
   // Returns the value of a specific bit of the status register
-  uint8_t Processor::GetFlag(FLAGS6502 f)
+  uint8_t Processor::getFlag(FLAGS6502 f)
   {
-//#if defined DEBUG
-//    Logger::log()->debug("GetFlag - Current: 0x{:02X} {} ", reg.SR, DecodeFlag(reg.SR));
-//#endif
-    //return ((status & f) > 0) ? 1 : 0;
-    return ((reg.SR & f) > 0) ? 1 : 0;
+    return ((uint8_t) (reg.SR & f) > 0) ? 1 : 0;
   }
 
   // Sets or clears a specific bit of the status register
-  void Processor::SetFlag(FLAGS6502 f, bool v)
+  void Processor::setFlag(FLAGS6502 f, bool v)
   {
-    if (v)
-    {
-      //status |= f;
+    if (v) {
       reg.SR |= f;
-    }
-    else
-    {
-      //status &= ~f;
+    } else {
       reg.SR &= ~f;
     }
   }
 
   // Get status register as string
-  std::string Processor::DecodeFlag(uint8_t flag)
+  std::string Processor::decodeFlag(uint8_t flag)
   {
     return fmt::format("{}{}{}{}{}{}{}{}",
       ((flag & N) > 0) ? "N" : ".",
@@ -401,9 +408,9 @@ namespace CPU
       ((flag & C) > 0) ? "C" : "."
     );
   }
-  uint8_t Processor::DecodeFlag(uint8_t flag, FLAGS6502 f)
+  uint8_t Processor::decodeFlag(uint8_t flag, FLAGS6502 f)
   {
-    return ((reg.SR & Z) > 0) ? 1 : 0;
+    return ((flag & f) > 0) ? 1 : 0;
   }
 
 #pragma endregion FLAG FUNCTIONS
@@ -413,22 +420,23 @@ namespace CPU
 
   void Processor::setRegister(REGISTER6502 f, uint8_t v)
   {
+    uint8_t newValue = v & 0xFF;
     switch (f)
     {
     case REGISTER6502::AC:
-      reg.AC = v;
+      reg.AC = newValue;
       break;
     case REGISTER6502::X:
-      reg.X = v;
+      reg.X = newValue;
       break;
     case REGISTER6502::Y:
-      reg.Y = v;
+      reg.Y = newValue;
       break;
     case REGISTER6502::SR:
-      reg.SR = v;
+      reg.SR = newValue;
       break;
     case REGISTER6502::SP:
-      reg.SP = v;
+      reg.SP = newValue;
       break;
     case REGISTER6502::PC:
       throw std::invalid_argument("Unable to set Register \"PC\"");
@@ -436,12 +444,11 @@ namespace CPU
     }
   }
 
-
   uint8_t Processor::getRegister(REGISTER6502 f)
   {
     if (jammed)
     {
-      return 0xFF;
+        return (uint8_t) 0xFF;
     }
 
     switch (f)
@@ -470,127 +477,8 @@ namespace CPU
   }
 
 
-  /*
-  void Processor::setRegister(REGISTER6502 f, uint16_t *v)
-  {
-      switch (f)
-      {
-          case REGISTER6502::PC:
-              setRegister(f, (uint16_t) v);
-
-              break;
-          default:
-              setRegister(f, (uint8_t) v);
-      }
-  }
-  void Processor::setRegister(REGISTER6502 f, uint16_t v)
-  {
-      switch (f)
-      {
-          case REGISTER6502::AC:
-              setProgramCounter(v);
-              break;
-          default:
-              setRegister(f, (uint8_t) v);
-      }
-
-  }
-  */
-
-
-  // Increment Program Counter
-  uint16_t Processor::incrementProgramCounter()
-  {
-    //Logger::log()->debug("PC++ {: >59}", reg);
-    reg.PC = (reg.PC + 1) & 0xFFFF;
-    return reg.PC;
-  }
-
-
-  // Decrement Program Counter
-  uint16_t Processor::decrementProgramCounter()
-  {
-    reg.PC = (reg.PC - 1) & 0xFFFF;
-    return reg.PC;
-  }
-
-
-  // Set Program Counter
-  void Processor::setProgramCounter(uint16_t value)
-  {
-    reg.PC = value & 0xFFFF;
-  }
-
-
-  // Get Program Counter
-  uint16_t Processor::getProgramCounter()
-  {
-    if (jammed)
-    {
-      return 0xFFFF;
-    }
-
-    return reg.PC;
-    //return pc;
-  }
-
-
-  // Increment Stack Pointer
-  uint8_t Processor::incrementStackPointer()
-  {
-    reg.SP = (reg.SP + 1) & 0xFF;
-    return reg.SP;
-  }
-
-
-  // Decrement Stack Pointer
-  uint8_t Processor::decrementStackPointer()
-  {
-    reg.SP = (reg.SP - 1) & 0xFF;
-    //--stkp;
-    //return stkp;
-    return reg.SP;
-  }
-
-
-  // Peek Stack Pointer (No change on cycle)
-  uint8_t Processor::PeekStack()
-  {
-    //return readMemoryWithoutCycle(stkp + 0x100);
-    return readMemoryWithoutCycle(reg.SP + 0x100);
-  }
-
-
-  // Poke Stack Pointer (No change on cycle)
-  void Processor::PokeStack(uint8_t value)
-  {
-    //Logger::log()->info("PokeStack: {:02X} -> ${:04X}", value, (reg.SP + 0x100));
-    //writeMemoryWithoutCycle(stkp + 0x100, value);
-    writeMemoryWithoutCycle(reg.SP + 0x100, value);
-  }
-
-
-  // Pop Stack (Change on cycle (+2 cycles) & stackpointer)
-  uint8_t Processor::PopStack()
-  {
-    incrementStackPointer();
-    //incrementCycleCount();
-    return readMemory(reg.SP + 0x100);
-  }
-
-
-  // Pop Stack (Change on cycle & stackpointer)
-  void Processor::PushStack(uint8_t value)
-  {
-    //Logger::log()->info("PushStack: {:02X} -> ${:04X}", value, (reg.SP + 0x100));
-    writeMemory(reg.SP + 0x100, value);
-    //incrementCycleCount();
-    decrementStackPointer();
-  }
-
-
   // Dump the Nth row from the bottom of the Stack
-  void Processor::DumpStack(uint8_t nRows)
+  void Processor::dumpStack(uint8_t nRows)
   {
     uint16_t offsetStart = (0x200 - (nRows * 0xF)) | 0x100;
     uint16_t offsetStop = 0x01FF;
@@ -599,18 +487,17 @@ namespace CPU
   }
 
   // Dump the whole Stack region
-  void Processor::DumpStack()
+  void Processor::dumpStack()
   {
-    Logger::log()->info("StackPointer is at 0x{:04X}", reg.SP);
     bus->dump(0x100, 0x1FF);
   }
 
 
   // Dump the row that StackPointer is located at
-  void Processor::DumpStackAtPointer()
+  void Processor::dumpStackAtPointer()
   {
-    uint16_t stackStart = (reg.SP + 0x100) & 0xFFF0;
-    uint16_t stackStop  = (reg.SP + 0x100) | 0x000F;
+    uint16_t stackStart = (getRegisterSP() + 0x100) & 0xFFF0;
+    uint16_t stackStop  = (getRegisterSP() + 0x100) | 0x000F;
 
     if ((stackStart & 0xFF00) != 0x100) {
       stackStart = (stackStart & 0x00FF) + 0x100;
@@ -621,7 +508,7 @@ namespace CPU
     if (stackStop < stackStart) {
       throw std::range_error(fmt::format("Start 0x{:04X} can not be larger than Stop 0x{:04X}", stackStart, stackStop));
     }
-    Logger::log()->info("StackPointer @ 0x{:04X} (0x{:04X} - 0x{:04X})", reg.SP, stackStart, stackStop);
+    Logger::log()->info("StackPointer @ 0x{:04X} (0x{:04X} - 0x{:04X})", getRegisterSP(), stackStart, stackStop);
 
 
     bus->dump(stackStart, stackStop);
@@ -635,7 +522,7 @@ namespace CPU
 
 // CPU Internals, like speed control (we don't want it to go to slow or to fast!)
 // Output log every: "cycle % GetLogModValue() == 0"
-  uint8_t Processor::GetLogModValue()
+  uint8_t Processor::getLogModValue()
   {
     switch (cpuspeed)
     {
@@ -663,7 +550,7 @@ namespace CPU
 
 
   // Clock down Processor a bit, sleep every GetSleepValue() millisecond
-  uint16_t Processor::GetSleepValue()
+  uint16_t Processor::getSleepValue()
   {
     switch (cpuspeed)
     {
@@ -700,13 +587,6 @@ namespace CPU
   {
     extra_cycles = (extra_cycles + 1);
 
-//#if defined DEBUG
-//    Logger::log()->debug(
-//      "addExtraCycle: {} - incrementCycle: {} - {}",
-//      executioner.getOperation(opcode), incCycleCount, reg
-//    );
-//#endif
-
     if (incCycleCount)
     {
       incrementCycleCount();
@@ -717,17 +597,10 @@ namespace CPU
   // Increment Cycle Count
   void Processor::incrementCycleCount()
   {
-//#if defined DEBUG
-//    Logger::log()->debug(
-//      "incrementCycleCount: {} - Current Cycle: {} - {}",
-//      executioner.getOperation(opcode), cycle_count, reg
-//    );
-//#endif
-    //cycle_count++;
     cycle_count = (cycle_count + 1) & 0xFF;
 
     _previousInterrupt = _interrupt;
-    _interrupt = TriggerNmi || (TriggerIRQ && GetFlag(I) == 0);
+    _interrupt = TriggerNmi || (TriggerIRQ && getFlag(I) == 0);
   }
 
 #pragma endregion INTERNALS

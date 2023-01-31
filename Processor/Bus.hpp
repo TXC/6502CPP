@@ -22,7 +22,7 @@ namespace CPU
     ~Bus();
 
   public: // Devices on bus
-    Processor cpu;
+    std::unique_ptr<Processor> cpu;
 
     // Fake RAM for this part of the series
     std::array<uint8_t, 64 * 1024> ram;
