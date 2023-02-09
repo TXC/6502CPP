@@ -1,9 +1,6 @@
 #pragma once
 
-#include "cpuExecutioner.hpp"
-//#include "Formatters.hpp"
-//#include "Logger.hpp"
-//#include "BaseBus.hpp"
+#include "Executioner.hpp"
 
 #include <vector>
 #include <map>
@@ -25,7 +22,7 @@ namespace Processor
 {
   // Forward declaration of generic communications bus class to
   // prevent circular inclusions
-  class BaseBus;
+  class Bus;
   class Logger;
   class Executioner;
 
@@ -39,7 +36,7 @@ namespace Processor
     // Linkages
   private:
     // Linkage to the communications bus
-    BaseBus* bus = nullptr;
+    Bus* bus = nullptr;
     bool jammed = false;
     // Set to true when an NMI should occur
     bool TriggerNmi = false;
@@ -104,7 +101,7 @@ namespace Processor
   // Bus Connectivity
   public:
     // Link this CPU to a communications bus
-    void connectBus(BaseBus* n) { bus = n; }
+    void connectBus(Bus* n) { bus = n; }
 
     // Dump 16 bytes of RAM 0x???0 -> 0x???F to logfile
     void dumpRam(uint16_t offset);

@@ -22,24 +22,26 @@ TARGET_SOURCES(${APP_NAME} PUBLIC
   FILE_SET HEADERS
   FILES 
         Bus.hpp
+        CPU.hpp
         Exceptions.hpp
         Executioner.hpp
         Formatters.hpp
         Logger.hpp
-        Processor.hpp
+        MainBus.hpp
         Singleton.hpp
         Types.hpp
   PRIVATE
         Bus.cpp
+        CPU.cpp
         Executioner.cpp
-#        Instructions.cpp
-        Processor.cpp
+        MainBus.cpp
 )
 
 TARGET_COMPILE_FEATURES(${APP_NAME} PUBLIC cxx_std_20)
 
 TARGET_INCLUDE_DIRECTORIES(${APP_NAME} PUBLIC
   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
+  "$<BUILD_INTERFACE:${PARENT_DIR}>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 

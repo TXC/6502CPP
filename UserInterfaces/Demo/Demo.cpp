@@ -1,19 +1,17 @@
-#include <Bus.hpp>
-#include <Processor.hpp>
+#include <Processor/MainBus.hpp>
+#include <Processor/CPU.hpp>
 
 #include <fmt/format.h>
 
-#include <iostream>
+#include <stdlib.h>
 #include <sstream>
 
 int main()
 {
-  CPU::Bus bus;
-  std::cout << "Hej" << std::endl;
+  Processor::MainBus bus;
 
-  bus.cpu->reset();
+  bus.cpu.reset();
 
-  std::cout << "Hej" << std::endl;
   // Load Program (assembled at https://www.masswerk.at/6502/assembler.html)
   /*
     *=$8000
@@ -38,13 +36,14 @@ int main()
     0x00, 0x18, 0x6D, 0x01, 0x00, 0x88, 0xD0, 0xFA, 0x8D, 0x02, 0x00, 0xEA, 0xEA, 0xEA
   };
   size_t n = sizeof(program) / sizeof(program[0]);
-  bus.cpu->loadProgram(0x8000, program, n, 0x8000);
+  bus.cpu.loadProgram(0x8000, program, n, 0x8000);
 
-  for (uint8_t i = 0; i <= 30; i++)
+  do
   {
-    bus.cpu->tick();
-    fmt::print("Tick Tock: {}\n", i);
-  }
+    bus.clock();
+  } while (!bus.complete());
 
-  return 0;
+  printf("CPU Demo Run OK\n");
+
+  return EXIT_SUCCESS;
 }

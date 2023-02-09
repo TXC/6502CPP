@@ -1,4 +1,4 @@
-#include "BaseBus.hpp"
+#include "Bus.hpp"
 #include "Types.hpp"
 #include "Logger.hpp"
 
@@ -40,7 +40,7 @@ namespace Processor
     exit(128 + sig);
   }
 
-  BaseBus::BaseBus()
+  Bus::Bus()
   {
     try
     {
@@ -72,11 +72,11 @@ namespace Processor
   }
 
 
-  BaseBus::~BaseBus()
+  Bus::~Bus()
   {
   }
 
-  void BaseBus::cpuWrite(uint16_t addr, uint8_t data)
+  void Bus::cpuWrite(uint16_t addr, uint8_t data)
   {
     if (addr >= 0x0000 && addr <= 0xFFFF)
     {
@@ -84,7 +84,7 @@ namespace Processor
     }
   }
 
-  uint8_t BaseBus::cpuRead(uint16_t addr, bool bReadOnly)
+  uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
   {
     if (addr >= 0x0000 && addr <= 0xFFFF)
     {
@@ -94,7 +94,7 @@ namespace Processor
     return 0x00;
   }
 
-  void BaseBus::reset()
+  void Bus::reset()
   {
     for (auto& i : ram)
     {
@@ -102,16 +102,18 @@ namespace Processor
     }
   }
 
-  void BaseBus::clock()
+  // Return false since we don't have audio here
+  bool Bus::clock()
   {
+    return false;
   }
 
-  bool BaseBus::complete()
+  bool Bus::complete()
   {
     return true;
   }
 
-  void BaseBus::dump(uint16_t offset)
+  void Bus::dump(uint16_t offset)
   {
 #if defined LOGMODE
     Logger::log()->info("Actual ADDR: ${:04X}", offset);
@@ -122,13 +124,13 @@ namespace Processor
 #endif
   }
 
-  void BaseBus::dump(uint16_t offsetStart, uint16_t offsetStop)
+  void Bus::dump(uint16_t offsetStart, uint16_t offsetStop)
   {
 #if defined LOGMODE
     Logger::log()->info("MEMORY LOG FOR: ${:04X} - ${:04X}", offsetStart, offsetStop);
     Logger::log()->info(" ADDR 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
     
-    std::map<uint16_t, BaseBus::MEMORYMAP> memory = memoryDump(offsetStart, offsetStop);
+    std::map<uint16_t, Bus::MEMORYMAP> memory = memoryDump(offsetStart, offsetStop);
     for (auto& i : memory)
     {
       Logger::log()->info("{}", i.second);
@@ -137,7 +139,7 @@ namespace Processor
   }
 
 /*
-  std::string BaseBus::dumpRaw(uint16_t offsetStart, uint16_t offsetStop)
+  std::string Bus::dumpRaw(uint16_t offsetStart, uint16_t offsetStop)
   {
     std::string log = fmt::format("MEMORY LOG FOR: ${:04X} - ${:04X} \n${:04X}:", offsetStart, offsetStop, offsetStart);
    
@@ -165,7 +167,7 @@ namespace Processor
 
   // Update Memory Map
 /*
-  void BaseBus::updateMemoryMap(uint16_t offset, uint8_t rows, bool clear)
+  void Bus::updateMemoryMap(uint16_t offset, uint8_t rows, bool clear)
   {
     if (clear)
     {
@@ -187,9 +189,9 @@ namespace Processor
   }
 */
 
-  std::map<uint16_t, BaseBus::MEMORYMAP> BaseBus::memoryDump(uint16_t offsetStart, uint16_t offsetStop)
+  std::map<uint16_t, Bus::MEMORYMAP> Bus::memoryDump(uint16_t offsetStart, uint16_t offsetStop)
   {
-    std::map<uint16_t, BaseBus::MEMORYMAP> memory;
+    std::map<uint16_t, Bus::MEMORYMAP> memory;
     uint16_t addr = offsetStart & 0xFFF0,
     multiplier = 0,
     offset = 0x00;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "CPU.hpp"
-
 #include <array>
 #include <map>
 #include <cstdint>
@@ -16,15 +14,13 @@
 
 namespace Processor
 {
-  class BaseBus
+  class Bus
   {
   public:
-    BaseBus();
-    ~BaseBus();
+    Bus();
+    ~Bus();
     
   public: // Devices on bus
-    // The 6502 derived processor
-    CPU cpu;
     // The 6502 RAM, we fake it a bit, 64KB
     std::array<uint8_t, 64 * 1024> ram;
 
@@ -42,7 +38,8 @@ namespace Processor
     // Resets the system
     virtual void reset();
     // Clocks the system - a single whole system tick
-    virtual void clock();
+    // True if audio is ready, false otherwise
+    virtual bool clock();
     // Check if the system is complete
     virtual bool complete();
 

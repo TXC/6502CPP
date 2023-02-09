@@ -128,6 +128,8 @@ else ()
     set (IMGUI_MISC_DIR ${IMGUI_ROOT_DIR}/../misc)
 endif ()
 
+GET_FILENAME_COMPONENT(PARENT_DIR "${IMGUI_ROOT_DIR}/../" ABSOLUTE)
+
 ###############################################################################
 # Warnings
 ###############################################################################
@@ -180,7 +182,10 @@ endif ()
 if (IMGUI_USER_CONFIG)
     target_compile_definitions(imgui INTERFACE "-DIMGUI_USER_CONFIG=<${IMGUI_USER_CONFIG}>")
 endif ()
-target_include_directories(imgui INTERFACE ${IMGUI_ROOT_DIR})
+target_include_directories(imgui INTERFACE
+  "${IMGUI_ROOT_DIR}"
+  "$<BUILD_INTERFACE:${PARENT_DIR}>"
+)
 if (NOT IMGUI_DEMO)
     target_compile_definitions(imgui INTERFACE -DIMGUI_DISABLE_DEMO_WINDOWS=1)
 endif ()

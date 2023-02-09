@@ -37,7 +37,7 @@ namespace NES
     std::vector<uint8_t> vPRGMemory;
     std::vector<uint8_t> vCHRMemory;
     
-    std::shared_ptr<Mapper> pMapper;
+    std::shared_ptr<Mapper> pMapper = nullptr;
     
   public:
     // Communication with Main Bus

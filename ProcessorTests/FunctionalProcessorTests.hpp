@@ -1,7 +1,8 @@
 #pragma once
 
 #include "MainTest.hpp"
-#include <Types.hpp>
+
+#include <Processor/Types.hpp>
 
 #include <string>
 #include <sstream>
@@ -11,7 +12,7 @@
 
 namespace CPUTest
 {
-  using namespace CPU;
+  using namespace Processor;
   class FunctionalProcessorTests
   {
   private:

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Bus.hpp>
-#include <Logger.hpp>
+#include <Processor/MainBus.hpp>
+#include <Processor/Logger.hpp>
 
 #include <string>
 
@@ -12,7 +12,6 @@
 
 namespace CPUTest
 {
-  using namespace CPU;
   //Bus bus;
 
   class MainTest
@@ -21,16 +20,16 @@ namespace CPUTest
 
     static void logTestCaseName(std::string name)
     {
-      CPU::Logger::log()->info("");
-      CPU::Logger::log()->info(" *** {: <32} ***", name);
-      CPU::Logger::log()->info("");
+      Processor::Logger::log()->info("");
+      Processor::Logger::log()->info(" *** {: <32} ***", name);
+      Processor::Logger::log()->info("");
     }
 
     static void logSectionName(std::string section)
     {
-      CPU::Logger::log()->info("");
-      CPU::Logger::log()->info(" *** SECTION {: <24} ***", section);
-      CPU::Logger::log()->info("");
+      Processor::Logger::log()->info("");
+      Processor::Logger::log()->info(" *** SECTION {: <24} ***", section);
+      Processor::Logger::log()->info("");
     }
 
   };

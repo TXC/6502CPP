@@ -186,8 +186,11 @@ namespace NES
   {
     // Note: This does not reset the ROM contents,
     // but does reset the mapper.
-    if (pMapper != nullptr)
+    //if (pMapper != nullptr)
+    if (!!pMapper)
+    {
       pMapper->reset();
+    }
   }
 
   MIRROR Cartridge::Mirror()

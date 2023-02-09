@@ -1,4 +1,4 @@
-#include "Bus.hpp"
+#include "MainBus.hpp"
 #include "Types.hpp"
 #include "Logger.hpp"
 
@@ -12,17 +12,17 @@
 
 namespace Processor
 {
-  Bus::Bus() : BaseBus()
+  MainBus::MainBus() : Bus()
   {
     cpu.connectBus(this);
   }
   
-  Bus::~Bus()
+  MainBus::~MainBus()
   {
   }
 
 /*
-  void Bus::cpuWrite(uint16_t addr, uint8_t data)
+  void MainBus::cpuWrite(uint16_t addr, uint8_t data)
   {
     if (addr >= 0x0000 && addr <= 0xFFFF)
     {
@@ -32,7 +32,7 @@ namespace Processor
 */
 
 /*
-  uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
+  uint8_t MainBus::cpuRead(uint16_t addr, bool bReadOnly)
   {
     if (addr >= 0x0000 && addr <= 0xFFFF)
     {
@@ -43,22 +43,25 @@ namespace Processor
   }
 */
 
-  void Bus::reset()
+  void MainBus::reset()
   {
-    BaseBus::reset();
+    Bus::reset();
     cpu.reset();
   }
 
-  void Bus::clock()
+  // 6502 CPU doesn't implement audio
+  bool MainBus::clock()
   {
-    BaseBus::clock();
+    Bus::clock();
     cpu.clock();
     
     nSystemClockCounter++;
+
+    return false;
   }
 
-  bool Bus::complete()
+  bool MainBus::complete()
   {
-    return cpu.complete() & BaseBus::complete();
+    return cpu.complete() & Bus::complete();
   }
 }

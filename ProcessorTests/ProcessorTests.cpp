@@ -1,8 +1,8 @@
 #include "ProcessorTests.hpp"
-#include <Types.hpp>
+
+#include <Processor/Types.hpp>
 
 #include <iostream>
-
 #include <catch2/catch_all.hpp>
 #include <string>
 #include <fmt/format.h>
@@ -10,13 +10,13 @@
 
 namespace CPUTest
 {
-  using namespace CPU;
+  using namespace Processor;
 
 TEST_CASE("Show instructions loaded", "[.debug][.print]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   bus.cpu.executioner.printInstructions();
 
@@ -27,7 +27,7 @@ TEST_CASE("Initialization Tests", "[init]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   SECTION("Processor Status Flags Initialized Correctly")
   {
@@ -77,7 +77,7 @@ TEST_CASE("Initialization Tests", "[init]")
     uint8_t program[] = {0xFF};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
-    REQUIRE_THROWS(bus.cpu.tick());
+    REQUIRE_THROWS(bus.cpu.clock());
   }
 #endif
 
@@ -92,14 +92,14 @@ TEST_CASE("Initialization Tests", "[init]")
   {
     bus.cpu.reset();
 
-    REQUIRE(bus.cpu.getFlag(Processor::FLAGS6502::C) == 0);
-    REQUIRE(bus.cpu.getFlag(Processor::FLAGS6502::Z) == 0);
-    REQUIRE(bus.cpu.getFlag(Processor::FLAGS6502::I) == 0);
-    REQUIRE(bus.cpu.getFlag(Processor::FLAGS6502::D) == 0);
-    REQUIRE(bus.cpu.getFlag(Processor::FLAGS6502::B) == 1);
-    REQUIRE(bus.cpu.getFlag(Processor::FLAGS6502::U) == 1); // Always set
-    REQUIRE(bus.cpu.getFlag(Processor::FLAGS6502::V) == 0);
-    REQUIRE(bus.cpu.getFlag(Processor::FLAGS6502::N) == 0);
+    REQUIRE(bus.cpu.getFlag(CPU::FLAGS6502::C) == 0);
+    REQUIRE(bus.cpu.getFlag(CPU::FLAGS6502::Z) == 0);
+    REQUIRE(bus.cpu.getFlag(CPU::FLAGS6502::I) == 0);
+    REQUIRE(bus.cpu.getFlag(CPU::FLAGS6502::D) == 0);
+    REQUIRE(bus.cpu.getFlag(CPU::FLAGS6502::B) == 1);
+    REQUIRE(bus.cpu.getFlag(CPU::FLAGS6502::U) == 1); // Always set
+    REQUIRE(bus.cpu.getFlag(CPU::FLAGS6502::V) == 0);
+    REQUIRE(bus.cpu.getFlag(CPU::FLAGS6502::N) == 0);
   }
 }
 
@@ -108,7 +108,7 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
   uint8_t operation = 0x69;
 
   SECTION("ADC Accumulator Correct When Not In BDC Mode")
@@ -144,7 +144,7 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu.clock();
       }
       else
       {
@@ -153,10 +153,10 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
@@ -184,7 +184,7 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
         uint8_t program[] = {0x38, 0xF8, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu.clock();
       }
       else
       {
@@ -193,11 +193,11 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
@@ -228,7 +228,7 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu.clock();
       }
       else
       {
@@ -237,10 +237,10 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedValue);
     }
   }
@@ -268,11 +268,11 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedValue);
     }
   }
@@ -299,10 +299,10 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -333,10 +333,10 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -389,7 +389,7 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0x69, amountToAdd};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu.clock();
       }
       else
       {
@@ -398,10 +398,10 @@ TEST_CASE("ADC - Add with Carry Tests", "[opcode][adc]")
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.V) == expectedValue);
     }
   }
@@ -411,7 +411,7 @@ TEST_CASE("AND - Compare Memory with Accumulator", "[opcode][and]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x29;
 
@@ -436,10 +436,10 @@ TEST_CASE("AND - Compare Memory with Accumulator", "[opcode][and]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
@@ -449,7 +449,7 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
   uint8_t operation = 0x0A;
 
   SECTION("ASL - Arithmetic Shift Left")
@@ -477,15 +477,15 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       if (sectionOperation == 0x0A)
       {
         REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
       }
       else
       {
-        REQUIRE(hex(bus.read(expectedLocation, false), 2) == hex(expectedValue, 2));
+        REQUIRE(hex(bus.cpuRead(expectedLocation, false), 2) == hex(expectedValue, 2));
       }
     }
   }
@@ -513,8 +513,8 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedValue);
     }
   }
@@ -543,8 +543,8 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -571,8 +571,8 @@ TEST_CASE("ASL - Arithmetic Shift Left", "[opcode][asl]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
@@ -583,7 +583,7 @@ TEST_CASE("BCC - Branch On Carry Clear", "[opcode][bcc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x90;
 
@@ -609,7 +609,7 @@ TEST_CASE("BCC - Branch On Carry Clear", "[opcode][bcc]")
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(programCounterInitalValue, 4));
       bus.cpu.dumpRam(0x0000);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
@@ -619,7 +619,7 @@ TEST_CASE("BCS - Branch on Carry Set", "[opcode][bcs]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xB0;
 
@@ -645,8 +645,8 @@ TEST_CASE("BCS - Branch on Carry Set", "[opcode][bcs]")
       bus.cpu.loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
       REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
@@ -656,7 +656,7 @@ TEST_CASE("BEQ - Branch on Zero Set", "[opcode][beq]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xF0;
 
@@ -685,8 +685,8 @@ TEST_CASE("BEQ - Branch on Zero Set", "[opcode][beq]")
       bus.cpu.loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
       REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
@@ -696,7 +696,7 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   SECTION("BIT Negative Set When Comparison Is Negative Number")
   {
@@ -726,8 +726,8 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedResult);
     }
   }
@@ -782,8 +782,8 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.V) == expectedResult);
     }
@@ -815,8 +815,8 @@ TEST_CASE("BIT - Compare Memory with Accumulator", "[opcode][bit]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedResult);
     }
   }
@@ -826,7 +826,7 @@ TEST_CASE("BMI - Branch if Negative Set", "[opcode][bmi]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x30;
 
@@ -852,8 +852,8 @@ TEST_CASE("BMI - Branch if Negative Set", "[opcode][bmi]")
       bus.cpu.loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
       REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
@@ -863,7 +863,7 @@ TEST_CASE("BNE - Branch On Result Not Zero", "[opcode][bne]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xD0;
 
@@ -891,8 +891,8 @@ TEST_CASE("BNE - Branch On Result Not Zero", "[opcode][bne]")
       bus.cpu.loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
       REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
@@ -902,7 +902,7 @@ TEST_CASE("BPL - Branch if Negative Clear", "[opcode][bpl]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x10;
 
@@ -928,8 +928,8 @@ TEST_CASE("BPL - Branch if Negative Clear", "[opcode][bpl]")
       bus.cpu.loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
       REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
@@ -939,7 +939,7 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
   uint8_t operation = 0x00;
 
   SECTION("BRK Program Counter Set To Address At Break Vector Address")
@@ -950,10 +950,10 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
     REQUIRE(bus.cpu.getProgramCounter() == 0x00);
-    bus.write(0xFFFE, 0xBC);
-    bus.write(0xFFFF, 0xCD);
+    bus.cpuWrite(0xFFFE, 0xBC);
+    bus.cpuWrite(0xFFFF, 0xCD);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getProgramCounter() == 0xCDBC);
   }
 
@@ -967,10 +967,10 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-    bus.cpu.tick();
+    bus.cpu.clock();
 
-    REQUIRE(hex(bus.read(stackLocation + (0x0100 - 0)), 2) == hex(0xAB, 2));
-    REQUIRE(hex(bus.read(stackLocation + (0x0100 - 1)), 2) == hex(0xCF, 2));
+    REQUIRE(hex(bus.cpuRead(stackLocation + (0x0100 - 0)), 2) == hex(0xAB, 2));
+    REQUIRE(hex(bus.cpuRead(stackLocation + (0x0100 - 1)), 2) == hex(0xCF, 2));
   }
 
   SECTION("BRK Stack Pointer Correct")
@@ -982,7 +982,7 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
     bus.cpu.loadProgram(0xABCD, program, n, 0xABCD);
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getRegisterSP(), 2) == hex(stackLocation - 3, 2));
   }
@@ -1010,11 +1010,11 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
 
       uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
-      REQUIRE(hex(bus.read(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpuRead(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -1041,12 +1041,12 @@ TEST_CASE("BRK - Simulate Interrupt Request (IRQ)", "[opcode][brk]")
 
       uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
-      REQUIRE(hex(bus.read(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpuRead(stackLocation + (0x0100 - 2)), 2) == hex(expectedValue, 2));
     }
   }
 }
@@ -1055,7 +1055,7 @@ TEST_CASE("BVC - Branch if Overflow Clear", "[opcode][bvc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x50;
 
@@ -1083,7 +1083,7 @@ TEST_CASE("BVC - Branch if Overflow Clear", "[opcode][bvc]")
       bus.cpu.loadProgram(programCounterInitalValue, program, n, programCounterInitalValue);
       REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
@@ -1093,7 +1093,7 @@ TEST_CASE("BVS - Branch if Overflow Set", "[opcode][bvs]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x70;
 
@@ -1124,9 +1124,9 @@ TEST_CASE("BVS - Branch if Overflow Set", "[opcode][bvs]")
 
       REQUIRE(bus.cpu.getProgramCounter() == programCounterInitalValue);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(expectedValue, 4));
     }
   }
@@ -1136,7 +1136,7 @@ TEST_CASE("CLC - Clear Carry Flag", "[opcode][clc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x18;
 
@@ -1148,7 +1148,7 @@ TEST_CASE("CLC - Clear Carry Flag", "[opcode][clc]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getFlag(bus.cpu.C) == 0);
   }
 }
@@ -1157,7 +1157,7 @@ TEST_CASE("CLD - Clear Decimal Flag", "[opcode][cld]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xD8;
 
@@ -1169,8 +1169,8 @@ TEST_CASE("CLD - Clear Decimal Flag", "[opcode][cld]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.D) == 0);
   }
@@ -1180,7 +1180,7 @@ TEST_CASE("CLI - Clear Interrupt Flag", "[opcode][cli]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x58;
 
@@ -1192,7 +1192,7 @@ TEST_CASE("CLI - Clear Interrupt Flag", "[opcode][cli]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getFlag(bus.cpu.I) == 0);
   }
 }
@@ -1201,7 +1201,7 @@ TEST_CASE("CLV - Clear Overflow Flag", "[opcode][clv]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x88;
 
@@ -1213,7 +1213,7 @@ TEST_CASE("CLV - Clear Overflow Flag", "[opcode][clv]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getFlag(bus.cpu.V) == 0);
   }
 }
@@ -1222,7 +1222,7 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xC9;
 
@@ -1248,8 +1248,8 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedResult);
     }
@@ -1278,8 +1278,8 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedResult);
     }
@@ -1308,8 +1308,8 @@ TEST_CASE("CMP - Compare Memory With Accumulator", "[opcode][cmp]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedResult);
     }
@@ -1320,7 +1320,7 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xE0;
 
@@ -1346,8 +1346,8 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedResult);
     }
@@ -1376,8 +1376,8 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedResult);
     }
@@ -1406,8 +1406,8 @@ TEST_CASE("CPX - Compare Memory With X Register", "[opcode][cpx]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedResult);
     }
@@ -1418,7 +1418,7 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xC0;
 
@@ -1444,8 +1444,8 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedResult);
     }
@@ -1474,8 +1474,8 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedResult);
     }
@@ -1504,8 +1504,8 @@ TEST_CASE("CPY - Compare Memory With X Register", "[opcode][cpy]")
       bus.cpu.loadProgram(0x00, program, n, 0x00);
       REQUIRE(bus.cpu.getProgramCounter() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedResult);
     }
@@ -1516,7 +1516,7 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xC6;
 
@@ -1537,8 +1537,8 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      REQUIRE(bus.read(0x0003, false) == expectedValue);
+      bus.cpu.clock();
+      REQUIRE(bus.cpuRead(0x0003, false) == expectedValue);
     }
   }
 
@@ -1560,7 +1560,7 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -1583,8 +1583,8 @@ TEST_CASE("DEC - Decrement Memory by One", "[opcode][dec]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -1594,7 +1594,7 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xCA;
 
@@ -1617,8 +1617,8 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getRegisterX() == expectedValue);
     }
   }
@@ -1641,8 +1641,8 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -1665,8 +1665,8 @@ TEST_CASE("DEX - Decrement X by One", "[opcode][dex]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -1676,7 +1676,7 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x88;
 
@@ -1699,8 +1699,8 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterY(), 2) == hex(expectedValue, 2));
     }
   }
@@ -1723,8 +1723,8 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -1747,8 +1747,8 @@ TEST_CASE("DEY - Decrement Y by One", "[opcode][dey]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -1758,7 +1758,7 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x49;
 
@@ -1782,8 +1782,8 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getRegisterAC() == expectedResult);
     }
   }
@@ -1807,8 +1807,8 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedResult);
     }
   }
@@ -1830,8 +1830,8 @@ TEST_CASE("EOR - Exclusive OR Compare Accumulator With Memory", "[opcode][eor]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedResult);
     }
   }
@@ -1841,7 +1841,7 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xE6;
 
@@ -1862,8 +1862,8 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      REQUIRE(bus.read(0x0003, false) == expectedValue);
+      bus.cpu.clock();
+      REQUIRE(bus.cpuRead(0x0003, false) == expectedValue);
     }
   }
 
@@ -1885,7 +1885,7 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -1908,8 +1908,8 @@ TEST_CASE("INC - Increment Memory by One", "[opcode][inc]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -1919,7 +1919,7 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xE8;
 
@@ -1942,8 +1942,8 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getRegisterX() == expectedValue);
     }
   }
@@ -1966,8 +1966,8 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -1990,8 +1990,8 @@ TEST_CASE("INX - Increment X by One", "[opcode][inx]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -2001,7 +2001,7 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xC8;
 
@@ -2022,8 +2022,8 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getRegisterY() == expectedValue);
     }
   }
@@ -2046,8 +2046,8 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -2070,8 +2070,8 @@ TEST_CASE("INY - Increment Y by One", "[opcode][iny]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -2081,7 +2081,7 @@ TEST_CASE("JMP - Jump to New Location", "[opcode][jmp]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   SECTION("Program Counter Set Correctly After Jump")
   {
@@ -2091,7 +2091,7 @@ TEST_CASE("JMP - Jump to New Location", "[opcode][jmp]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x08, 4));
   }
 
@@ -2103,7 +2103,7 @@ TEST_CASE("JMP - Jump to New Location", "[opcode][jmp]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x08, 4));
   }
 
@@ -2115,11 +2115,11 @@ TEST_CASE("JMP - Jump to New Location", "[opcode][jmp]")
     uint8_t program[] = {0x6C, 0xFF, 0x01, 0x08, 0x00};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
-    bus.write(0x01FE, 0x6C);
-    bus.write(0x01FF, 0x03);
-    bus.write(0x0100, 0x02);
+    bus.cpuWrite(0x01FE, 0x6C);
+    bus.cpuWrite(0x01FF, 0x03);
+    bus.cpuWrite(0x0100, 0x02);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0203, 4));
   }
 #endif
@@ -2129,7 +2129,7 @@ TEST_CASE("JSR - Jump to SubRoutine", "[opcode][jsr]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   SECTION("Stack Loads Correct Value")
   {
@@ -2140,10 +2140,10 @@ TEST_CASE("JSR - Jump to SubRoutine", "[opcode][jsr]")
     bus.cpu.loadProgram(0xBBAA, program, n, 0xBBAA);
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
-    bus.cpu.tick();
+    bus.cpu.clock();
 
-    REQUIRE(hex(bus.read(stackLocation + 0x0100), 4) == hex(0xBB, 4));
-    REQUIRE(hex(bus.read(stackLocation + 0x0100 - 1), 4) == hex(0xAC, 4));
+    REQUIRE(hex(bus.cpuRead(stackLocation + 0x0100), 4) == hex(0xBB, 4));
+    REQUIRE(hex(bus.cpuRead(stackLocation + 0x0100 - 1), 4) == hex(0xAC, 4));
   }
 
   SECTION("Program Counter Correct")
@@ -2153,7 +2153,7 @@ TEST_CASE("JSR - Jump to SubRoutine", "[opcode][jsr]")
     uint8_t program[] = {0x20, 0xCC, 0xCC};
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0xCCCC, 4));
   }
@@ -2167,7 +2167,7 @@ TEST_CASE("JSR - Jump to SubRoutine", "[opcode][jsr]")
     bus.cpu.loadProgram(0xBBAA, program, n, 0xBBAA);
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getRegisterSP(), 4) == hex(stackLocation - 2, 4));
   }
@@ -2177,7 +2177,7 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xA9;
 
@@ -2191,7 +2191,7 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getRegisterAC() == 0x03);
   }
 
@@ -2216,7 +2216,7 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -2242,7 +2242,7 @@ TEST_CASE("LDA - Load Accumulator with Memory", "[opcode][lda]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -2252,7 +2252,7 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xA2;
 
@@ -2260,7 +2260,7 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
   {
     MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-    Bus bus;
+    MainBus bus;
 
     bus.cpu.reset();
 
@@ -2270,7 +2270,7 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getRegisterX() == 0x03);
   }
 
@@ -2293,7 +2293,7 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -2319,7 +2319,7 @@ TEST_CASE("LDX - Load X with Memory", "[opcode][ldx]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -2329,7 +2329,7 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xA0;
 
@@ -2343,7 +2343,7 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getRegisterY() == 0x03);
   }
 
@@ -2366,7 +2366,7 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -2394,7 +2394,7 @@ TEST_CASE("LDY - Load Y with Memory", "[opcode][ldy]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -2404,7 +2404,7 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x4A;
 
@@ -2430,9 +2430,9 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == 0);
     }
@@ -2456,8 +2456,8 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
@@ -2481,8 +2481,8 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedValue);
     }
@@ -2512,8 +2512,8 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       uint8_t actualValue;
       if (operation == 0x4A)
@@ -2522,7 +2522,7 @@ TEST_CASE("LSR - Logical Shift Right", "[opcode][lsr]")
       }
       else
       {
-        actualValue = bus.read(expectedLocation);
+        actualValue = bus.cpuRead(expectedLocation);
       }
       REQUIRE(actualValue == expectedValue);
     }
@@ -2533,7 +2533,7 @@ TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x09;
 
@@ -2559,8 +2559,8 @@ TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
@@ -2585,8 +2585,8 @@ TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
@@ -2613,8 +2613,8 @@ TEST_CASE("ORA - Bitwise OR Compare Memory with Accumulator", "[opcode][ora]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
@@ -2625,7 +2625,7 @@ TEST_CASE("PHA - Push Accumulator Onto Stack", "[opcode][pha]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x48;
 
@@ -2637,10 +2637,10 @@ TEST_CASE("PHA - Push Accumulator Onto Stack", "[opcode][pha]")
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
-    REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(0x03, 2));
+    REQUIRE(hex(bus.cpuRead(stackLocation + 0x0100), 2) == hex(0x03, 2));
   }
 
   SECTION("Stack Pointer Has Correct Value")
@@ -2651,8 +2651,8 @@ TEST_CASE("PHA - Push Accumulator Onto Stack", "[opcode][pha]")
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getRegisterSP(), 2) == hex(stackLocation - 1, 2));
   }
@@ -2665,8 +2665,8 @@ TEST_CASE("PHA - Push Accumulator Onto Stack", "[opcode][pha]")
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getRegisterSP(), 2) == hex(0xFF, 2));
   }
@@ -2676,7 +2676,7 @@ TEST_CASE("PHP - Push Flags Onto Stack", "[opcode][php]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x08;
 
@@ -2703,11 +2703,11 @@ TEST_CASE("PHP - Push Flags Onto Stack", "[opcode][php]")
 
       uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
-      REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpuRead(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -2733,12 +2733,12 @@ TEST_CASE("PHP - Push Flags Onto Stack", "[opcode][php]")
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
       uint8_t stackLocation = bus.cpu.getRegisterSP();
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
-      REQUIRE(hex(bus.read(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpuRead(stackLocation + 0x0100), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -2752,7 +2752,7 @@ TEST_CASE("PHP - Push Flags Onto Stack", "[opcode][php]")
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getRegisterSP(), 2) == hex(stackLocation - 1, 2));
   }
@@ -2762,7 +2762,7 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x68;
 
@@ -2774,7 +2774,7 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(0x03, 2));
   }
@@ -2800,9 +2800,9 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
       //uint8_t stackLocation = bus.cpu.getRegisterSP();
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedResult);
     }
@@ -2829,9 +2829,9 @@ TEST_CASE("PLA - Pull From Stack to Accumulator", "[opcode][pla]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
       //uint8_t stackLocation = bus.cpu.getRegisterSP();
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedResult);
     }
@@ -2842,7 +2842,7 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x28;
 
@@ -2856,9 +2856,9 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.C) == 1);
   }
@@ -2873,9 +2873,9 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == 1);
   }
@@ -2890,9 +2890,9 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.D) == 1);
   }
@@ -2907,9 +2907,9 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.I) == 1);
   }
@@ -2924,9 +2924,9 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.V) == 1);
   }
@@ -2941,9 +2941,9 @@ TEST_CASE("PLP - Pull From Stack to Flags", "[opcode][plp]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.N) == 1);
   }
@@ -2953,7 +2953,7 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x2A;
 
@@ -2977,8 +2977,8 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedResult);
     }
@@ -3005,8 +3005,8 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedResult);
     }
@@ -3031,8 +3031,8 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedResult);
     }
@@ -3063,8 +3063,8 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       uint8_t actualResult;
       if (operation == 0x2A)
@@ -3073,7 +3073,7 @@ TEST_CASE("ROL - Rotate Left", "[opcode][rol]")
       }
       else
       {
-        actualResult = bus.read(expectedLocation);
+        actualResult = bus.cpuRead(expectedLocation);
       }
 
       REQUIRE(hex(actualResult, 2) == hex(expectedValue, 2));
@@ -3085,7 +3085,7 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x6A;
 
@@ -3112,9 +3112,9 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
@@ -3143,9 +3143,9 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedResult);
     }
@@ -3170,8 +3170,8 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedResult);
     }
@@ -3202,8 +3202,8 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       uint8_t actualResult;
       if (operation == 0x6A)
@@ -3212,7 +3212,7 @@ TEST_CASE("ROR - Rotate Right", "[opcode][ror]")
       }
       else
       {
-        actualResult = bus.read(expectedLocation);
+        actualResult = bus.cpuRead(expectedLocation);
       }
 
       REQUIRE(hex(actualResult, 2) == hex(expectedValue, 2));
@@ -3224,7 +3224,7 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   SECTION("Program Counter Correct")
   {
@@ -3235,10 +3235,10 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     bus.cpu.loadProgram(0xABCD, program, n, 0xABCD);
 
     //The Reset Vector Points to 0x0000 by default, so load the RTI instruction there.
-    bus.write(0x00, 0x40);
+    bus.cpuWrite(0x00, 0x40);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0xABCF, 4));
   }
@@ -3252,9 +3252,9 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.C) == 1);
   }
@@ -3268,9 +3268,9 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == 1);
   }
@@ -3284,9 +3284,9 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.I) == 1);
   }
@@ -3302,9 +3302,9 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.D) == 1);
   }
@@ -3319,9 +3319,9 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.V) == 1);
   }
@@ -3336,9 +3336,9 @@ TEST_CASE("RTI - Return from Interrupt", "[opcode][rti]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(bus.cpu.getFlag(bus.cpu.N) == 1);
     }
@@ -3348,7 +3348,7 @@ TEST_CASE("RTS - Return from SubRoutine", "[opcode][rts]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   SECTION("Program Counter Has Correct Value")
   {
@@ -3358,8 +3358,8 @@ TEST_CASE("RTS - Return from SubRoutine", "[opcode][rts]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x03, 4));
   }
@@ -3376,7 +3376,7 @@ TEST_CASE("RTS - Return from SubRoutine", "[opcode][rts]")
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getRegisterSP(), 4) == hex((stackLocation + 2) & 0x00FF, 4));
   }
@@ -3386,7 +3386,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xE9;
 
@@ -3410,7 +3410,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
     );
     uint8_t operation = 0xE9;
 
-    Bus bus;
+    MainBus bus;
 
     DYNAMIC_SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
@@ -3425,7 +3425,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu.clock();
       }
       else
       {
@@ -3434,10 +3434,10 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getRegisterAC() == expectedValue);
     }
   }
@@ -3452,7 +3452,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
     );
     uint8_t operation = 0xE9;
 
-    Bus bus;
+    MainBus bus;
 
     SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}, 0x{:02X}) works",
@@ -3467,7 +3467,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
         uint8_t program[] = {0x38, 0xF8, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu.clock();
       }
       else
       {
@@ -3476,11 +3476,11 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
   }
@@ -3515,7 +3515,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu.clock();
       }
       else
       {
@@ -3524,10 +3524,10 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.V) == expectedValue);
     }
   }
@@ -3559,7 +3559,7 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
         uint8_t program[] = {0x38, 0xA9, accumulatorInitialValue, 0xE9, amountToSubtract};
         size_t n = sizeof(program) / sizeof(program[0]);
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
-        bus.cpu.tick();
+        bus.cpu.clock();
       }
       else
       {
@@ -3568,10 +3568,10 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
         bus.cpu.loadProgram(0x0000, program, n, 0x00);
       }
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.V) == expectedValue);
     }
   }
@@ -3599,10 +3599,10 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.C) == expectedValue);
     }
   }
@@ -3630,10 +3630,10 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
   }
@@ -3661,10 +3661,10 @@ TEST_CASE("SBC - Subtraction With Borrow", "[opcode][sbc]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulatorInitialValue, 2));
       
-      bus.cpu.tick();
+      bus.cpu.clock();
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
   }
@@ -3674,7 +3674,7 @@ TEST_CASE("SEC - Set Carry Flag", "[opcode][sec]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x38;
 
@@ -3686,7 +3686,7 @@ TEST_CASE("SEC - Set Carry Flag", "[opcode][sec]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getFlag(bus.cpu.C) == 1);
   }
 }
@@ -3695,7 +3695,7 @@ TEST_CASE("Set Decimal Mode", "[opcode][sed]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xF8;
 
@@ -3707,7 +3707,7 @@ TEST_CASE("Set Decimal Mode", "[opcode][sed]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getFlag(bus.cpu.D) == 1);
   }
 }
@@ -3716,7 +3716,7 @@ TEST_CASE("SEI - Set Interrupt Flag", "[opcode][sei]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x78;
 
@@ -3728,7 +3728,7 @@ TEST_CASE("SEI - Set Interrupt Flag", "[opcode][sei]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
+    bus.cpu.clock();
     REQUIRE(bus.cpu.getFlag(bus.cpu.I) == 1);
   }
 }
@@ -3737,7 +3737,7 @@ TEST_CASE("STA - Store Accumulator In Memory", "[opcode][sta]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x85;
 
@@ -3749,10 +3749,10 @@ TEST_CASE("STA - Store Accumulator In Memory", "[opcode][sta]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
-    REQUIRE(hex(bus.read(0x05), 2) == hex(0x03, 2));
+    REQUIRE(hex(bus.cpuRead(0x05), 2) == hex(0x03, 2));
   }
 }
 
@@ -3760,7 +3760,7 @@ TEST_CASE("STX - Set Memory To X", "[opcode][stx]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x86;
 
@@ -3772,10 +3772,10 @@ TEST_CASE("STX - Set Memory To X", "[opcode][stx]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
-    REQUIRE(hex(bus.read(0x05), 2) == hex(0x03, 2));
+    REQUIRE(hex(bus.cpuRead(0x05), 2) == hex(0x03, 2));
   }
 }
 
@@ -3783,7 +3783,7 @@ TEST_CASE("STY - Set Memory To Y", "[opcode][sty]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x84;
 
@@ -3795,10 +3795,10 @@ TEST_CASE("STY - Set Memory To Y", "[opcode][sty]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
-    REQUIRE(hex(bus.read(0x05), 2) == hex(0x03, 2));
+    REQUIRE(hex(bus.cpuRead(0x05), 2) == hex(0x03, 2));
   }
 }
 
@@ -3806,7 +3806,7 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   //uint8_t operation = 0x0A;
 
@@ -3845,8 +3845,8 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       switch (transferFrom)
       {
@@ -3886,7 +3886,7 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
       {0x98, 0x00, ProcessorTests::YRegister, 0},
     }));
 
-    Bus bus;
+    MainBus bus;
 
     DYNAMIC_SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
@@ -3912,8 +3912,8 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedResult);
     }
@@ -3934,7 +3934,7 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
       {0x98, 0x00, ProcessorTests::YRegister, 1},
     }));
 
-    Bus bus;
+    MainBus bus;
 
     DYNAMIC_SECTION(
       fmt::format("Check if {:s}(0x{:02X}, 0x{:02X}, {}) works",
@@ -3960,8 +3960,8 @@ TEST_CASE("TAX, TAY, TSX, TSY Tests", "[opcode][tax][tay][tsx][tsy]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedResult);
     }
@@ -3972,7 +3972,7 @@ TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0xBA;
 
@@ -3986,8 +3986,8 @@ TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
 
     uint8_t stackLocation = bus.cpu.getRegisterSP();
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getRegisterX(), 2) == hex(stackLocation, 2));
   }
@@ -4014,9 +4014,9 @@ TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == expectedValue);
     }
@@ -4043,9 +4043,9 @@ TEST_CASE("TSX - Transfer Stack Pointer to X Register", "[opcode][tsx]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == expectedValue);
     }
@@ -4056,7 +4056,7 @@ TEST_CASE("TXS - Transfer X Register to Stack Pointer", "[opcode][txs]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x9A;
 
@@ -4068,8 +4068,8 @@ TEST_CASE("TXS - Transfer X Register to Stack Pointer", "[opcode][txs]")
     size_t n = sizeof(program) / sizeof(program[0]);
     bus.cpu.loadProgram(0x00, program, n, 0x00);
 
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getRegisterSP(), 2) == hex(0xAA, 2));
   }
@@ -4081,7 +4081,7 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   //uint8_t operation = 0x0A;
 
@@ -4107,8 +4107,8 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getRegisterAC() == expectedValue);
     }
@@ -4136,8 +4136,8 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getRegisterAC() == expectedValue);
     }
@@ -4165,9 +4165,9 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getRegisterAC() == expectedValue);
     }
@@ -4195,8 +4195,8 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getRegisterAC() == expectedValue);
     }
@@ -4224,9 +4224,9 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getRegisterAC() == expectedValue);
     }
@@ -4254,9 +4254,9 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getRegisterAC() == expectedValue);
     }
@@ -4284,9 +4284,9 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
@@ -4314,9 +4314,9 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
@@ -4344,9 +4344,9 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
@@ -4374,9 +4374,9 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
@@ -4404,9 +4404,9 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
@@ -4434,9 +4434,9 @@ TEST_CASE("Accumulator Address Tests", "[address][acc]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(expectedValue, 2));
     }
@@ -4447,7 +4447,7 @@ TEST_CASE("Index Address Tests", "[address][index]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x0A;
 
@@ -4471,7 +4471,7 @@ TEST_CASE("Index Address Tests", "[address][index]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       if (testXRegister)
       {
@@ -4504,8 +4504,8 @@ TEST_CASE("Index Address Tests", "[address][index]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       if (testXRegister)
       {
@@ -4536,7 +4536,7 @@ TEST_CASE("Index Address Tests", "[address][index]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       if (testXRegister)
       {
@@ -4554,7 +4554,7 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x0A;
 
@@ -4590,8 +4590,8 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == 0);
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == 1);
@@ -4632,8 +4632,8 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == 0);
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == 1);
@@ -4674,8 +4674,8 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == 0);
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == 1);
@@ -4706,9 +4706,9 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
       bus.cpu.loadProgram(0x0000, program.data(), program.size(), 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == 0);
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == 1);
@@ -4739,9 +4739,9 @@ TEST_CASE("Compare Address Tests", "[address][compare]")
       bus.cpu.loadProgram(0x0000, program.data(), program.size(), 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       REQUIRE(bus.cpu.getFlag(bus.cpu.Z) == 0);
       REQUIRE(bus.cpu.getFlag(bus.cpu.N) == 1);
@@ -4754,7 +4754,7 @@ TEST_CASE("Decrement/Increment Address Tests", "[address][inc][dec]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x0A;
 
@@ -4777,9 +4777,9 @@ TEST_CASE("Decrement/Increment Address Tests", "[address][inc][dec]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
-      REQUIRE(hex(bus.read(0x02, true), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpuRead(0x02, true), 2) == hex(expectedValue, 2));
     }
   }
 
@@ -4802,9 +4802,9 @@ TEST_CASE("Decrement/Increment Address Tests", "[address][inc][dec]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
-      REQUIRE(hex(bus.read(0x03, true), 2) == hex(expectedValue, 2));
+      REQUIRE(hex(bus.cpuRead(0x03, true), 2) == hex(expectedValue, 2));
     }
   }
 }
@@ -4813,7 +4813,7 @@ TEST_CASE("Store In Memory Address Tests", "[storage][address]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   uint8_t operation = 0x0A;
 
@@ -4852,10 +4852,10 @@ TEST_CASE("Store In Memory Address Tests", "[storage][address]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
-      REQUIRE(hex(bus.read(0x04, true), 2) == hex(0x05, 2));
+      REQUIRE(hex(bus.cpuRead(0x04, true), 2) == hex(0x05, 2));
     }
   }
 
@@ -4893,10 +4893,10 @@ TEST_CASE("Store In Memory Address Tests", "[storage][address]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
-      REQUIRE(hex(bus.read(0x04, true), 2) == hex(valueToLoad, 2));
+      REQUIRE(hex(bus.cpuRead(0x04, true), 2) == hex(valueToLoad, 2));
     }
   }
 }
@@ -4905,7 +4905,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
   //uint8_t operation = 0x0A;
 
   SECTION("NumberOfCyclesRemaining Correct After Operations That Do Not Wrap")
@@ -5163,7 +5163,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5200,11 +5200,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5233,11 +5233,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5265,11 +5265,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       uint8_t program[]= {0xA0, 0x04, operation, 0x05, 0x08, 0xFF, 0xFF, 0x03};
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5293,11 +5293,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(0x00, 2));
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5321,11 +5321,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(0x00, 2));
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5355,11 +5355,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(initialAddress, program, n, initialAddress);
       REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(0x00, 2));
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5383,11 +5383,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5411,11 +5411,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5445,11 +5445,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(initialAddress, program, n, initialAddress);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5473,11 +5473,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5501,11 +5501,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5534,11 +5534,11 @@ TEST_CASE("Cycle Tests", "[cycle]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(initialAddress, program, n, initialAddress);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5562,12 +5562,12 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5591,12 +5591,12 @@ TEST_CASE("Cycle Tests", "[cycle]")
       bus.cpu.loadProgram(0x0000, program, n, 0x00);
       REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5625,12 +5625,12 @@ TEST_CASE("Cycle Tests", "[cycle]")
       size_t n = sizeof(program) / sizeof(program[0]);
       bus.cpu.loadProgram(initialAddress, program, n, initialAddress);
 
-      bus.cpu.tick();
-      bus.cpu.tick();
+      bus.cpu.clock();
+      bus.cpu.clock();
 
       //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5683,7 +5683,7 @@ TEST_CASE("Cycle Tests", "[cycle]")
 
       uint8_t startingNumberOfCycles = bus.cpu.getOperationCycleCount();
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       REQUIRE(hex(startingNumberOfCycles + numberOfCyclesUsed, 4) == hex(bus.cpu.getOperationCycleCount(), 4));
     }
@@ -5694,7 +5694,7 @@ TEST_CASE("Program Counter Tests", "[programcounter][pc]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   bus.cpu.reset();
   REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0000, 4));
@@ -5707,9 +5707,9 @@ TEST_CASE("Program Counter Tests", "[programcounter][pc]")
     REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
     //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-    bus.cpu.tick();
+    bus.cpu.clock();
     uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu.getProgramCounter(), 4));
   }
@@ -5722,9 +5722,9 @@ TEST_CASE("Program Counter Tests", "[programcounter][pc]")
     REQUIRE(bus.cpu.getRegisterAC() == 0x00);
 
     //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-    bus.cpu.tick();
+    bus.cpu.clock();
     uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(currentProgramCounter + 2, 4) == hex(bus.cpu.getProgramCounter(), 4));
   }
@@ -5737,11 +5737,11 @@ TEST_CASE("Program Counter Tests", "[programcounter][pc]")
     REQUIRE(bus.cpu.getProgramCounter() == 0x0000);
 
     //Get the number of cycles after the register has been loaded, so we can isolate the operation under test
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
     uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
 
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu.getProgramCounter(), 4));
   }
@@ -5755,11 +5755,11 @@ TEST_CASE("Program Counter Tests", "[programcounter][pc]")
 
     // Get the number of cycles after the register has been
     // loaded, so we can isolate the operation under test
-    bus.cpu.tick();
-    bus.cpu.tick();
+    bus.cpu.clock();
+    bus.cpu.clock();
     uint16_t currentProgramCounter = bus.cpu.getProgramCounter();
 
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(currentProgramCounter + 0x2, 4) == hex(bus.cpu.getProgramCounter(), 4));
   }
@@ -5771,7 +5771,7 @@ TEST_CASE("Program Counter Tests", "[programcounter][pc]")
     bus.cpu.loadProgram(0xFFFF, program, n, 0xFFFF);
 
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0xFFFF, 4));
-    bus.cpu.tick();
+    bus.cpu.clock();
 
     REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(0x0000, 4));
   }

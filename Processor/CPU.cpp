@@ -1,9 +1,9 @@
-#include "cpuCPU.hpp"
-#include "cpuTypes.hpp"
-#include "cpuExecutioner.hpp"
-#include "cpuBus.hpp"
-#include "cpuLogger.hpp"
-#include "cpuExceptions.hpp"
+#include "CPU.hpp"
+#include "Types.hpp"
+#include "Executioner.hpp"
+#include "MainBus.hpp"
+#include "Logger.hpp"
+#include "Exceptions.hpp"
 
 #include <stdexcept>
 #include <sstream>
@@ -59,11 +59,8 @@ namespace Processor
 
     setProgramCounter(initialProgramCounter);
 
-    uint8_t lo = initialProgramCounter & 0xFF;
-    uint8_t hi = (initialProgramCounter >> 8) & 0xFF;
-
-    writeMemoryWithoutCycle(0xFFFC, lo);
-    writeMemoryWithoutCycle(0xFFFD, hi);
+    writeMemoryWithoutCycle(0xFFFC, initialProgramCounter & 0xFF);
+    writeMemoryWithoutCycle(0xFFFD, (initialProgramCounter >> 8) & 0xFF);
   }
 
   void CPU::loadProgram(uint16_t offset, uint8_t program[], size_t programSize)
@@ -87,21 +84,17 @@ namespace Processor
       ));
     }
 
-    //fmt::memory_buffer buffer;
-
     bus->reset();
     uint16_t pos = 0;
     for (uint16_t i = 0; i < programSize; i++)
     {
-      //fmt::format_to(std::back_inserter(buffer), "{:02X} ", program[i]);
       pos = (offset + i);
       bus->ram[pos] = program[i];
     }
 
-    //Logger::log()->info("** Loading Program: {}", fmt::to_string(buffer));
-
     reset();
     reg.SP = 0xFF;
+    setFlag(B, false);
   }
 
   void CPU::loadProgram(uint16_t offset, uint8_t program[], size_t programSize, uint16_t initialProgramCounter)
@@ -110,11 +103,8 @@ namespace Processor
 
     setProgramCounter(initialProgramCounter);
 
-    uint8_t lo = initialProgramCounter & 0xFF;
-    uint8_t hi = (initialProgramCounter >> 8) & 0xFF;
-
-    writeMemoryWithoutCycle((uint16_t) 0xFFFC, lo);
-    writeMemoryWithoutCycle((uint16_t) 0xFFFD, hi);
+    writeMemoryWithoutCycle(0xFFFC, initialProgramCounter & 0xFF);
+    writeMemoryWithoutCycle(0xFFFD, (initialProgramCounter >> 8) & 0xFF);
   }
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -205,7 +195,6 @@ namespace Processor
     _previousInterrupt = false;
     TriggerNmi = false;
     TriggerIRQ = false;
-    setFlag(B, false);
   }
 
   // Interrupt requests are a complex operation and only happen if the

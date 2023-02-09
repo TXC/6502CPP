@@ -1,28 +1,28 @@
-#include "Bus.hpp"
-#include <Processor/BaseBus.hpp>
+#include "NESBus.hpp"
+#include <Processor/Bus.hpp>
 
 
 namespace NES
 {
-  Bus::Bus() : Processor::BaseBus()
+  NESBus::NESBus() : Processor::Bus()
   {
     cpu.connectBus(this);
   }
 
-  Bus::~Bus()
+  NESBus::~NESBus()
   {
   }
 
-  void Bus::SetSampleFrequency(uint32_t sample_rate)
+  void NESBus::SetSampleFrequency(uint32_t sample_rate)
   {
     dAudioTimePerSystemSample = 1.0 / (double)sample_rate;
     dAudioTimePerNESClock = 1.0 / 5369318.0; // PPU Clock Frequency
   }
 
-  void Bus::cpuWrite(uint16_t addr, uint8_t data)
+  void NESBus::cpuWrite(uint16_t addr, uint8_t data)
   {
 
-    if (cart->cpuWrite(addr, data))
+    if (cart != nullptr && cart->cpuWrite(addr, data))
     {
       // The cartridge "sees all" and has the facility to veto
       // the propagation of the bus transaction if it requires.
@@ -67,10 +67,10 @@ namespace NES
     }
   }
 
-  uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
+  uint8_t NESBus::cpuRead(uint16_t addr, bool bReadOnly)
   {
     uint8_t data = 0x00;
-    if (cart->cpuRead(addr, data))
+    if (cart != nullptr && cart->cpuRead(addr, data))
     {
       // Cartridge Address Range
     }
@@ -99,17 +99,20 @@ namespace NES
     return data;
   }
 
-  void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
+  void NESBus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
   {
     // Connects cartridge to both Main Bus and CPU Bus
     this->cart = cartridge;
     ppu.connectCartridge(cartridge);
   }
 
-  void Bus::reset()
+  void NESBus::reset()
   {
-    BaseBus::reset();
-    cart->reset();
+    Bus::reset();
+    if (cart != nullptr)
+    {
+      cart->reset();
+    }
     cpu.reset();
     ppu.reset();
     nSystemClockCounter = 0;
@@ -120,7 +123,7 @@ namespace NES
     dma_transfer = false;
   }
 
-  void Bus::clock()
+  bool NESBus::clock()
   {
     // Clocking. The heart and soul of an emulator. The running
     // frequency is controlled by whatever calls this function.
@@ -213,7 +216,7 @@ namespace NES
     
     
     // Check if cartridge is requesting IRQ
-    if (cart->GetMapper()->irqState())
+    if (cart != nullptr && cart->GetMapper()->irqState())
     {
       cart->GetMapper()->irqClear();
       //cpu.irq();
@@ -225,8 +228,8 @@ namespace NES
     return bAudioSampleReady;
   }
 
-  bool Bus::complete()
+  bool NESBus::complete()
   {
-    return cpu.complete() & BaseBus::complete();
+    return cpu.complete() & NESBus::complete();
   }
 };

@@ -1,20 +1,18 @@
 #pragma once
 
-#include <Bus.hpp>
+#include <NES/NESBus.hpp>
 #include <memory>
 
-using namespace CPU;
-
-class Bus;
 class Simulator
 {
 private:
-  std::unique_ptr<CPU::Bus> bus;
+  std::unique_ptr<NES::NESBus> bus;
 
 public:
   Simulator() {
-    bus = std::make_unique<CPU::Bus>();
+    bus = std::make_unique<NES::NESBus>();
   };
+
   ~Simulator() {
   };
 
@@ -27,8 +25,6 @@ public:
   void RegistersWindow();
 
   void MemoryTable(uint16_t offsetStart, uint16_t offsetStop);
-  
+
   void Frame();
 };
-
-

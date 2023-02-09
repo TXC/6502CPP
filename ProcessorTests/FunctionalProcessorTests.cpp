@@ -1,6 +1,6 @@
 #include "FunctionalProcessorTests.hpp"
-#include <Types.hpp>
 
+#include <Processor/Types.hpp>
 
 #include <catch2/catch_all.hpp>
 #include <string>
@@ -18,8 +18,7 @@
 
 namespace CPUTest
 {
-  using namespace CPU;
-
+  using namespace Processor;
 
 /** 
  * Each Test Case in Klaus_Dormann's Functional Test Program. 
@@ -32,7 +31,7 @@ TEST_CASE("KlausDormann's Functional Test Program", "[.KlausDormann][.functional
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   FunctionalProcessorTests::PROGRAMDATA KdTestProgram = FunctionalProcessorTests::loadFunctionFile("6502_functional_test.bin");
 
@@ -108,7 +107,7 @@ TEST_CASE("KlausDormann's Functional Test Program", "[.KlausDormann][.functional
 
       while(true)
       {
-        bus.cpu.tick();
+        bus.cpu.clock();
         ++numberOfCycles;
 
         if(hex(bus.cpu.getProgramCounter(), 4) == hex(programCounter, 4))
@@ -131,7 +130,7 @@ TEST_CASE("Klaus Dormann's Interrupt Test Program", "[.KlausDormann][.interrupt]
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   FunctionalProcessorTests::PROGRAMDATA InterruptProgram = FunctionalProcessorTests::loadFunctionFile("6502_interrupt_test.bin");
 
@@ -155,7 +154,7 @@ TEST_CASE("Klaus Dormann's Interrupt Test Program", "[.KlausDormann][.interrupt]
 
       while(true)
       {
-        interruptWatch = bus.read(0xbffc);
+        interruptWatch = bus.cpuRead(0xbffc);
 
         //This is used to simulate the edge triggering of an NMI. If we didn't do this we would get stuck in a loop forever
         if (interruptWatch != previousInterruptWatchValue)
@@ -164,17 +163,19 @@ TEST_CASE("Klaus Dormann's Interrupt Test Program", "[.KlausDormann][.interrupt]
 
           if ((interruptWatch & 2) != 0)
           {
-            bus.cpu.TriggerNmi = true;
+            //bus.cpu.TriggerNmi = true;
+            bus.cpu.requestNmi();
           }
         }
 
         if (bus.cpu.getFlag(bus.cpu.I) == 0 && (interruptWatch & 1) != 0)
         {
           //bus.cpu.TriggerIRQ = true;
-          bus.cpu.irq();
+          //bus.cpu.irq();
+          bus.cpu.requestIRQ();
         }
 
-        bus.cpu.tick();
+        bus.cpu.clock();
         numberOfCycles++;
 
         if(bus.cpu.getProgramCounter() == programCounter)
@@ -199,7 +200,7 @@ TEST_CASE("Ed Spittles Test Program", "[.EdSpittles]")
 {
   MainTest::logTestCaseName(Catch::getResultCapture().getCurrentTestName());
 
-  Bus bus;
+  MainBus bus;
 
   FunctionalProcessorTests::PROGRAMDATA CycleProgram = FunctionalProcessorTests::loadFunctionFile("6502_cycle_test.bin");
   std::vector<FunctionalProcessorTests::TESTDATA> CycleTestDataResults = FunctionalProcessorTests::loadCycleTestResults("cycle_test_data.csv", ",");
@@ -216,7 +217,7 @@ TEST_CASE("Ed Spittles Test Program", "[.EdSpittles]")
         
       }
 
-      bus.cpu.tick();
+      bus.cpu.clock();
 
       //CAPTURE(fmt::format("Step: {} PC: {:04X}", numberOfLoops, bus.cpu.getProgramCounter()));
       //CAPTURE(fmt::format("Step: {} Cycles: {}", numberOfLoops, bus.cpu.cycle_count));

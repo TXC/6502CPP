@@ -1,8 +1,8 @@
 #pragma once
 
-#include "cpuBus.hpp"
-#include "cpuCPU.hpp"
-#include "cpuExecutioner.hpp"
+#include "MainBus.hpp"
+#include "CPU.hpp"
+#include "Executioner.hpp"
 
 #if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>

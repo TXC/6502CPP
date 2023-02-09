@@ -1,6 +1,6 @@
 #pragma once
 
-#include "BaseBus.hpp"
+#include "Bus.hpp"
 #include "CPU.hpp"
 
 #include <array>
@@ -16,11 +16,11 @@
 namespace Processor
 {
   class Logger;
-  class Bus : public BaseBus
+  class MainBus : public Bus
   {
   public:
-    Bus();
-    ~Bus();
+    MainBus();
+    ~MainBus();
 
   public: // Devices on bus
     // The 6502 derived processor
@@ -30,7 +30,7 @@ namespace Processor
     // Resets the system
     void reset() override;
     // Clocks the system - a single whole systme tick
-    void clock() override;
+    bool clock() override;
     // Check if the system is complete
     bool complete() override;
   };

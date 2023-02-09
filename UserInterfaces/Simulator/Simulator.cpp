@@ -1,10 +1,10 @@
 #include "Simulator.hpp"
 
-#include <Bus.hpp>
-#include <CPU.hpp>
-#include <Formatters.hpp>
+#include <NES/NESBus.hpp>
+#include <Processor/CPU.hpp>
+#include <Processor/Formatters.hpp>
 
-#include <imgui.h>
+#include <imgui/imgui.h>
 #include <cstdint>
 #include <iostream>
 #include <map>
@@ -56,13 +56,13 @@ void Simulator::ProgramController()
 {
   ImGui::Begin("Program Control"); 
 
-  static bool run_button_disable = bus->cpu.getJammed() || (bus->cpu.getOpCode() == 0 && bus->cpu.getOperationCycleCount() > 0);
+  static bool run_button_disable = bus->cpu.getJammed() || bus->cpu.complete();
   static bool reset_button_disable = bus->cpu.getJammed();
 
   ImGui::BeginDisabled(run_button_disable);
 
   if (ImGui::Button("Run cycle")) {
-    bus->cpu.tick();
+    bus->cpu.clock();
   }
 
   ImGui::EndDisabled();
@@ -80,14 +80,13 @@ void Simulator::ProgramController()
   ImGui::SameLine();
 
   if (ImGui::Button("Hard reset")) {
-    bus->cpu.reset();
     bus.reset();
   }
 
   //ImGui::SliderInt("CPU Speed", &bus->cpu.cpuspeed, 1, 10, "%d");
 
   if (ImGui::IsKeyDown(ImGuiKey_Space) && run_button_disable == false) {
-    bus->cpu.tick();
+    bus->cpu.clock();
   }
 
   ImGui::End();
@@ -189,7 +188,7 @@ void Simulator::MemoryTable(uint16_t offsetStart, uint16_t offsetStop)
     ImGui::TableSetupColumn("0F", ImGuiTableColumnFlags_WidthFixed);
     ImGui::TableHeadersRow();
 
-    std::map<uint16_t, Processor::Bus::MEMORYMAP> memorymap = bus->ram.memoryDump(offsetStart, offsetStop);
+    std::map<uint16_t, Processor::Bus::MEMORYMAP> memorymap = bus->memoryDump(offsetStart, offsetStop);
     for (uint16_t n = 0; n < (memorymap.size() - 1) ; ++n)
     {
       ImGui::TableNextRow();

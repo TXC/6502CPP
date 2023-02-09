@@ -4,7 +4,8 @@
 #include "PPU.hpp"
 #include "Cartridge.hpp"
 
-#include <Processor/BaseBus.hpp>
+#include <Processor/Bus.hpp>
+#include <Processor/CPU.hpp>
 
 #include <array>
 #include <map>
@@ -20,15 +21,15 @@
 
 namespace NES
 {
-  class Bus : public Processor::BaseBus
+  class NESBus : public Processor::Bus
   {
   public:
-    Bus();
-    ~Bus();
+    NESBus();
+    ~NESBus();
 
   public: // Devices on bus
     // The 6502 derived processor
-    //CPU cpu;
+    Processor::CPU cpu;
     // The 2C02 Picture Processing Unit
     PPU ppu;
     // The "2A03" Audio Processing Unit
@@ -94,7 +95,7 @@ namespace NES
     // Resets the system
     void reset() override;
     // Clocks the system - a single whole systme tick
-    void clock() override;
+    bool clock() override;
     // Check if the system is complete
     bool complete() override;
   };

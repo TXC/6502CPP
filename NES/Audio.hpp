@@ -1,13 +1,89 @@
-//
-//  NESAudio.hpp
-//  NES
-//
-//  Created by Jonas Marklén on 2023-02-09.
-//
+#pragma once
 
-#ifndef NESAudio_hpp
-#define NESAudio_hpp
+#include "NESResources.hpp"
 
-#include <stdio.h>
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#include <queue>
+#include <list>
 
-#endif /* NESAudio_hpp */
+#pragma pack(push, 1)
+typedef struct {
+  uint16_t wFormatTag;
+  uint16_t nChannels;
+  uint32_t nSamplesPerSec;
+  uint32_t nAvgBytesPerSec;
+  uint16_t nBlockAlign;
+  uint16_t wBitsPerSample;
+  uint16_t cbSize;
+} NES_WAVEFORMATEX;
+#pragma pack(pop)
+
+namespace NES
+{
+  // Container class for Advanced 2D Drawing functions
+  class SOUND
+  {
+    // A representation of an affine transform, used to rotate, scale, offset & shear space
+  public:
+    class AudioSample
+    {
+    public:
+      AudioSample();
+      AudioSample(std::string sWavFile, NES::ResourcePack *pack = nullptr);
+      NES::rcode LoadFromFile(std::string sWavFile, NES::ResourcePack *pack = nullptr);
+
+    public:
+      NES_WAVEFORMATEX wavHeader;
+      float *fSample = nullptr;
+      long nSamples = 0;
+      int nChannels = 0;
+      bool bSampleValid = false;
+    };
+
+    struct sCurrentlyPlayingSample
+    {
+      int nAudioSampleID = 0;
+      long nSamplePosition = 0;
+      bool bFinished = false;
+      bool bLoop = false;
+      bool bFlagForStop = false;
+    };
+
+    static std::list<sCurrentlyPlayingSample> listActiveSamples;
+
+  public:
+    static bool InitialiseAudio(unsigned int nSampleRate = 44100, unsigned int nChannels = 1, unsigned int nBlocks = 8, unsigned int nBlockSamples = 512);
+    static bool DestroyAudio();
+    static void SetUserSynthFunction(std::function<float(int, float, float)> func);
+    static void SetUserFilterFunction(std::function<float(int, float, float)> func);
+
+  public:
+    static int LoadAudioSample(std::string sWavFile, NES::ResourcePack *pack = nullptr);
+    static void PlaySample(int id, bool bLoop = false);
+    static void StopSample(int id);
+    static void StopAll();
+    static float GetMixerOutput(int nChannel, float fGlobalTime, float fTimeStep);
+
+
+  private:
+    static std::queue<ALuint> m_qAvailableBuffers;
+    static ALuint *m_pBuffers;
+    static ALuint m_nSource;
+    static ALCdevice *m_pDevice;
+    static ALCcontext *m_pContext;
+    static unsigned int m_nSampleRate;
+    static unsigned int m_nChannels;
+    static unsigned int m_nBlockCount;
+    static unsigned int m_nBlockSamples;
+    static short* m_pBlockMemory;
+
+    static void AudioThread();
+    static std::thread m_AudioThread;
+    static std::atomic<bool> m_bAudioThreadActive;
+    static std::atomic<float> m_fGlobalTime;
+    static std::function<float(int, float, float)> funcUserSynth;
+    static std::function<float(int, float, float)> funcUserFilter;
+  };
+
+};

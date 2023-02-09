@@ -1,8 +1,8 @@
-#include "cpuExecutioner.hpp"
-#include "cpuCPU.hpp"
-#include "cpuLogger.hpp"
-#include "cpuTypes.hpp"
-#include "cpuExceptions.hpp"
+#include "Executioner.hpp"
+#include "CPU.hpp"
+#include "Logger.hpp"
+#include "Types.hpp"
+#include "Exceptions.hpp"
 
 #include <iostream>
 #include <vector>
