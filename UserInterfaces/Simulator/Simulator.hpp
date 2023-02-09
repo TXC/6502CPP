@@ -27,6 +27,8 @@ public:
   void RegistersWindow();
 
   void MemoryTable(uint16_t offsetStart, uint16_t offsetStop);
+  
+  void Frame();
 };
 
 

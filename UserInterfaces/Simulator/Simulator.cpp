@@ -1,7 +1,7 @@
 #include "Simulator.hpp"
 
 #include <Bus.hpp>
-#include <Processor.hpp>
+#include <CPU.hpp>
 #include <Formatters.hpp>
 
 #include <imgui.h>
@@ -31,7 +31,7 @@ void Simulator::setApplication()
     0x00, 0x18, 0x6D, 0x01, 0x00, 0x88, 0xD0, 0xFA, 0x8D, 0x02, 0x00, 0xEA, 0xEA, 0xEA
   };
   size_t n = sizeof(program) / sizeof(program[0]);
-  bus->cpu->loadProgram(0x8000, program, n, 0x8000);
+  bus->cpu.loadProgram(0x8000, program, n, 0x8000);
 }
 
 void Simulator::renderApplication() {
@@ -56,13 +56,13 @@ void Simulator::ProgramController()
 {
   ImGui::Begin("Program Control"); 
 
-  static bool run_button_disable = bus->cpu->getJammed() || (bus->cpu->getOpCode() == 0 && bus->cpu->getOperationCycleCount() > 0);
-  static bool reset_button_disable = bus->cpu->getJammed();
+  static bool run_button_disable = bus->cpu.getJammed() || (bus->cpu.getOpCode() == 0 && bus->cpu.getOperationCycleCount() > 0);
+  static bool reset_button_disable = bus->cpu.getJammed();
 
   ImGui::BeginDisabled(run_button_disable);
 
   if (ImGui::Button("Run cycle")) {
-    bus->cpu->tick();
+    bus->cpu.tick();
   }
 
   ImGui::EndDisabled();
@@ -72,7 +72,7 @@ void Simulator::ProgramController()
   ImGui::BeginDisabled(reset_button_disable);
 
   if (ImGui::Button("Reset")) {
-    bus->cpu->reset();
+    bus->cpu.reset();
   }
 
   ImGui::EndDisabled();
@@ -80,14 +80,14 @@ void Simulator::ProgramController()
   ImGui::SameLine();
 
   if (ImGui::Button("Hard reset")) {
-    bus->cpu->reset();
+    bus->cpu.reset();
     bus.reset();
   }
 
-  //ImGui::SliderInt("CPU Speed", &bus->cpu->cpuspeed, 1, 10, "%d");
+  //ImGui::SliderInt("CPU Speed", &bus->cpu.cpuspeed, 1, 10, "%d");
 
   if (ImGui::IsKeyDown(ImGuiKey_Space) && run_button_disable == false) {
-    bus->cpu->tick();
+    bus->cpu.tick();
   }
 
   ImGui::End();
@@ -97,7 +97,7 @@ void Simulator::RegistersWindow()
 {
   ImGui::Begin("Registers");
 
-  //uint8_t r = bus->cpu->getRegister(CPU::Processor::REGISTER6502::SR);
+  //uint8_t r = bus->cpu.getRegister(CPU::Processor::REGISTER6502::SR);
   //fmt::print("REGISTER: {}", r);
 
   ImVec4 flagActive     = ImVec4(0.0f, 1.0f, 0.6f, 1.0f);
@@ -105,56 +105,56 @@ void Simulator::RegistersWindow()
 /*
   std::string buf = fmt::format(
     "AC: {0:02X}   {0:03d} X  : {1:02X}   {1:03d}\nY  : {2:02X}   {2:03d} SP : {3:02X}   {3:03d}\nPC : {4:04X} ({4:05d})\nOpCode : {5:02X}",
-    bus->cpu->getRegisterAC(), bus->cpu->getRegisterX(),
-    bus->cpu->getRegisterY(), bus->cpu->getRegisterSP(),
-    bus->cpu->getProgramCounter(), bus->cpu->getOpCode()
+    bus->cpu.getRegisterAC(), bus->cpu.getRegisterX(),
+    bus->cpu.getRegisterY(), bus->cpu.getRegisterSP(),
+    bus->cpu.getProgramCounter(), bus->cpu.getOpCode()
   );
 */
 
-  ImGui::Text("AC : %1$02X   (%1$03d)", bus->cpu->getRegisterAC());
+  ImGui::Text("AC : %1$02X   (%1$03d)", bus->cpu.getRegisterAC());
   ImGui::SameLine();
   ImGui::Text(" ");
   ImGui::SameLine();
-  ImGui::Text("X  : %1$02X   (%1$03d)", bus->cpu->getRegisterX());
+  ImGui::Text("X  : %1$02X   (%1$03d)", bus->cpu.getRegisterX());
 
-  ImGui::Text("Y  : %1$02X   (%1$03d)", bus->cpu->getRegisterY());
+  ImGui::Text("Y  : %1$02X   (%1$03d)", bus->cpu.getRegisterY());
   ImGui::SameLine();
   ImGui::Text(" ");
   ImGui::SameLine();
-  ImGui::Text("SP : %1$02X   (%1$03d)", bus->cpu->getRegisterSP());
+  ImGui::Text("SP : %1$02X   (%1$03d)", bus->cpu.getRegisterSP());
   
-  ImGui::Text("PC : %1$04X (%1$05d)", bus->cpu->getProgramCounter());
+  ImGui::Text("PC : %1$04X (%1$05d)", bus->cpu.getProgramCounter());
   
-  ImGui::Text("Total Cycles : %d", bus->cpu->getOperationCycleCount());
+  ImGui::Text("Total Cycles : %d", bus->cpu.getOperationCycleCount());
 
   ImGui::Text("OpCode : %1$02X  %2$s / %3$s",
-    bus->cpu->getOpCode(),
-    bus->cpu->executioner.getInstructionName(bus->cpu->getOpCode()).c_str(),
-    bus->cpu->executioner.getAddressModeName(bus->cpu->getOpCode()).c_str()
+    bus->cpu.getOpCode(),
+    bus->cpu.executioner.getInstructionName(bus->cpu.getOpCode()).c_str(),
+    bus->cpu.executioner.getAddressModeName(bus->cpu.getOpCode()).c_str()
   );
 
-  ImGui::TextColored(bus->cpu->getFlag(bus->cpu->N) ? flagActive : flagInactive, "N");
+  ImGui::TextColored(bus->cpu.getFlag(bus->cpu.N) ? flagActive : flagInactive, "N");
   ImGui::SameLine();
 
-  ImGui::TextColored(bus->cpu->getFlag(bus->cpu->V) ? flagActive : flagInactive, "V");
+  ImGui::TextColored(bus->cpu.getFlag(bus->cpu.V) ? flagActive : flagInactive, "V");
   ImGui::SameLine();
 
-  ImGui::TextColored(bus->cpu->getFlag(bus->cpu->U) ? flagActive : flagInactive, "U");
+  ImGui::TextColored(bus->cpu.getFlag(bus->cpu.U) ? flagActive : flagInactive, "U");
   ImGui::SameLine();
 
-  ImGui::TextColored(bus->cpu->getFlag(bus->cpu->B) ? flagActive : flagInactive, "B");
+  ImGui::TextColored(bus->cpu.getFlag(bus->cpu.B) ? flagActive : flagInactive, "B");
   ImGui::SameLine();
 
-  ImGui::TextColored(bus->cpu->getFlag(bus->cpu->D) ? flagActive : flagInactive, "D");
+  ImGui::TextColored(bus->cpu.getFlag(bus->cpu.D) ? flagActive : flagInactive, "D");
   ImGui::SameLine();
 
-  ImGui::TextColored(bus->cpu->getFlag(bus->cpu->I) ? flagActive : flagInactive, "I");
+  ImGui::TextColored(bus->cpu.getFlag(bus->cpu.I) ? flagActive : flagInactive, "I");
   ImGui::SameLine();
 
-  ImGui::TextColored(bus->cpu->getFlag(bus->cpu->Z) ? flagActive : flagInactive, "Z");
+  ImGui::TextColored(bus->cpu.getFlag(bus->cpu.Z) ? flagActive : flagInactive, "Z");
   ImGui::SameLine();
 
-  ImGui::TextColored(bus->cpu->getFlag(bus->cpu->C) ? flagActive : flagInactive, "C");
+  ImGui::TextColored(bus->cpu.getFlag(bus->cpu.C) ? flagActive : flagInactive, "C");
 
   ImGui::End();
 }
@@ -189,7 +189,7 @@ void Simulator::MemoryTable(uint16_t offsetStart, uint16_t offsetStop)
     ImGui::TableSetupColumn("0F", ImGuiTableColumnFlags_WidthFixed);
     ImGui::TableHeadersRow();
 
-    std::map<uint16_t, CPU::Bus::MEMORYMAP> memorymap = bus->memoryDump(offsetStart, offsetStop);
+    std::map<uint16_t, Processor::Bus::MEMORYMAP> memorymap = bus->ram.memoryDump(offsetStart, offsetStop);
     for (uint16_t n = 0; n < (memorymap.size() - 1) ; ++n)
     {
       ImGui::TableNextRow();
@@ -247,7 +247,7 @@ void Simulator::MemoryTable(uint16_t offsetStart, uint16_t offsetStop)
 
 
       for(uint8_t col = 0; col <= 0xF; ++col) {
-        if (bus->cpu->getProgramCounter() == (uint16_t)(memorymap[n].Offset + col)) {
+        if (bus->cpu.getProgramCounter() == (uint16_t)(memorymap[n].Offset + col)) {
           ImU32 cell_bg_color = ImGui::GetColorU32(ImVec4(0.3f, 0.3f, 0.7f, 0.65f));
           ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, cell_bg_color, (col + 1));
         }
@@ -260,6 +260,20 @@ void Simulator::MemoryTable(uint16_t offsetStart, uint16_t offsetStop)
 }
 
 
+void Simulator::Frame()
+{
+  ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
+  const ImVec2 p = ImGui::GetCursorScreenPos();
+  const float spacing = 10.0f;
+  static float sz = 36.0f;
+  float x = p.x + 4.0f;
+  float y = p.y + 4.0f;
+
+  const ImU32 col = ImColor(ImVec4());
+  draw_list->AddRectFilled(ImVec2(x, y), ImVec2(x + sz, y + sz), col, 10.0f);
+  x += sz + spacing;  // Square with all rounded corners
+
+}
 
 

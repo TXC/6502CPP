@@ -1,9 +1,8 @@
-#include "Executioner.hpp"
-//#include "Instructions.hpp"
-#include "Processor.hpp"
-#include "Logger.hpp"
-#include "Types.hpp"
-#include "Exceptions.hpp"
+#include "cpuExecutioner.hpp"
+#include "cpuCPU.hpp"
+#include "cpuLogger.hpp"
+#include "cpuTypes.hpp"
+#include "cpuExceptions.hpp"
 
 #include <iostream>
 #include <vector>
@@ -19,11 +18,11 @@
 #include <spdlog/fmt/fmt.h>
 #endif
 
-namespace CPU
+namespace Processor
 {
   Executioner::Executioner()
   {
-    loadInstructions();
+    //loadInstructions();
     //opcode = &cpu->opcode;
     //cycle_count = &cpu->cycle_count;
     //operation_cycle = &cpu->operation_cycle;
@@ -41,12 +40,9 @@ namespace CPU
 
     uint16_t newPc = (cpu->readMemory(addr_abs + 1) << 8) | cpu->readMemory(addr_abs + 0);
 
-    fmt::print("Program Counter Reset: {:04X}\n", newPc);
-
     // set it
     cpu->setProgramCounter(newPc);
 
-    fmt::print("Program Counter Set: {:04X}\n", newPc);
     // Clear internal helper variables
     addr_rel = 0x0000;
     addr_abs = 0x0000;
@@ -71,17 +67,16 @@ namespace CPU
       Logger::log()->info("ADDR MODE START    - OP {} {: >53}", getOperation(), cpu->reg);
 #endif
 
-      (this->*lookup[op].addrmode.op)();
+      (this->*lookup.at(op).addrmode.op)();
 
 #if defined DEBUG
       Logger::log()->info("ADDR MODE FINISHED - OP {} {: >53}", getOperation(), cpu->reg);
 #endif
-
     }
     catch (const std::exception& e)
     {
       std::cout << "std::exception : lookup.addrmode.op["
-                << lookup[op].addrmode.name
+                << lookup.at(op).addrmode.name
                 << "] reported an exception:"
                 << e.what()
                 << std::endl;
@@ -92,7 +87,7 @@ namespace CPU
     catch (...)
     {
       std::cout << "catch_all : lookup.addrmode.op["
-                << lookup[op].addrmode.name
+                << lookup.at(op).addrmode.name
                 << "] reported an exception:"
                 << std::endl;
     }
@@ -111,7 +106,7 @@ namespace CPU
       Logger::log()->info("OPERATION START    - OP {} {: >53}", getOperation(), cpu->reg);
 #endif
 
-      (this->*lookup[op].operate.op)();
+      (this->*lookup.at(op).operate.op)();
 
 #if defined DEBUG
       Logger::log()->info("OPERATION FINISHED - OP {} {: >53}", getOperation(), cpu->reg);
@@ -121,7 +116,7 @@ namespace CPU
     catch (const std::exception& e)
     {
       std::cout << "std::exception : lookup.operate.op["
-                << lookup[op].operate.name
+                << lookup.at(op).operate.name
                 << "] reported an exception:"
                 << e.what()
                 << std::endl;
@@ -132,7 +127,7 @@ namespace CPU
     catch (...)
     {
       std::cout << "catch_all : lookup.operate.op["
-                << lookup[op].addrmode.name
+                << lookup.at(op).addrmode.name
                 << "] reported an exception:"
                 << std::endl;
     }
@@ -148,7 +143,7 @@ namespace CPU
     if (!lookup.contains(op)) {
       throw std::runtime_error(fmt::format("Unable to get Address Mode Name - Invalid operation ({:02X})", op));
     }
-    return lookup[op].addrmode.name;
+    return lookup.at(op).addrmode.name;
   }
 
   std::string Executioner::getInstructionName()
@@ -158,10 +153,10 @@ namespace CPU
 
   std::string Executioner::getInstructionName(uint8_t op)
   {
-    if (!lookup.contains(op)) {
+    if (lookup.contains(op) == false) {
       throw std::runtime_error(fmt::format("Unable to get Instruction Name - Invalid operation ({:02X})", op));
     }
-    return lookup[op].operate.name;
+    return lookup.at(op).operate.name;
   }
 
   std::string Executioner::getOperation()
@@ -175,7 +170,7 @@ namespace CPU
       throw std::runtime_error(fmt::format("Unable to get Operation - Invalid operation ({:02X})", op));
     }
 
-    return fmt::format("{}:{} [{:02X}]", lookup[op].operate.name, lookup[op].addrmode.name, op);
+    return fmt::format("{}:{} [{:02X}]", lookup.at(op).operate.name, lookup.at(op).addrmode.name, op);
   }
 
   void Executioner::printInstructions()
@@ -1994,7 +1989,7 @@ namespace CPU
   // Function:    (A OR CONST) AND oper -> A -> X
   // Flags Out:   N, Z
   // Note:        Highly unstable, involves a "magic" constant
-  // See:         Processor::ANE
+  // See:         Executioner::ANE
   void Executioner::opLXA()
   {
     fetch();

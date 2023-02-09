@@ -12,12 +12,6 @@ TARGET_SOURCES(${APP_NAME} PUBLIC
     ${APP_DIR}/Simulator.cpp
 )
 
-SOURCE_GROUP(${APP_NAME} FILES
-  Main.cpp
-  Simulator.hpp
-  Simulator.cpp
-)
-
 INCLUDE(Common)
 
 TARGET_INCLUDE_DIRECTORIES(${APP_NAME} PRIVATE
@@ -56,7 +50,7 @@ ELSE()
     TARGET_LINK_LIBRARIES(${APP_NAME} PRIVATE Processor::Processor)
   ENDIF()
 ENDIF()
-TARGET_COMPILE_OPTIONS(Processor PRIVATE "-ferror-limit=50")
+
 TARGET_COMPILE_DEFINITIONS(Processor PRIVATE ${PROJECT_COMPILE_DEFINITIONS})
 
 common_create_install(NAME "${APP_NAME}" TARGETS "${APP_NAME}")

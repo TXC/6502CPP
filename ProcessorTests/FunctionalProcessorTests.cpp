@@ -101,17 +101,17 @@ TEST_CASE("KlausDormann's Functional Test Program", "[.KlausDormann][.functional
     SECTION(
       fmt::format("TestCase: (0x{:02X}, 0x{:4X}) works", accumulator, programCounter)
     ) {
-      bus.cpu->reset();
-      bus.cpu->loadProgram(0x400, KdTestProgram.program, KdTestProgram.size, 0x400);
+      bus.cpu.reset();
+      bus.cpu.loadProgram(0x400, KdTestProgram.program, KdTestProgram.size, 0x400);
 
       uint32_t numberOfCycles = 0;
 
       while(true)
       {
-        bus.cpu->tick();
+        bus.cpu.tick();
         ++numberOfCycles;
 
-        if(hex(bus.cpu->getProgramCounter(), 4) == hex(programCounter, 4))
+        if(hex(bus.cpu.getProgramCounter(), 4) == hex(programCounter, 4))
         {
           break;
         }
@@ -121,7 +121,7 @@ TEST_CASE("KlausDormann's Functional Test Program", "[.KlausDormann][.functional
         }
       }
 
-      REQUIRE(hex(bus.cpu->getRegisterAC(), 2) == hex(accumulator, 2));
+      REQUIRE(hex(bus.cpu.getRegisterAC(), 2) == hex(accumulator, 2));
     }
 
   }
@@ -147,8 +147,8 @@ TEST_CASE("Klaus Dormann's Interrupt Test Program", "[.KlausDormann][.interrupt]
     SECTION(
       fmt::format("TestGroup: {} - 0x{:04X}", name, programCounter)
     ) {
-      bus.cpu->reset();
-      bus.cpu->loadProgram(0x400, InterruptProgram.program, InterruptProgram.size, 0x400);
+      bus.cpu.reset();
+      bus.cpu.loadProgram(0x400, InterruptProgram.program, InterruptProgram.size, 0x400);
       uint32_t numberOfCycles = 0;
       uint8_t  previousInterruptWatchValue = 0,
               interruptWatch;
@@ -164,20 +164,20 @@ TEST_CASE("Klaus Dormann's Interrupt Test Program", "[.KlausDormann][.interrupt]
 
           if ((interruptWatch & 2) != 0)
           {
-            bus.cpu->TriggerNmi = true;
+            bus.cpu.TriggerNmi = true;
           }
         }
 
-        if (bus.cpu->getFlag(bus.cpu->I) == 0 && (interruptWatch & 1) != 0)
+        if (bus.cpu.getFlag(bus.cpu.I) == 0 && (interruptWatch & 1) != 0)
         {
-          //bus.cpu->TriggerIRQ = true;
-          bus.cpu->irq();
+          //bus.cpu.TriggerIRQ = true;
+          bus.cpu.irq();
         }
 
-        bus.cpu->tick();
+        bus.cpu.tick();
         numberOfCycles++;
 
-        if(bus.cpu->getProgramCounter() == programCounter)
+        if(bus.cpu.getProgramCounter() == programCounter)
         {
           break;
         }
@@ -206,7 +206,7 @@ TEST_CASE("Ed Spittles Test Program", "[.EdSpittles]")
 
   SECTION("Cycle Test")
   {
-    bus.cpu->loadProgram(0x0000, CycleProgram.program, CycleProgram.size, 0x00);
+    bus.cpu.loadProgram(0x0000, CycleProgram.program, CycleProgram.size, 0x00);
     uint16_t numberOfLoops = 1;
 
     while(true)
@@ -216,17 +216,17 @@ TEST_CASE("Ed Spittles Test Program", "[.EdSpittles]")
         
       }
 
-      bus.cpu->tick();
+      bus.cpu.tick();
 
-      //CAPTURE(fmt::format("Step: {} PC: {:04X}", numberOfLoops, bus.cpu->getProgramCounter()));
-      //CAPTURE(fmt::format("Step: {} Cycles: {}", numberOfLoops, bus.cpu->cycle_count));
+      //CAPTURE(fmt::format("Step: {} PC: {:04X}", numberOfLoops, bus.cpu.getProgramCounter()));
+      //CAPTURE(fmt::format("Step: {} Cycles: {}", numberOfLoops, bus.cpu.cycle_count));
 
-      REQUIRE(hex(bus.cpu->getProgramCounter(), 4) == hex(CycleTestDataResults[numberOfLoops].PC, 4));
-      REQUIRE(hex(bus.cpu->getOperationCycleCount(), 4) == hex(CycleTestDataResults[numberOfLoops].CC, 4));
+      REQUIRE(hex(bus.cpu.getProgramCounter(), 4) == hex(CycleTestDataResults[numberOfLoops].PC, 4));
+      REQUIRE(hex(bus.cpu.getOperationCycleCount(), 4) == hex(CycleTestDataResults[numberOfLoops].CC, 4));
 
       numberOfLoops++;
 
-      if(bus.cpu->getProgramCounter() == 0x1266)
+      if(bus.cpu.getProgramCounter() == 0x1266)
       {
         break;
       }
@@ -236,7 +236,7 @@ TEST_CASE("Ed Spittles Test Program", "[.EdSpittles]")
       }
     }
 
-    REQUIRE(hex(bus.cpu->getOperationCycleCount(), 4) == hex(0x0474, 4));
+    REQUIRE(hex(bus.cpu.getOperationCycleCount(), 4) == hex(0x0474, 4));
   }
 }
 }

@@ -1,9 +1,11 @@
 #pragma once
 
-#include "Processor.hpp"
+#include "CPU.hpp"
 
 #include <array>
 #include <map>
+#include <cstdint>
+
 #if defined SPDLOG_FMT_EXTERNAL
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -12,21 +14,39 @@
 #include <spdlog/fmt/ostr.h>
 #endif
 
-namespace CPU
+namespace Processor
 {
-  class Logger;
-  class Bus
+  class BaseBus
   {
   public:
-    Bus();
-    ~Bus();
-
+    BaseBus();
+    ~BaseBus();
+    
   public: // Devices on bus
-    std::unique_ptr<Processor> cpu;
-
-    // Fake RAM for this part of the series
+    // The 6502 derived processor
+    CPU cpu;
+    // The 6502 RAM, we fake it a bit, 64KB
     std::array<uint8_t, 64 * 1024> ram;
 
+  public:
+    virtual void    cpuWrite(uint16_t addr, uint8_t data);
+    virtual uint8_t cpuRead(uint16_t addr, bool bReadOnly = false);
+    
+  public:
+    // A count of how many clocks have passed
+    uint32_t nSystemClockCounter = 0;
+    
+  public: // System Interface
+    // Connects a cartridge object to the internal buses
+    //void insertCartridge(const std::shared_ptr<Cartridge>& cartridge);
+    // Resets the system
+    virtual void reset();
+    // Clocks the system - a single whole system tick
+    virtual void clock();
+    // Check if the system is complete
+    virtual bool complete();
+
+  public:
     struct MEMORYMAP
     {
       uint16_t  Offset;
@@ -46,29 +66,24 @@ namespace CPU
       uint8_t   Pos0D;
       uint8_t   Pos0E;
       uint8_t   Pos0F;
-
+      
       friend std::ostream &operator<<(std::ostream &os, const MEMORYMAP& obj)
       {
         fmt::format_to(
-          std::ostream_iterator<char>(os),
-          "${:04X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
-          obj.Offset,
-          obj.Pos00, obj.Pos01, obj.Pos02, obj.Pos03,
-          obj.Pos04, obj.Pos05, obj.Pos06, obj.Pos07,
-          obj.Pos08, obj.Pos09, obj.Pos0A, obj.Pos0B,
-          obj.Pos0C, obj.Pos0D, obj.Pos0E, obj.Pos0F
-        );
+                       std::ostream_iterator<char>(os),
+                       "${:04X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
+                       obj.Offset,
+                       obj.Pos00, obj.Pos01, obj.Pos02, obj.Pos03,
+                       obj.Pos04, obj.Pos05, obj.Pos06, obj.Pos07,
+                       obj.Pos08, obj.Pos09, obj.Pos0A, obj.Pos0B,
+                       obj.Pos0C, obj.Pos0D, obj.Pos0E, obj.Pos0F
+                       );
         return os;
       }
     };
-
+    
   private:
     std::map<uint16_t, MEMORYMAP> memorymap = {};
-
-  public: // Bus Read & Write
-    void reset();
-    void write(uint16_t addr, uint8_t data);
-    uint8_t read(uint16_t addr, bool bReadOnly = false);
 
   public: // DEBUG
     std::map<uint16_t, MEMORYMAP> memoryDump(uint16_t offsetStart, uint16_t offsetStop);

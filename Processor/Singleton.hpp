@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace CPU
+namespace Processor
 {
   template <typename T>
   class Singleton {
@@ -22,4 +22,4 @@ namespace CPU
     static const std::unique_ptr<T> instance{ new T { token{} } };
     return *instance;
   }
-}
+};

@@ -1,0 +1,5 @@
+if(EXISTS "/Users/txc/Projects/CPP/xcode/ProcessorTests/ProcessorTests_tests-b12d07c.cmake")
+  include("/Users/txc/Projects/CPP/xcode/ProcessorTests/ProcessorTests_tests-b12d07c.cmake")
+else()
+  add_test(ProcessorTests_NOT_BUILT-b12d07c ProcessorTests_NOT_BUILT-b12d07c)
+endif()

@@ -18,7 +18,7 @@ INCLUDE(Common)
 ADD_LIBRARY(${APP_NAME})
 ADD_LIBRARY(${APP_NAME}::${APP_NAME} ALIAS ${APP_NAME})
 
-TARGET_SOURCES(${APP_NAME} INTERFACE
+TARGET_SOURCES(${APP_NAME} PUBLIC
   FILE_SET HEADERS
   FILES 
         Bus.hpp
@@ -32,23 +32,8 @@ TARGET_SOURCES(${APP_NAME} INTERFACE
   PRIVATE
         Bus.cpp
         Executioner.cpp
-        Instructions.cpp
+#        Instructions.cpp
         Processor.cpp
-)
-
-SOURCE_GROUP(${APP_NAME} FILES
-  Bus.cpp
-  Bus.hpp
-  Exceptions.hpp
-  Executioner.cpp
-  Executioner.hpp
-  Formatters.hpp
-  Instructions.cpp
-  Logger.hpp
-  Processor.cpp
-  Processor.hpp
-  Singleton.hpp
-  Types.hpp
 )
 
 TARGET_COMPILE_FEATURES(${APP_NAME} PUBLIC cxx_std_20)
@@ -60,7 +45,6 @@ TARGET_INCLUDE_DIRECTORIES(${APP_NAME} PUBLIC
 
 #COMMON_LANGUAGE_PARAMETERS()
 COMMON_SET_PROJECT_FLAGS()
-#COMMON_SET_TARGET_COMPILE_DEFINITIONS(TARGETS ${APP_NAME} "${APP_NAME}-shared" "${APP_NAME}-static")
 
 set_compiler_version(
   CXX_STANDARD 20
@@ -69,24 +53,12 @@ set_compiler_version(
   TARGET "${APP_NAME}"
 )
 
-#IF(DEBUG)
-#  TARGET_COMPILE_OPTIONS("${APP_NAME}" INTERFACE "-ferror-limit=50")
-#ENDIF()
-#
-#TARGET_COMPILE_DEFINITIONS("${APP_NAME}" INTERFACE
-#  DEBUG=${DEBUG}
-#  DECIMAL_MODE=${DECIMAL_MODE}
-#  ILLEGAL=${WITH_ILLEGAL}
-#  LOGMODE=${WITH_LOGGING}
-#  EMULATE65C02=${EMULATE65C02}
-#)
-
 IF(
   DEFINED LOGFILE
   AND NOT LOGFILE STREQUAL ""
   AND NOT LOGFILE STREQUAL "Processor.log"
 )
-  TARGET_COMPILE_DEFINITIONS("${APP_NAME}" INTERFACE LOGFILE=${LOGFILE})
+  TARGET_COMPILE_DEFINITIONS("${APP_NAME}" PUBLIC LOGFILE=${LOGFILE})
 ENDIF()
 
 # BEGIN DEPENDENCIES

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "container:Projects/6502_NES.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "container:Projects/6502_Processor.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "container:Projects/6502_Processor_Tests.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "container:Projects/imgui.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "container:Projects/6502_UserInterfaces.xcodeproj">
+   </FileRef>
+</Workspace>

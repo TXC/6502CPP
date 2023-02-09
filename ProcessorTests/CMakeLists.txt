@@ -33,22 +33,6 @@ TARGET_SOURCES(${APP_NAME}
           FunctionalProcessorTests.cpp
 )
 
-SOURCE_GROUP(${APP_NAME} FILES
-  MainTest.cpp
-  MainTest.hpp
-  ProcessorTests.cpp
-  ProcessorTests.hpp
-  FunctionalProcessorTests.cpp
-  FunctionalProcessorTests.hpp
-  FunctionalTests/6502_cycle_test.bin
-  FunctionalTests/6502_cycle_test.lst
-  FunctionalTests/6502_functional_test_test.bin
-  FunctionalTests/6502_functional_test_test.lst
-  FunctionalTests/6502_interrupt_test.bin
-  FunctionalTests/6502_interrupt_test.lst
-  FunctionalTests/cycle_test_data.csv
-)
-
 OPTION(ENABLE_TEST "Enable Tests" ON)
 
 SET(TestDataDirectory "${CMAKE_CURRENT_SOURCE_DIR}/FunctionalTests/" CACHE PATH "Path to directory where binary test files can be found")
@@ -94,10 +78,8 @@ ENDIF()
 
 TARGET_INCLUDE_DIRECTORIES(${APP_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
-TARGET_COMPILE_OPTIONS("${APP_NAME}" PRIVATE "-ferror-limit=50")
 TARGET_COMPILE_DEFINITIONS("${APP_NAME}" PRIVATE ${PROJECT_COMPILE_DEFINITIONS})
 
-TARGET_COMPILE_OPTIONS(Processor PRIVATE "-ferror-limit=50")
 TARGET_COMPILE_DEFINITIONS(Processor PRIVATE ${PROJECT_COMPILE_DEFINITIONS})
 
 common_create_install(NAME Processor TARGETS "${APP_NAME}")

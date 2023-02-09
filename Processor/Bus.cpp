@@ -1,17 +1,14 @@
-#include "Bus.hpp"
+#include "BaseBus.hpp"
 #include "Types.hpp"
 #include "Logger.hpp"
+
 #include <iostream>
-#if defined SPDLOG_FMT_EXTERNAL
-#include <fmt/format.h>
-#else
-#include <spdlog/fmt/fmt.h>
-#endif
 #include <signal.h>
+#include <stdexcept>
 
-namespace CPU
+
+namespace Processor
 {
-
   void handler(int sig)
   {
     switch(sig)
@@ -38,18 +35,13 @@ namespace CPU
         std::cout << "Unknown Fault Detected." << std::endl;
     }
 #if defined DEBUG
-    std::cout << "Printing Backtrace:" << std::endl
-              << Backtrace() << std::endl;
+    std::cout << "Printing Backtrace:" << std::endl << Backtrace() << std::endl;
 #endif
     exit(128 + sig);
   }
 
-
-  Bus::Bus()
+  BaseBus::BaseBus()
   {
-#if defined DEBUG
-    std::cout << "DEBUG MODE ACTIVE!" << std::endl;
-#endif
     try
     {
       signal(SIGABRT, handler);
@@ -60,7 +52,7 @@ namespace CPU
       signal(SIGTERM, handler);
 
       // Connect CPU to communication bus
-      cpu->connectBus(this);
+      //cpu.connectBus(this);
       
       // Clear RAM contents, just in case :P
       reset();
@@ -79,19 +71,12 @@ namespace CPU
     }
   }
 
-  Bus::~Bus()
+
+  BaseBus::~BaseBus()
   {
   }
 
-  void Bus::reset()
-  {
-    for (auto& i : ram)
-    {
-      i = 0x00;
-    }
-  }
-
-  void Bus::write(uint16_t addr, uint8_t data)
+  void BaseBus::cpuWrite(uint16_t addr, uint8_t data)
   {
     if (addr >= 0x0000 && addr <= 0xFFFF)
     {
@@ -99,35 +84,51 @@ namespace CPU
     }
   }
 
-  uint8_t Bus::read(uint16_t addr, bool bReadOnly)
+  uint8_t BaseBus::cpuRead(uint16_t addr, bool bReadOnly)
   {
     if (addr >= 0x0000 && addr <= 0xFFFF)
     {
-      //Logger::log()->debug("RAM: ${:04X} = {:02X}", addr, ram[addr]);
       return ram[addr];
     }
-
+    
     return 0x00;
   }
 
-  void Bus::dump(uint16_t offset)
+  void BaseBus::reset()
+  {
+    for (auto& i : ram)
+    {
+      i = 0x00;
+    }
+  }
+
+  void BaseBus::clock()
+  {
+  }
+
+  bool BaseBus::complete()
+  {
+    return true;
+  }
+
+  void BaseBus::dump(uint16_t offset)
   {
 #if defined LOGMODE
     Logger::log()->info("Actual ADDR: ${:04X}", offset);
-
+    
     uint16_t offsetStart = offset & 0xFFF0;
     uint16_t offsetStop = offset | 0x000F;
     dump(offsetStart, offsetStop);
 #endif
   }
 
-  void Bus::dump(uint16_t offsetStart, uint16_t offsetStop)
+  void BaseBus::dump(uint16_t offsetStart, uint16_t offsetStop)
   {
 #if defined LOGMODE
     Logger::log()->info("MEMORY LOG FOR: ${:04X} - ${:04X}", offsetStart, offsetStop);
     Logger::log()->info(" ADDR 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
-
-    std::map<uint16_t, Bus::MEMORYMAP> memory = memoryDump(offsetStart, offsetStop);
+    
+    std::map<uint16_t, BaseBus::MEMORYMAP> memory = memoryDump(offsetStart, offsetStop);
     for (auto& i : memory)
     {
       Logger::log()->info("{}", i.second);
@@ -135,11 +136,11 @@ namespace CPU
 #endif
   }
 
-  /*
-  std::string Bus::dumpRaw(uint16_t offsetStart, uint16_t offsetStop)
+/*
+  std::string BaseBus::dumpRaw(uint16_t offsetStart, uint16_t offsetStop)
   {
     std::string log = fmt::format("MEMORY LOG FOR: ${:04X} - ${:04X} \n${:04X}:", offsetStart, offsetStop, offsetStart);
-
+   
     uint16_t multiplier = 0;
     for (uint16_t i = offsetStart; i <= offsetStop; i++)
     {
@@ -159,12 +160,12 @@ namespace CPU
     }
 
     return log;
-  }
-  */
+   }
+*/
 
-/*
   // Update Memory Map
-  void Bus::updateMemoryMap(uint16_t offset, uint8_t rows, bool clear)
+/*
+  void BaseBus::updateMemoryMap(uint16_t offset, uint8_t rows, bool clear)
   {
     if (clear)
     {
@@ -186,39 +187,39 @@ namespace CPU
   }
 */
 
-  std::map<uint16_t, Bus::MEMORYMAP> Bus::memoryDump(uint16_t offsetStart, uint16_t offsetStop)
+  std::map<uint16_t, BaseBus::MEMORYMAP> BaseBus::memoryDump(uint16_t offsetStart, uint16_t offsetStop)
   {
-    std::map<uint16_t, Bus::MEMORYMAP> memory;
+    std::map<uint16_t, BaseBus::MEMORYMAP> memory;
     uint16_t addr = offsetStart & 0xFFF0,
-             multiplier = 0,
-             offset = 0x00;
-
+    multiplier = 0,
+    offset = 0x00;
+    
     while (addr <= (offsetStop & 0xFFF0))
     {
       offset = (offsetStart & 0xFFF0) + (multiplier * 0x0010);
-
+      
       memory[multiplier] = {
         offset,             // Offset $
-        read(addr++, true), // 0x00
-        read(addr++, true), // 0x01
-        read(addr++, true), // 0x02
-        read(addr++, true), // 0x03
-        read(addr++, true), // 0x04
-        read(addr++, true), // 0x05
-        read(addr++, true), // 0x06
-        read(addr++, true), // 0x07
-        read(addr++, true), // 0x08
-        read(addr++, true), // 0x09
-        read(addr++, true), // 0x0A
-        read(addr++, true), // 0x0B
-        read(addr++, true), // 0x0C
-        read(addr++, true), // 0x0D
-        read(addr++, true), // 0x0E
-        read(addr, true)  // 0x0F
+        cpuRead(addr++, true), // 0x00
+        cpuRead(addr++, true), // 0x01
+        cpuRead(addr++, true), // 0x02
+        cpuRead(addr++, true), // 0x03
+        cpuRead(addr++, true), // 0x04
+        cpuRead(addr++, true), // 0x05
+        cpuRead(addr++, true), // 0x06
+        cpuRead(addr++, true), // 0x07
+        cpuRead(addr++, true), // 0x08
+        cpuRead(addr++, true), // 0x09
+        cpuRead(addr++, true), // 0x0A
+        cpuRead(addr++, true), // 0x0B
+        cpuRead(addr++, true), // 0x0C
+        cpuRead(addr++, true), // 0x0D
+        cpuRead(addr++, true), // 0x0E
+        cpuRead(addr, true)  // 0x0F
       };
       //++addr;
       ++multiplier;
     }
     return memory;
   }
-}
+};

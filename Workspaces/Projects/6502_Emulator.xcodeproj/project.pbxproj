@@ -1,0 +1,2420 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		3DCC566FE6C748DCB7945317 /* Nightly */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 259A7A15B5904832BCAF5BAE /* Build configuration list for PBXAggregateTarget "Nightly" */;
+			buildPhases = (
+				0EDBC12D86B89EB7BF129D15 /* Generate ProcessorTests/CMakeFiles/Nightly */,
+			);
+			dependencies = (
+			);
+			name = Nightly;
+			productName = Nightly;
+		};
+		41CCA7CDBDD245D7B1B5C7A7 /* Experimental */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = E827F31ABE9D4FE2A3291ACE /* Build configuration list for PBXAggregateTarget "Experimental" */;
+			buildPhases = (
+				FB7CDF4815227BF6C92E6D3A /* Generate ProcessorTests/CMakeFiles/Experimental */,
+			);
+			dependencies = (
+			);
+			name = Experimental;
+			productName = Experimental;
+		};
+		A79585F0E9EA4BB29064831B /* ZERO_CHECK */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 4BD9F8322704415F9C1242F1 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */;
+			buildPhases = (
+				F722ACDE8D495B666C3A5122 /* Generate CMakeFiles/ZERO_CHECK */,
+			);
+			dependencies = (
+			);
+			name = ZERO_CHECK;
+			productName = ZERO_CHECK;
+		};
+		B03D4A76F80E4F07A51EEE55 /* Continuous */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 1266B62F03BF4ED0AD1DFFBD /* Build configuration list for PBXAggregateTarget "Continuous" */;
+			buildPhases = (
+				65B20C61E8C6C1EFA46655B6 /* Generate ProcessorTests/CMakeFiles/Continuous */,
+			);
+			dependencies = (
+			);
+			name = Continuous;
+			productName = Continuous;
+		};
+		EEE95CE5855D47E0B0ACA6AB /* ALL_BUILD */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = F7E54EF83252475C9998B741 /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */;
+			buildPhases = (
+				1ECD2A688C7C4E581EEDFE63 /* Generate CMakeFiles/ALL_BUILD */,
+			);
+			dependencies = (
+				03ECB35ABCC54D2999D4E07B /* PBXTargetDependency */,
+				D8C67F2BF8204413BF01A8D8 /* PBXTargetDependency */,
+				37553BBEF833411CA3EF82BD /* PBXTargetDependency */,
+				BE739D0DC8084B74B2E26019 /* PBXTargetDependency */,
+				42383419DC484C35BCD9153E /* PBXTargetDependency */,
+				8C8B2B7F143E4B9390E0339F /* PBXTargetDependency */,
+			);
+			name = ALL_BUILD;
+			productName = ALL_BUILD;
+		};
+		F87FCA3C2E5C41E9807EF7AE /* NightlyMemoryCheck */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 50A685C345344FA7994904C7 /* Build configuration list for PBXAggregateTarget "NightlyMemoryCheck" */;
+			buildPhases = (
+				34A72FA9F678D9A8D7474EC6 /* Generate ProcessorTests/CMakeFiles/NightlyMemoryCheck */,
+			);
+			dependencies = (
+			);
+			name = NightlyMemoryCheck;
+			productName = NightlyMemoryCheck;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		077DE88B75FB4D88B925BB13 /* /Users/txc/Projects/CPP/includes/imgui/imstb_textedit.h */ = {isa = PBXBuildFile; fileRef = 7230DF693E39409DB5466DD3 /* /Users/txc/Projects/CPP/includes/imgui/imstb_textedit.h */; };
+		0816BE61229D4BB0B91DB4FD /* /Users/txc/Projects/CPP/includes/imgui/imgui.h */ = {isa = PBXBuildFile; fileRef = B64321A66A7A4C179BCAE1BD /* /Users/txc/Projects/CPP/includes/imgui/imgui.h */; };
+		0EDDEA0E76F24ACAAA973409 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */ = {isa = PBXBuildFile; fileRef = 952577EA78DF497194F3539D /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */; };
+		0F0759FA37C14898B6B94C67 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 5F036B72684E42A1B4C8068A /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/CMakeLists.txt */; };
+		10F34D7D0E8F478DB57AAA07 /* /Users/txc/Projects/CPP/Processor/Processor.hpp */ = {isa = PBXBuildFile; fileRef = 8786C8707C094280980DC3F9 /* /Users/txc/Projects/CPP/Processor/Processor.hpp */; };
+		140412692EF94AFE9009E7C3 /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */ = {isa = PBXBuildFile; fileRef = C5701B9FA5434A6484F73495 /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */; };
+		15C16F62A59E48ECBD4C07CD /* /Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo/ImGuiDemo.mm */ = {isa = PBXBuildFile; fileRef = 38AD2C0C4B324855963DEC8A /* /Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo/ImGuiDemo.mm */; };
+		17ACCFD9717B430FAE5B7396 /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */ = {isa = PBXBuildFile; fileRef = A12200A099BD400D98A91178 /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */; };
+		238237224CA349D38ED635F0 /* /Users/txc/Projects/CPP/UserInterfaces/Demo/Demo.cpp */ = {isa = PBXBuildFile; fileRef = D6C51F02CB024236B409AE34 /* /Users/txc/Projects/CPP/UserInterfaces/Demo/Demo.cpp */; };
+		2B10F1228E4A414F84B52BC5 /* /Users/txc/Projects/CPP/Processor/Executioner.cpp */ = {isa = PBXBuildFile; fileRef = F01DD7059252448AA774F251 /* /Users/txc/Projects/CPP/Processor/Executioner.cpp */; };
+		2BC0031B38AB412FB920CC00 /* /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/CMakeFiles/Demo.dir/Info.plist */ = {isa = PBXBuildFile; fileRef = CF29A018F41A4073BE97180F /* /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/CMakeFiles/Demo.dir/Info.plist */; };
+		30DB75C134A74FD494062955 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */ = {isa = PBXBuildFile; fileRef = E28DE09A37374CC3A94CF9DE /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */; };
+		31DB48AFA7FA455EB868542C /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */ = {isa = PBXBuildFile; fileRef = D658BC805640481B84607A7A /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */; };
+		37738720E1C34566869BDD1F /* /Users/txc/Projects/CPP/ProcessorTests/ProcessorTests.cpp */ = {isa = PBXBuildFile; fileRef = AFB8668C57BC48B4B178B613 /* /Users/txc/Projects/CPP/ProcessorTests/ProcessorTests.cpp */; };
+		37D3DAB25986486C83A3B001 /* /Users/txc/Projects/CPP/includes/imgui/imconfig.h */ = {isa = PBXBuildFile; fileRef = 05105D3F68314E7DAE4B6DD2 /* /Users/txc/Projects/CPP/includes/imgui/imconfig.h */; };
+		3D2935300704400EA85EB12F /* /Users/txc/Projects/CPP/includes/imgui/imstb_rectpack.h */ = {isa = PBXBuildFile; fileRef = 65CC558DC63C4136A860E12E /* /Users/txc/Projects/CPP/includes/imgui/imstb_rectpack.h */; };
+		456A8E1D0D044F69A64C525D /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */ = {isa = PBXBuildFile; fileRef = A747D3C2A4BD4ABB9F4E701E /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */; };
+		4B9268415350464D8A112C38 /* /Users/txc/Projects/CPP/ProcessorTests/MainTest.cpp */ = {isa = PBXBuildFile; fileRef = 3433301ACD234E78A00EF503 /* /Users/txc/Projects/CPP/ProcessorTests/MainTest.cpp */; };
+		4DFF4ECFA5684C40B879B9DF /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.h */ = {isa = PBXBuildFile; fileRef = F4372CE209FA4A21A929F2A4 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.h */; };
+		5665417F408442AA9BCADF70 /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */ = {isa = PBXBuildFile; fileRef = 714B8217F15E406CB622C27D /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */; };
+		56EA980E309A46598AE25FE4 /* /Users/txc/Projects/CPP/Processor/Executioner.hpp */ = {isa = PBXBuildFile; fileRef = 48EF9EDCB713426FBCE684BE /* /Users/txc/Projects/CPP/Processor/Executioner.hpp */; };
+		5DE4D9F59E3D47818DA64D7A /* /Users/txc/Projects/CPP/ProcessorTests/FunctionalProcessorTests.hpp */ = {isa = PBXBuildFile; fileRef = F0C2E1287140462FAF29F4E8 /* /Users/txc/Projects/CPP/ProcessorTests/FunctionalProcessorTests.hpp */; };
+		5E21ADC8D5C44B8C9B674B55 /* /Users/txc/Projects/CPP/includes/imgui/imgui_internal.h */ = {isa = PBXBuildFile; fileRef = 160145503D744249A8BD43B8 /* /Users/txc/Projects/CPP/includes/imgui/imgui_internal.h */; };
+		6231B19C8BE0429C981BE446 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_metal.h */ = {isa = PBXBuildFile; fileRef = 45E8E708C4274DE38870CA0E /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_metal.h */; };
+		634A45DCBEB74C51959C8915 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Main.cpp */ = {isa = PBXBuildFile; fileRef = 6F57BF0ACA5F4A40B38BCD62 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Main.cpp */; };
+		6A61C88B4E394B3281A801AF /* /Users/txc/Projects/CPP/UserInterfaces/Demo/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 0B4F2C70B2CE4A4CB31D4903 /* /Users/txc/Projects/CPP/UserInterfaces/Demo/CMakeLists.txt */; };
+		6C65DE4376244EE3B2FAA4D1 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */ = {isa = PBXBuildFile; fileRef = 9A79B5A8BEF64CBC9E3E6E33 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */; };
+		6C89A7C96C7D4273A667925E /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */ = {isa = PBXBuildFile; fileRef = E1037EA45AE548268F6EAE28 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */; };
+		79372056446040BBAF4AAB48 /* /Users/txc/Projects/CPP/includes/imgui/imgui.h */ = {isa = PBXBuildFile; fileRef = 35D8F4539295473F8E59338E /* /Users/txc/Projects/CPP/includes/imgui/imgui.h */; };
+		7D566494AE604790AF8A2853 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */ = {isa = PBXBuildFile; fileRef = B5CA736392B3499596D88D26 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */; };
+		844D4FC9261645649B754085 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_opengl3.cpp */ = {isa = PBXBuildFile; fileRef = 601D674529A1471CBFD24471 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_opengl3.cpp */; };
+		863215882946445E87884222 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.h */ = {isa = PBXBuildFile; fileRef = EF1C94EEEA5A4BA28EEC5FA6 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.h */; };
+		86D11A3985D346C8ADE439F1 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_metal.mm */ = {isa = PBXBuildFile; fileRef = 051DBCBE8D8B49DCB0455FB1 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_metal.mm */; };
+		8838A1FA514043F0BA51D63A /* /Users/txc/Projects/CPP/Processor/Bus.hpp */ = {isa = PBXBuildFile; fileRef = 3184B14851BC4C1981BC5873 /* /Users/txc/Projects/CPP/Processor/Bus.hpp */; };
+		8D66EC0EF9824944B3BE4B56 /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = DA338415130F4C7D836DB7A0 /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */; };
+		90EBC820F3AA4F7E93E70D99 /* /Users/txc/Projects/CPP/includes/imgui/imconfig.h */ = {isa = PBXBuildFile; fileRef = 11A85F1DB69E4F358EE95A42 /* /Users/txc/Projects/CPP/includes/imgui/imconfig.h */; };
+		97BBED984E274C9E89160FF5 /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */ = {isa = PBXBuildFile; fileRef = 34AA15F7932C46019DBD82D2 /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */; };
+		98FD0D1FC31D4126B7E253A4 /* /Users/txc/Projects/CPP/Processor/Formatters.hpp */ = {isa = PBXBuildFile; fileRef = 8324A317390540F4ABC9A796 /* /Users/txc/Projects/CPP/Processor/Formatters.hpp */; };
+		9A6B93AE204F4C6486637F38 /* /Users/txc/Projects/CPP/Processor/Logger.hpp */ = {isa = PBXBuildFile; fileRef = C546E9C7F37E4F5082FE4AD6 /* /Users/txc/Projects/CPP/Processor/Logger.hpp */; };
+		B70330B6C2604FC9A3BD9227 /* /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/CMakeFiles/ImGuiDemo.dir/Info.plist */ = {isa = PBXBuildFile; fileRef = AAC82392D5AA464785D9D100 /* /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/CMakeFiles/ImGuiDemo.dir/Info.plist */; };
+		B9E0A5A89FB14C91B0B3327A /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Simulator.cpp */ = {isa = PBXBuildFile; fileRef = D39C0CD526B84E0085BC4472 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Simulator.cpp */; };
+		BCC51B0A6160403F9F75A17D /* /Users/txc/Projects/CPP/Processor/Bus.cpp */ = {isa = PBXBuildFile; fileRef = A603A0B84E214562BB496C32 /* /Users/txc/Projects/CPP/Processor/Bus.cpp */; };
+		C0911B9A3337416E96C9D94E /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Simulator.hpp */ = {isa = PBXBuildFile; fileRef = 1EF6AE2ED8274717B821F635 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Simulator.hpp */; };
+		C1841B5DE2F3428ABC8722C9 /* /Users/txc/Projects/CPP/ProcessorTests/MainTest.hpp */ = {isa = PBXBuildFile; fileRef = 7ECE6098CE8642BD80C58DC6 /* /Users/txc/Projects/CPP/ProcessorTests/MainTest.hpp */; };
+		C20E9863AB5340CB9495F6BC /* /Users/txc/Projects/CPP/includes/imgui/imstb_textedit.h */ = {isa = PBXBuildFile; fileRef = 03FC9280F2C04A48BD55581A /* /Users/txc/Projects/CPP/includes/imgui/imstb_textedit.h */; };
+		C438BB0D64A7464BA62B052A /* /Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = F451438FB5C04AE89149B876 /* /Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo/CMakeLists.txt */; };
+		CAA9E055AA0848B0B75F511A /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.h */ = {isa = PBXBuildFile; fileRef = 9905A637E7E6442DB605765E /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.h */; };
+		CFD26E60E029403B99101B26 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.h */ = {isa = PBXBuildFile; fileRef = D187664A71314AB1B46E6EC5 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.h */; };
+		D11E08AD3CA2405EA625B25C /* /Users/txc/Projects/CPP/includes/imgui/imstb_truetype.h */ = {isa = PBXBuildFile; fileRef = 63ED4121562E485688E9E529 /* /Users/txc/Projects/CPP/includes/imgui/imstb_truetype.h */; };
+		D16244730E564327AE3469E4 /* /Users/txc/Projects/CPP/ProcessorTests/ProcessorTests.hpp */ = {isa = PBXBuildFile; fileRef = 8ED49644CD494EAE81DD8B65 /* /Users/txc/Projects/CPP/ProcessorTests/ProcessorTests.hpp */; };
+		D77CD2A2C68548BBA025460B /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */ = {isa = PBXBuildFile; fileRef = 39B7DA275DCD4709BFE891FA /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */; };
+		D9AA6A59AF08423F9A9BBD32 /* /Users/txc/Projects/CPP/includes/imgui/imstb_rectpack.h */ = {isa = PBXBuildFile; fileRef = EF8281189BF849A6989570E9 /* /Users/txc/Projects/CPP/includes/imgui/imstb_rectpack.h */; };
+		DEB5E52D1F664931A3BBB861 /* /Users/txc/Projects/CPP/includes/imgui/imstb_truetype.h */ = {isa = PBXBuildFile; fileRef = 962EDE5EA21E4CE89AD1A867 /* /Users/txc/Projects/CPP/includes/imgui/imstb_truetype.h */; };
+		DF045CE37A7F47DC87B39AD6 /* /Users/txc/Projects/CPP/Processor/Singleton.hpp */ = {isa = PBXBuildFile; fileRef = DB9423A3C4654F11986F98B5 /* /Users/txc/Projects/CPP/Processor/Singleton.hpp */; };
+		E3E5953905D14A3EA02D49C0 /* /Users/txc/Projects/CPP/includes/imgui/imgui_internal.h */ = {isa = PBXBuildFile; fileRef = 677EDE2C499C454FAB58872F /* /Users/txc/Projects/CPP/includes/imgui/imgui_internal.h */; };
+		ED6375DE2C1C4B2F9C1BDCC5 /* /Users/txc/Projects/CPP/ProcessorTests/FunctionalProcessorTests.cpp */ = {isa = PBXBuildFile; fileRef = EA823ED7BB4B4C339DC358C9 /* /Users/txc/Projects/CPP/ProcessorTests/FunctionalProcessorTests.cpp */; };
+		EDDF8A54A6F4436F98581B4D /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */ = {isa = PBXBuildFile; fileRef = 1FAF2DAE7BCB4E9C8EEBFE9F /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */; };
+		EF5813CEBF4244A7BD993CA5 /* /Users/txc/Projects/CPP/Processor/Processor.cpp */ = {isa = PBXBuildFile; fileRef = 3268B087BD3F474C841735AD /* /Users/txc/Projects/CPP/Processor/Processor.cpp */; };
+		F073B3D212F3490480452321 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */ = {isa = PBXBuildFile; fileRef = EFDF1937D25D4AB2A82364E9 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */; };
+		F0F286746AE34C95B10378A8 /* /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/CMakeFiles/Simulator.dir/Info.plist */ = {isa = PBXBuildFile; fileRef = 9C8A0B338C15440BAF20E68F /* /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/CMakeFiles/Simulator.dir/Info.plist */; };
+		F58C1918DDFE478DAA776B27 /* /Users/txc/Projects/CPP/Processor/Types.hpp */ = {isa = PBXBuildFile; fileRef = 4470E7827E324D0DA2221DF3 /* /Users/txc/Projects/CPP/Processor/Types.hpp */; };
+		F6F4173C550D416787511714 /* /Users/txc/Projects/CPP/Processor/Exceptions.hpp */ = {isa = PBXBuildFile; fileRef = A012A33007424B2FAF59FA76 /* /Users/txc/Projects/CPP/Processor/Exceptions.hpp */; };
+		FB510CB7135A412C95759684 /* /Users/txc/Projects/CPP/Processor/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 04DD9D7A26054584A7F037AC /* /Users/txc/Projects/CPP/Processor/CMakeLists.txt */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildStyle section */
+		26D74BECD8E0488B9AB5A0C5 /* Release */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Release;
+		};
+		5FB0987207E844C19731450F /* MinSizeRel */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = MinSizeRel;
+		};
+		65B90ACA153A4E5D8C04FB37 /* RelWithDebInfo */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = RelWithDebInfo;
+		};
+		D17E47E740324F29B36B7417 /* Debug */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Debug;
+		};
+/* End PBXBuildStyle section */
+
+/* Begin PBXContainerItemProxy section */
+		006EA8A6D4F94BCF83EFCC6D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E07580073374DA2B08BB597 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E8AB458061304D6B8EC82968;
+			remoteInfo = Processor;
+		};
+		0928ECCEFCA448F3A835A4E5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E07580073374DA2B08BB597 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E8AB458061304D6B8EC82968;
+			remoteInfo = Processor;
+		};
+		1D2F221CF4ED40BF808C52C8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E07580073374DA2B08BB597 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5A65914968784E69864DA5D6;
+			remoteInfo = ImGuiDemo;
+		};
+		389B9173CA164062B9EF82C1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E07580073374DA2B08BB597 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E8AB458061304D6B8EC82968;
+			remoteInfo = Processor;
+		};
+		A1330DE63E7C477B8404C497 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E07580073374DA2B08BB597 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8B848E83F1824E9EB040E233;
+			remoteInfo = Demo;
+		};
+		B5BFE8FF533149A0B8E29E51 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E07580073374DA2B08BB597 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A3DCA7F5665D456EA5CCF03D;
+			remoteInfo = ProcessorTests;
+		};
+		BB4D150F19E343D5BAC521D3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E07580073374DA2B08BB597 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D9891E41E78D4129B63CFFAC;
+			remoteInfo = Simulator;
+		};
+		D505DA7B2FAA4479BE80BFBA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E07580073374DA2B08BB597 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E8AB458061304D6B8EC82968;
+			remoteInfo = Processor;
+		};
+		F4DA49003D5743E9AA3CE3DD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E07580073374DA2B08BB597 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A79585F0E9EA4BB29064831B;
+			remoteInfo = ZERO_CHECK;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		03FC9280F2C04A48BD55581A /* /Users/txc/Projects/CPP/includes/imgui/imstb_textedit.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imstb_textedit.h; path = includes/imgui/imstb_textedit.h; sourceTree = SOURCE_ROOT; };
+		04DD9D7A26054584A7F037AC /* /Users/txc/Projects/CPP/Processor/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = Processor/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		05105D3F68314E7DAE4B6DD2 /* /Users/txc/Projects/CPP/includes/imgui/imconfig.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imconfig.h; path = includes/imgui/imconfig.h; sourceTree = SOURCE_ROOT; };
+		051DBCBE8D8B49DCB0455FB1 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_metal.mm */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = imgui_impl_metal.mm; path = includes/imgui/backends/imgui_impl_metal.mm; sourceTree = SOURCE_ROOT; };
+		0B4F2C70B2CE4A4CB31D4903 /* /Users/txc/Projects/CPP/UserInterfaces/Demo/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = UserInterfaces/Demo/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		11A85F1DB69E4F358EE95A42 /* /Users/txc/Projects/CPP/includes/imgui/imconfig.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imconfig.h; path = includes/imgui/imconfig.h; sourceTree = SOURCE_ROOT; };
+		148A5A588F764535A4F3E117 /* ProcessorTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = ProcessorTests; sourceTree = BUILT_PRODUCTS_DIR; };
+		160145503D744249A8BD43B8 /* /Users/txc/Projects/CPP/includes/imgui/imgui_internal.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imgui_internal.h; path = includes/imgui/imgui_internal.h; sourceTree = SOURCE_ROOT; };
+		1EF6AE2ED8274717B821F635 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Simulator.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = Simulator.hpp; path = UserInterfaces/Simulator/Simulator.hpp; sourceTree = SOURCE_ROOT; };
+		1FAF2DAE7BCB4E9C8EEBFE9F /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_demo.cpp; path = includes/imgui/imgui_demo.cpp; sourceTree = SOURCE_ROOT; };
+		3184B14851BC4C1981BC5873 /* /Users/txc/Projects/CPP/Processor/Bus.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = Bus.hpp; path = Processor/Bus.hpp; sourceTree = SOURCE_ROOT; };
+		3268B087BD3F474C841735AD /* /Users/txc/Projects/CPP/Processor/Processor.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Processor.cpp; path = Processor/Processor.cpp; sourceTree = SOURCE_ROOT; };
+		3433301ACD234E78A00EF503 /* /Users/txc/Projects/CPP/ProcessorTests/MainTest.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = MainTest.cpp; path = ProcessorTests/MainTest.cpp; sourceTree = SOURCE_ROOT; };
+		34AA15F7932C46019DBD82D2 /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_demo.cpp; path = includes/imgui/imgui_demo.cpp; sourceTree = SOURCE_ROOT; };
+		35D8F4539295473F8E59338E /* /Users/txc/Projects/CPP/includes/imgui/imgui.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imgui.h; path = includes/imgui/imgui.h; sourceTree = SOURCE_ROOT; };
+		38AD2C0C4B324855963DEC8A /* /Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo/ImGuiDemo.mm */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = ImGuiDemo.mm; path = UserInterfaces/ImGuiDemo/ImGuiDemo.mm; sourceTree = SOURCE_ROOT; };
+		39B7DA275DCD4709BFE891FA /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_widgets.cpp; path = includes/imgui/imgui_widgets.cpp; sourceTree = SOURCE_ROOT; };
+		3C132961D0C44A9297BF2C7B /* /Users/txc/Projects/CPP/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		4470E7827E324D0DA2221DF3 /* /Users/txc/Projects/CPP/Processor/Types.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = Types.hpp; path = Processor/Types.hpp; sourceTree = SOURCE_ROOT; };
+		45E8E708C4274DE38870CA0E /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_metal.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imgui_impl_metal.h; path = includes/imgui/backends/imgui_impl_metal.h; sourceTree = SOURCE_ROOT; };
+		48EF9EDCB713426FBCE684BE /* /Users/txc/Projects/CPP/Processor/Executioner.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = Executioner.hpp; path = Processor/Executioner.hpp; sourceTree = SOURCE_ROOT; };
+		56C7E409C6CB4366B4E7BADB /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = ProcessorTests/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		5F036B72684E42A1B4C8068A /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = UserInterfaces/Simulator/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		601D674529A1471CBFD24471 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_opengl3.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_impl_opengl3.cpp; path = includes/imgui/backends/imgui_impl_opengl3.cpp; sourceTree = SOURCE_ROOT; };
+		63ED4121562E485688E9E529 /* /Users/txc/Projects/CPP/includes/imgui/imstb_truetype.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imstb_truetype.h; path = includes/imgui/imstb_truetype.h; sourceTree = SOURCE_ROOT; };
+		65CC558DC63C4136A860E12E /* /Users/txc/Projects/CPP/includes/imgui/imstb_rectpack.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imstb_rectpack.h; path = includes/imgui/imstb_rectpack.h; sourceTree = SOURCE_ROOT; };
+		677EDE2C499C454FAB58872F /* /Users/txc/Projects/CPP/includes/imgui/imgui_internal.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imgui_internal.h; path = includes/imgui/imgui_internal.h; sourceTree = SOURCE_ROOT; };
+		6F57BF0ACA5F4A40B38BCD62 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Main.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Main.cpp; path = UserInterfaces/Simulator/Main.cpp; sourceTree = SOURCE_ROOT; };
+		714B8217F15E406CB622C27D /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui.cpp; path = includes/imgui/imgui.cpp; sourceTree = SOURCE_ROOT; };
+		7230DF693E39409DB5466DD3 /* /Users/txc/Projects/CPP/includes/imgui/imstb_textedit.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imstb_textedit.h; path = includes/imgui/imstb_textedit.h; sourceTree = SOURCE_ROOT; };
+		72B8B24626CC430EA85785AE /* Simulator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = Simulator; sourceTree = BUILT_PRODUCTS_DIR; };
+		7ECE6098CE8642BD80C58DC6 /* /Users/txc/Projects/CPP/ProcessorTests/MainTest.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = MainTest.hpp; path = ProcessorTests/MainTest.hpp; sourceTree = SOURCE_ROOT; };
+		8324A317390540F4ABC9A796 /* /Users/txc/Projects/CPP/Processor/Formatters.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = Formatters.hpp; path = Processor/Formatters.hpp; sourceTree = SOURCE_ROOT; };
+		8786C8707C094280980DC3F9 /* /Users/txc/Projects/CPP/Processor/Processor.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = Processor.hpp; path = Processor/Processor.hpp; sourceTree = SOURCE_ROOT; };
+		8ED49644CD494EAE81DD8B65 /* /Users/txc/Projects/CPP/ProcessorTests/ProcessorTests.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = ProcessorTests.hpp; path = ProcessorTests/ProcessorTests.hpp; sourceTree = SOURCE_ROOT; };
+		952577EA78DF497194F3539D /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_freetype.cpp; path = includes/imgui/misc/freetype/imgui_freetype.cpp; sourceTree = SOURCE_ROOT; };
+		962EDE5EA21E4CE89AD1A867 /* /Users/txc/Projects/CPP/includes/imgui/imstb_truetype.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imstb_truetype.h; path = includes/imgui/imstb_truetype.h; sourceTree = SOURCE_ROOT; };
+		9905A637E7E6442DB605765E /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imgui_impl_glfw.h; path = includes/imgui/backends/imgui_impl_glfw.h; sourceTree = SOURCE_ROOT; };
+		9A79B5A8BEF64CBC9E3E6E33 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_tables.cpp; path = includes/imgui/imgui_tables.cpp; sourceTree = SOURCE_ROOT; };
+		9C8A0B338C15440BAF20E68F /* /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/CMakeFiles/Simulator.dir/Info.plist */ = {isa = PBXFileReference; explicitFileType = sourcecode.text.plist; fileEncoding = 4; name = Info.plist; path = xcode/UserInterfaces/Simulator/CMakeFiles/Simulator.dir/Info.plist; sourceTree = SOURCE_ROOT; };
+		9D85A9512BD34FF997A43CB9 /* Processor */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libProcessor.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		A012A33007424B2FAF59FA76 /* /Users/txc/Projects/CPP/Processor/Exceptions.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = Exceptions.hpp; path = Processor/Exceptions.hpp; sourceTree = SOURCE_ROOT; };
+		A12200A099BD400D98A91178 /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui.cpp; path = includes/imgui/imgui.cpp; sourceTree = SOURCE_ROOT; };
+		A603A0B84E214562BB496C32 /* /Users/txc/Projects/CPP/Processor/Bus.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Bus.cpp; path = Processor/Bus.cpp; sourceTree = SOURCE_ROOT; };
+		A747D3C2A4BD4ABB9F4E701E /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_widgets.cpp; path = includes/imgui/imgui_widgets.cpp; sourceTree = SOURCE_ROOT; };
+		AAC82392D5AA464785D9D100 /* /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/CMakeFiles/ImGuiDemo.dir/Info.plist */ = {isa = PBXFileReference; explicitFileType = sourcecode.text.plist; fileEncoding = 4; name = Info.plist; path = xcode/UserInterfaces/ImGuiDemo/CMakeFiles/ImGuiDemo.dir/Info.plist; sourceTree = SOURCE_ROOT; };
+		AFB8668C57BC48B4B178B613 /* /Users/txc/Projects/CPP/ProcessorTests/ProcessorTests.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = ProcessorTests.cpp; path = ProcessorTests/ProcessorTests.cpp; sourceTree = SOURCE_ROOT; };
+		B1DC976802B94375AFC74848 /* Demo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = Demo; sourceTree = BUILT_PRODUCTS_DIR; };
+		B5CA736392B3499596D88D26 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_impl_glfw.cpp; path = includes/imgui/backends/imgui_impl_glfw.cpp; sourceTree = SOURCE_ROOT; };
+		B64321A66A7A4C179BCAE1BD /* /Users/txc/Projects/CPP/includes/imgui/imgui.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imgui.h; path = includes/imgui/imgui.h; sourceTree = SOURCE_ROOT; };
+		C546E9C7F37E4F5082FE4AD6 /* /Users/txc/Projects/CPP/Processor/Logger.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = Logger.hpp; path = Processor/Logger.hpp; sourceTree = SOURCE_ROOT; };
+		C5701B9FA5434A6484F73495 /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_draw.cpp; path = includes/imgui/imgui_draw.cpp; sourceTree = SOURCE_ROOT; };
+		C6ECB8EAAC8F41F0B4E3EA1D /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = ProcessorTests/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		C8A40D39EF81468D87CA622E /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = ProcessorTests/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		CF29A018F41A4073BE97180F /* /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/CMakeFiles/Demo.dir/Info.plist */ = {isa = PBXFileReference; explicitFileType = sourcecode.text.plist; fileEncoding = 4; name = Info.plist; path = xcode/UserInterfaces/Demo/CMakeFiles/Demo.dir/Info.plist; sourceTree = SOURCE_ROOT; };
+		D187664A71314AB1B46E6EC5 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imgui_freetype.h; path = includes/imgui/misc/freetype/imgui_freetype.h; sourceTree = SOURCE_ROOT; };
+		D39C0CD526B84E0085BC4472 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Simulator.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Simulator.cpp; path = UserInterfaces/Simulator/Simulator.cpp; sourceTree = SOURCE_ROOT; };
+		D658BC805640481B84607A7A /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_draw.cpp; path = includes/imgui/imgui_draw.cpp; sourceTree = SOURCE_ROOT; };
+		D6C51F02CB024236B409AE34 /* /Users/txc/Projects/CPP/UserInterfaces/Demo/Demo.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Demo.cpp; path = UserInterfaces/Demo/Demo.cpp; sourceTree = SOURCE_ROOT; };
+		DA338415130F4C7D836DB7A0 /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = ProcessorTests/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		DB9423A3C4654F11986F98B5 /* /Users/txc/Projects/CPP/Processor/Singleton.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = Singleton.hpp; path = Processor/Singleton.hpp; sourceTree = SOURCE_ROOT; };
+		E1037EA45AE548268F6EAE28 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_freetype.cpp; path = includes/imgui/misc/freetype/imgui_freetype.cpp; sourceTree = SOURCE_ROOT; };
+		E28DE09A37374CC3A94CF9DE /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_impl_glfw.cpp; path = includes/imgui/backends/imgui_impl_glfw.cpp; sourceTree = SOURCE_ROOT; };
+		EA823ED7BB4B4C339DC358C9 /* /Users/txc/Projects/CPP/ProcessorTests/FunctionalProcessorTests.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = FunctionalProcessorTests.cpp; path = ProcessorTests/FunctionalProcessorTests.cpp; sourceTree = SOURCE_ROOT; };
+		EF1C94EEEA5A4BA28EEC5FA6 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imgui_impl_glfw.h; path = includes/imgui/backends/imgui_impl_glfw.h; sourceTree = SOURCE_ROOT; };
+		EF8281189BF849A6989570E9 /* /Users/txc/Projects/CPP/includes/imgui/imstb_rectpack.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imstb_rectpack.h; path = includes/imgui/imstb_rectpack.h; sourceTree = SOURCE_ROOT; };
+		EFDF1937D25D4AB2A82364E9 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = imgui_tables.cpp; path = includes/imgui/imgui_tables.cpp; sourceTree = SOURCE_ROOT; };
+		F01DD7059252448AA774F251 /* /Users/txc/Projects/CPP/Processor/Executioner.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = Executioner.cpp; path = Processor/Executioner.cpp; sourceTree = SOURCE_ROOT; };
+		F0C2E1287140462FAF29F4E8 /* /Users/txc/Projects/CPP/ProcessorTests/FunctionalProcessorTests.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; name = FunctionalProcessorTests.hpp; path = ProcessorTests/FunctionalProcessorTests.hpp; sourceTree = SOURCE_ROOT; };
+		F4372CE209FA4A21A929F2A4 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = imgui_freetype.h; path = includes/imgui/misc/freetype/imgui_freetype.h; sourceTree = SOURCE_ROOT; };
+		F451438FB5C04AE89149B876 /* /Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = UserInterfaces/ImGuiDemo/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		FBF04B01784B42DC8ABBD077 /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = ProcessorTests/CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		FEDBF983BD37442E8C17603A /* ImGuiDemo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = ImGuiDemo; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2ED0E73FB6F4420EB05D3813 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4BD5D881446C422BB8B6E7EA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B0579C573022462998C81F25 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C91BA109356F4007AF29F098 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DE4769F2EC3A46ED84E3C85B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		182473FDD9FF495AADE9E2FA /* Header Files */ = {
+			isa = PBXGroup;
+			children = (
+				9905A637E7E6442DB605765E /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.h */,
+				45E8E708C4274DE38870CA0E /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_metal.h */,
+				05105D3F68314E7DAE4B6DD2 /* /Users/txc/Projects/CPP/includes/imgui/imconfig.h */,
+				35D8F4539295473F8E59338E /* /Users/txc/Projects/CPP/includes/imgui/imgui.h */,
+				677EDE2C499C454FAB58872F /* /Users/txc/Projects/CPP/includes/imgui/imgui_internal.h */,
+				EF8281189BF849A6989570E9 /* /Users/txc/Projects/CPP/includes/imgui/imstb_rectpack.h */,
+				03FC9280F2C04A48BD55581A /* /Users/txc/Projects/CPP/includes/imgui/imstb_textedit.h */,
+				63ED4121562E485688E9E529 /* /Users/txc/Projects/CPP/includes/imgui/imstb_truetype.h */,
+				D187664A71314AB1B46E6EC5 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.h */,
+			);
+			name = "Header Files";
+			sourceTree = "<group>";
+		};
+		1A02CC8687B24A2A87DA2F13 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				6F57BF0ACA5F4A40B38BCD62 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Main.cpp */,
+				D39C0CD526B84E0085BC4472 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Simulator.cpp */,
+				E28DE09A37374CC3A94CF9DE /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */,
+				601D674529A1471CBFD24471 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_opengl3.cpp */,
+				A12200A099BD400D98A91178 /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */,
+				34AA15F7932C46019DBD82D2 /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */,
+				D658BC805640481B84607A7A /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */,
+				EFDF1937D25D4AB2A82364E9 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */,
+				39B7DA275DCD4709BFE891FA /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */,
+				952577EA78DF497194F3539D /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		1B9FA4A558E54CEC91BFFB08 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B1DC976802B94375AFC74848 /* Demo */,
+				FEDBF983BD37442E8C17603A /* ImGuiDemo */,
+				9D85A9512BD34FF997A43CB9 /* Processor */,
+				148A5A588F764535A4F3E117 /* ProcessorTests */,
+				72B8B24626CC430EA85785AE /* Simulator */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1D14A2AF8F0C4C80ACB3FB9F /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		23AE179CCC6D4BDA9EA28C05 /* ProcessorTests */ = {
+			isa = PBXGroup;
+			children = (
+				D6DAA4B61F804CD5B93674B0 /* Header Files */,
+				EF0D187625C0455F82F2F36C /* Source Files */,
+				DA338415130F4C7D836DB7A0 /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */,
+			);
+			name = ProcessorTests;
+			sourceTree = "<group>";
+		};
+		27153ABD9D2C4E24B216941F /* Header Files */ = {
+			isa = PBXGroup;
+			children = (
+				1EF6AE2ED8274717B821F635 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Simulator.hpp */,
+				EF1C94EEEA5A4BA28EEC5FA6 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.h */,
+				11A85F1DB69E4F358EE95A42 /* /Users/txc/Projects/CPP/includes/imgui/imconfig.h */,
+				B64321A66A7A4C179BCAE1BD /* /Users/txc/Projects/CPP/includes/imgui/imgui.h */,
+				160145503D744249A8BD43B8 /* /Users/txc/Projects/CPP/includes/imgui/imgui_internal.h */,
+				65CC558DC63C4136A860E12E /* /Users/txc/Projects/CPP/includes/imgui/imstb_rectpack.h */,
+				7230DF693E39409DB5466DD3 /* /Users/txc/Projects/CPP/includes/imgui/imstb_textedit.h */,
+				962EDE5EA21E4CE89AD1A867 /* /Users/txc/Projects/CPP/includes/imgui/imstb_truetype.h */,
+				F4372CE209FA4A21A929F2A4 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.h */,
+			);
+			name = "Header Files";
+			sourceTree = "<group>";
+		};
+		36773EAE21BD4D8FAFA03A92 /* NightlyMemoryCheck */ = {
+			isa = PBXGroup;
+			children = (
+				9806A2FB01C94826890FF5C4 /* CMake Rules */,
+				FBF04B01784B42DC8ABBD077 /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */,
+			);
+			name = NightlyMemoryCheck;
+			sourceTree = "<group>";
+		};
+		470B085D4956491FA531053C /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				38AD2C0C4B324855963DEC8A /* /Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo/ImGuiDemo.mm */,
+				B5CA736392B3499596D88D26 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */,
+				051DBCBE8D8B49DCB0455FB1 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_metal.mm */,
+				714B8217F15E406CB622C27D /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */,
+				1FAF2DAE7BCB4E9C8EEBFE9F /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */,
+				C5701B9FA5434A6484F73495 /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */,
+				9A79B5A8BEF64CBC9E3E6E33 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */,
+				A747D3C2A4BD4ABB9F4E701E /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */,
+				E1037EA45AE548268F6EAE28 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		49C12ACB84494B2A8A6F8715 /* Processor */ = {
+			isa = PBXGroup;
+			children = (
+				C03C1C8B413A4074813945AC /* Source Files */,
+				A3F022566F974A1CBFEB60C1 /* Header Files */,
+				04DD9D7A26054584A7F037AC /* /Users/txc/Projects/CPP/Processor/CMakeLists.txt */,
+			);
+			name = Processor;
+			sourceTree = "<group>";
+		};
+		4D7B2344D95E459C8E732880 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AAC82392D5AA464785D9D100 /* /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/CMakeFiles/ImGuiDemo.dir/Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		6379C459462448D595241ADA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9C8A0B338C15440BAF20E68F /* /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/CMakeFiles/Simulator.dir/Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		661182C137A54932ABB42F28 = {
+			isa = PBXGroup;
+			children = (
+				766602150DB74AD19164705A /* ALL_BUILD */,
+				49C12ACB84494B2A8A6F8715 /* Processor */,
+				23AE179CCC6D4BDA9EA28C05 /* ProcessorTests */,
+				C14A6461D62848AD8A0AB56C /* Experimental */,
+				B6A6A43C8714425F977BC28C /* Nightly */,
+				A83C08DF8B4A411392B2546A /* Continuous */,
+				36773EAE21BD4D8FAFA03A92 /* NightlyMemoryCheck */,
+				808339EB4F8E437B8F3A60FD /* Demo */,
+				BA0070E806AF4F10ACA2E644 /* ImGuiDemo */,
+				A09B1DA245B24532AF727295 /* Simulator */,
+				1B9FA4A558E54CEC91BFFB08 /* Products */,
+				CE4A8638D7674A2F8A332029 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		6BF13AF3905242DD815D681D /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		766602150DB74AD19164705A /* ALL_BUILD */ = {
+			isa = PBXGroup;
+			children = (
+				D93A9C19EAF441BDA90AE89A /* CMake Rules */,
+				3C132961D0C44A9297BF2C7B /* /Users/txc/Projects/CPP/CMakeLists.txt */,
+			);
+			name = ALL_BUILD;
+			sourceTree = "<group>";
+		};
+		808339EB4F8E437B8F3A60FD /* Demo */ = {
+			isa = PBXGroup;
+			children = (
+				A7F7BC5E7EA84BF0AEFA256E /* Source Files */,
+				EACE1FB4BAB8405FA16D9C27 /* Resources */,
+				0B4F2C70B2CE4A4CB31D4903 /* /Users/txc/Projects/CPP/UserInterfaces/Demo/CMakeLists.txt */,
+			);
+			name = Demo;
+			sourceTree = "<group>";
+		};
+		9806A2FB01C94826890FF5C4 /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		A09B1DA245B24532AF727295 /* Simulator */ = {
+			isa = PBXGroup;
+			children = (
+				1A02CC8687B24A2A87DA2F13 /* Source Files */,
+				27153ABD9D2C4E24B216941F /* Header Files */,
+				6379C459462448D595241ADA /* Resources */,
+				5F036B72684E42A1B4C8068A /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/CMakeLists.txt */,
+			);
+			name = Simulator;
+			sourceTree = "<group>";
+		};
+		A3F022566F974A1CBFEB60C1 /* Header Files */ = {
+			isa = PBXGroup;
+			children = (
+				3184B14851BC4C1981BC5873 /* /Users/txc/Projects/CPP/Processor/Bus.hpp */,
+				A012A33007424B2FAF59FA76 /* /Users/txc/Projects/CPP/Processor/Exceptions.hpp */,
+				48EF9EDCB713426FBCE684BE /* /Users/txc/Projects/CPP/Processor/Executioner.hpp */,
+				8324A317390540F4ABC9A796 /* /Users/txc/Projects/CPP/Processor/Formatters.hpp */,
+				C546E9C7F37E4F5082FE4AD6 /* /Users/txc/Projects/CPP/Processor/Logger.hpp */,
+				8786C8707C094280980DC3F9 /* /Users/txc/Projects/CPP/Processor/Processor.hpp */,
+				DB9423A3C4654F11986F98B5 /* /Users/txc/Projects/CPP/Processor/Singleton.hpp */,
+				4470E7827E324D0DA2221DF3 /* /Users/txc/Projects/CPP/Processor/Types.hpp */,
+			);
+			name = "Header Files";
+			sourceTree = "<group>";
+		};
+		A7F7BC5E7EA84BF0AEFA256E /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				D6C51F02CB024236B409AE34 /* /Users/txc/Projects/CPP/UserInterfaces/Demo/Demo.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		A83C08DF8B4A411392B2546A /* Continuous */ = {
+			isa = PBXGroup;
+			children = (
+				6BF13AF3905242DD815D681D /* CMake Rules */,
+				C6ECB8EAAC8F41F0B4E3EA1D /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */,
+			);
+			name = Continuous;
+			sourceTree = "<group>";
+		};
+		B6A6A43C8714425F977BC28C /* Nightly */ = {
+			isa = PBXGroup;
+			children = (
+				1D14A2AF8F0C4C80ACB3FB9F /* CMake Rules */,
+				C8A40D39EF81468D87CA622E /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */,
+			);
+			name = Nightly;
+			sourceTree = "<group>";
+		};
+		BA0070E806AF4F10ACA2E644 /* ImGuiDemo */ = {
+			isa = PBXGroup;
+			children = (
+				470B085D4956491FA531053C /* Source Files */,
+				182473FDD9FF495AADE9E2FA /* Header Files */,
+				4D7B2344D95E459C8E732880 /* Resources */,
+				F451438FB5C04AE89149B876 /* /Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo/CMakeLists.txt */,
+			);
+			name = ImGuiDemo;
+			sourceTree = "<group>";
+		};
+		C03C1C8B413A4074813945AC /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				A603A0B84E214562BB496C32 /* /Users/txc/Projects/CPP/Processor/Bus.cpp */,
+				F01DD7059252448AA774F251 /* /Users/txc/Projects/CPP/Processor/Executioner.cpp */,
+				3268B087BD3F474C841735AD /* /Users/txc/Projects/CPP/Processor/Processor.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		C14A6461D62848AD8A0AB56C /* Experimental */ = {
+			isa = PBXGroup;
+			children = (
+				ED28190DD93C4DBB8254A6A8 /* CMake Rules */,
+				56C7E409C6CB4366B4E7BADB /* /Users/txc/Projects/CPP/ProcessorTests/CMakeLists.txt */,
+			);
+			name = Experimental;
+			sourceTree = "<group>";
+		};
+		CE4A8638D7674A2F8A332029 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D6DAA4B61F804CD5B93674B0 /* Header Files */ = {
+			isa = PBXGroup;
+			children = (
+				F0C2E1287140462FAF29F4E8 /* /Users/txc/Projects/CPP/ProcessorTests/FunctionalProcessorTests.hpp */,
+				7ECE6098CE8642BD80C58DC6 /* /Users/txc/Projects/CPP/ProcessorTests/MainTest.hpp */,
+				8ED49644CD494EAE81DD8B65 /* /Users/txc/Projects/CPP/ProcessorTests/ProcessorTests.hpp */,
+			);
+			name = "Header Files";
+			sourceTree = "<group>";
+		};
+		D93A9C19EAF441BDA90AE89A /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		EACE1FB4BAB8405FA16D9C27 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				CF29A018F41A4073BE97180F /* /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/CMakeFiles/Demo.dir/Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		ED28190DD93C4DBB8254A6A8 /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		EF0D187625C0455F82F2F36C /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				EA823ED7BB4B4C339DC358C9 /* /Users/txc/Projects/CPP/ProcessorTests/FunctionalProcessorTests.cpp */,
+				3433301ACD234E78A00EF503 /* /Users/txc/Projects/CPP/ProcessorTests/MainTest.cpp */,
+				AFB8668C57BC48B4B178B613 /* /Users/txc/Projects/CPP/ProcessorTests/ProcessorTests.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5A65914968784E69864DA5D6 /* ImGuiDemo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BA20505BF51D47FA94DC5537 /* Build configuration list for PBXNativeTarget "ImGuiDemo" */;
+			buildPhases = (
+				24B589F2F89D408FB8779833 /* Sources */,
+				DE4769F2EC3A46ED84E3C85B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ImGuiDemo;
+			productName = ImGuiDemo;
+			productReference = FEDBF983BD37442E8C17603A /* ImGuiDemo */;
+			productType = "com.apple.product-type.application";
+		};
+		8B848E83F1824E9EB040E233 /* Demo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8C7C51150BDE49E9A3E7E317 /* Build configuration list for PBXNativeTarget "Demo" */;
+			buildPhases = (
+				9E2C900590CB42E2848480BC /* Sources */,
+				4BD5D881446C422BB8B6E7EA /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EC28F7ED0D6B490A96E341AE /* PBXTargetDependency */,
+			);
+			name = Demo;
+			productName = Demo;
+			productReference = B1DC976802B94375AFC74848 /* Demo */;
+			productType = "com.apple.product-type.application";
+		};
+		A3DCA7F5665D456EA5CCF03D /* ProcessorTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 86A605ACA6EE42DF8A47EF21 /* Build configuration list for PBXNativeTarget "ProcessorTests" */;
+			buildPhases = (
+				12522274D3A54CECA023C17B /* Sources */,
+				C91BA109356F4007AF29F098 /* Frameworks */,
+				C45CB9CA85F6F1A17482834C /* CMake PostBuild Rules */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1428340F48094C85ABBEBEAB /* PBXTargetDependency */,
+			);
+			name = ProcessorTests;
+			productName = ProcessorTests;
+			productReference = 148A5A588F764535A4F3E117 /* ProcessorTests */;
+			productType = "com.apple.product-type.tool";
+		};
+		D9891E41E78D4129B63CFFAC /* Simulator */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1CEF34336AB94256850C5D7B /* Build configuration list for PBXNativeTarget "Simulator" */;
+			buildPhases = (
+				CAB9BE4208334CBCA5FCE507 /* Sources */,
+				2ED0E73FB6F4420EB05D3813 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6C8C49B8387C44698119A55E /* PBXTargetDependency */,
+			);
+			name = Simulator;
+			productName = Simulator;
+			productReference = 72B8B24626CC430EA85785AE /* Simulator */;
+			productType = "com.apple.product-type.application";
+		};
+		E8AB458061304D6B8EC82968 /* Processor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1891BD170A8A4BB9AF00A7A1 /* Build configuration list for PBXNativeTarget "Processor" */;
+			buildPhases = (
+				0A8067FE761C407085906C90 /* Sources */,
+				B0579C573022462998C81F25 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Processor;
+			productName = Processor;
+			productReference = 9D85A9512BD34FF997A43CB9 /* Processor */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1E07580073374DA2B08BB597 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1420;
+			};
+			buildConfigurationList = 29368C70AE644516B71239D4 /* Build configuration list for PBXProject "6502_Emulator" */;
+			buildSettings = {
+			};
+			buildStyles = (
+				D17E47E740324F29B36B7417 /* Debug */,
+				26D74BECD8E0488B9AB5A0C5 /* Release */,
+				5FB0987207E844C19731450F /* MinSizeRel */,
+				65B90ACA153A4E5D8C04FB37 /* RelWithDebInfo */,
+			);
+			compatibilityVersion = "Xcode 3.2";
+			hasScannedForEncodings = 0;
+			mainGroup = 661182C137A54932ABB42F28;
+			projectDirPath = /Users/txc/Projects/CPP;
+			projectRoot = "";
+			targets = (
+				EEE95CE5855D47E0B0ACA6AB /* ALL_BUILD */,
+				B03D4A76F80E4F07A51EEE55 /* Continuous */,
+				8B848E83F1824E9EB040E233 /* Demo */,
+				41CCA7CDBDD245D7B1B5C7A7 /* Experimental */,
+				5A65914968784E69864DA5D6 /* ImGuiDemo */,
+				3DCC566FE6C748DCB7945317 /* Nightly */,
+				F87FCA3C2E5C41E9807EF7AE /* NightlyMemoryCheck */,
+				E8AB458061304D6B8EC82968 /* Processor */,
+				A3DCA7F5665D456EA5CCF03D /* ProcessorTests */,
+				D9891E41E78D4129B63CFFAC /* Simulator */,
+				A79585F0E9EA4BB29064831B /* ZERO_CHECK */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		09FB783FD30DC6E66DF354AF = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		0EDBC12D86B89EB7BF129D15 /* Generate ProcessorTests/CMakeFiles/Nightly */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate ProcessorTests/CMakeFiles/Nightly";
+			outputPaths = (
+/Users/txc/Projects/CPP/xcode/ProcessorTests/CMakeFiles/Nightly			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Nightly
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Nightly
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Nightly
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Nightly
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+		1ECD2A688C7C4E581EEDFE63 /* Generate CMakeFiles/ALL_BUILD */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ALL_BUILD";
+			outputPaths = (
+/Users/txc/Projects/CPP/xcode/CMakeFiles/ALL_BUILD			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/txc/Projects/CPP/xcode
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/txc/Projects/CPP/xcode
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/txc/Projects/CPP/xcode
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/txc/Projects/CPP/xcode
+  echo Build\\ all\\ projects
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+		23E0E19C1FE635DB84934AD9 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		323E6CE94951678BF055CC89 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		34A72FA9F678D9A8D7474EC6 /* Generate ProcessorTests/CMakeFiles/NightlyMemoryCheck */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate ProcessorTests/CMakeFiles/NightlyMemoryCheck";
+			outputPaths = (
+/Users/txc/Projects/CPP/xcode/ProcessorTests/CMakeFiles/NightlyMemoryCheck			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D NightlyMemoryCheck
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D NightlyMemoryCheck
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D NightlyMemoryCheck
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D NightlyMemoryCheck
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+		3C0110FC8322DE7E50886E21 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		65B20C61E8C6C1EFA46655B6 /* Generate ProcessorTests/CMakeFiles/Continuous */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate ProcessorTests/CMakeFiles/Continuous";
+			outputPaths = (
+/Users/txc/Projects/CPP/xcode/ProcessorTests/CMakeFiles/Continuous			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Continuous
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Continuous
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Continuous
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Continuous
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+		9B50530E35CC49C82C2FACCF = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		A68D7F74133ED74D8658B427 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		C45CB9CA85F6F1A17482834C /* CMake PostBuild Rules */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "CMake PostBuild Rules";
+			outputPaths = (
+"/Users/txc/Projects/CPP/xcode/ProcessorTests/ProcessorTests_tests-b12d07c.cmake"			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/cmake -D TEST_TARGET=ProcessorTests -D TEST_EXECUTABLE=/Users/txc/Projects/CPP/xcode/ProcessorTests/Debug/ProcessorTests -D TEST_EXECUTOR= -D TEST_WORKING_DIR=/Users/txc/Projects/CPP/xcode/ProcessorTests -D TEST_SPEC= -D TEST_EXTRA_ARGS= -D TEST_PROPERTIES= -D TEST_PREFIX= -D TEST_SUFFIX= -D TEST_LIST=ProcessorTests_TESTS -D TEST_REPORTER= -D TEST_OUTPUT_DIR= -D TEST_OUTPUT_PREFIX= -D TEST_OUTPUT_SUFFIX= -D TEST_DL_PATHS= -D CTEST_FILE=/Users/txc/Projects/CPP/xcode/ProcessorTests/ProcessorTests_tests-b12d07c.cmake -P /usr/local/lib/cmake/Catch2/CatchAddTests.cmake
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/cmake -D TEST_TARGET=ProcessorTests -D TEST_EXECUTABLE=/Users/txc/Projects/CPP/xcode/ProcessorTests/Release/ProcessorTests -D TEST_EXECUTOR= -D TEST_WORKING_DIR=/Users/txc/Projects/CPP/xcode/ProcessorTests -D TEST_SPEC= -D TEST_EXTRA_ARGS= -D TEST_PROPERTIES= -D TEST_PREFIX= -D TEST_SUFFIX= -D TEST_LIST=ProcessorTests_TESTS -D TEST_REPORTER= -D TEST_OUTPUT_DIR= -D TEST_OUTPUT_PREFIX= -D TEST_OUTPUT_SUFFIX= -D TEST_DL_PATHS= -D CTEST_FILE=/Users/txc/Projects/CPP/xcode/ProcessorTests/ProcessorTests_tests-b12d07c.cmake -P /usr/local/lib/cmake/Catch2/CatchAddTests.cmake
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/cmake -D TEST_TARGET=ProcessorTests -D TEST_EXECUTABLE=/Users/txc/Projects/CPP/xcode/ProcessorTests/MinSizeRel/ProcessorTests -D TEST_EXECUTOR= -D TEST_WORKING_DIR=/Users/txc/Projects/CPP/xcode/ProcessorTests -D TEST_SPEC= -D TEST_EXTRA_ARGS= -D TEST_PROPERTIES= -D TEST_PREFIX= -D TEST_SUFFIX= -D TEST_LIST=ProcessorTests_TESTS -D TEST_REPORTER= -D TEST_OUTPUT_DIR= -D TEST_OUTPUT_PREFIX= -D TEST_OUTPUT_SUFFIX= -D TEST_DL_PATHS= -D CTEST_FILE=/Users/txc/Projects/CPP/xcode/ProcessorTests/ProcessorTests_tests-b12d07c.cmake -P /usr/local/lib/cmake/Catch2/CatchAddTests.cmake
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/cmake -D TEST_TARGET=ProcessorTests -D TEST_EXECUTABLE=/Users/txc/Projects/CPP/xcode/ProcessorTests/RelWithDebInfo/ProcessorTests -D TEST_EXECUTOR= -D TEST_WORKING_DIR=/Users/txc/Projects/CPP/xcode/ProcessorTests -D TEST_SPEC= -D TEST_EXTRA_ARGS= -D TEST_PROPERTIES= -D TEST_PREFIX= -D TEST_SUFFIX= -D TEST_LIST=ProcessorTests_TESTS -D TEST_REPORTER= -D TEST_OUTPUT_DIR= -D TEST_OUTPUT_PREFIX= -D TEST_OUTPUT_SUFFIX= -D TEST_DL_PATHS= -D CTEST_FILE=/Users/txc/Projects/CPP/xcode/ProcessorTests/ProcessorTests_tests-b12d07c.cmake -P /usr/local/lib/cmake/Catch2/CatchAddTests.cmake
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+		F722ACDE8D495B666C3A5122 /* Generate CMakeFiles/ZERO_CHECK */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ZERO_CHECK";
+			outputPaths = (
+/Users/txc/Projects/CPP/xcode/CMakeFiles/ZERO_CHECK			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/txc/Projects/CPP/xcode
+  make -f /Users/txc/Projects/CPP/xcode/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/txc/Projects/CPP/xcode
+  make -f /Users/txc/Projects/CPP/xcode/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/txc/Projects/CPP/xcode
+  make -f /Users/txc/Projects/CPP/xcode/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/txc/Projects/CPP/xcode
+  make -f /Users/txc/Projects/CPP/xcode/CMakeScripts/ReRunCMake.make
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+		FB7CDF4815227BF6C92E6D3A /* Generate ProcessorTests/CMakeFiles/Experimental */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate ProcessorTests/CMakeFiles/Experimental";
+			outputPaths = (
+/Users/txc/Projects/CPP/xcode/ProcessorTests/CMakeFiles/Experimental			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Experimental
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Experimental
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Experimental
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/txc/Projects/CPP/xcode/ProcessorTests
+  /Applications/CMake.app/Contents/bin/ctest -C $CONFIGURATION$EFFECTIVE_PLATFORM_NAME -D Experimental
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0A8067FE761C407085906C90 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BCC51B0A6160403F9F75A17D /* /Users/txc/Projects/CPP/Processor/Bus.cpp */,
+				2B10F1228E4A414F84B52BC5 /* /Users/txc/Projects/CPP/Processor/Executioner.cpp */,
+				EF5813CEBF4244A7BD993CA5 /* /Users/txc/Projects/CPP/Processor/Processor.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		12522274D3A54CECA023C17B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ED6375DE2C1C4B2F9C1BDCC5 /* /Users/txc/Projects/CPP/ProcessorTests/FunctionalProcessorTests.cpp */,
+				4B9268415350464D8A112C38 /* /Users/txc/Projects/CPP/ProcessorTests/MainTest.cpp */,
+				37738720E1C34566869BDD1F /* /Users/txc/Projects/CPP/ProcessorTests/ProcessorTests.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		24B589F2F89D408FB8779833 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				15C16F62A59E48ECBD4C07CD /* /Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo/ImGuiDemo.mm */,
+				7D566494AE604790AF8A2853 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */,
+				86D11A3985D346C8ADE439F1 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_metal.mm */,
+				5665417F408442AA9BCADF70 /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */,
+				EDDF8A54A6F4436F98581B4D /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */,
+				140412692EF94AFE9009E7C3 /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */,
+				6C65DE4376244EE3B2FAA4D1 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */,
+				456A8E1D0D044F69A64C525D /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */,
+				6C89A7C96C7D4273A667925E /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E2C900590CB42E2848480BC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				238237224CA349D38ED635F0 /* /Users/txc/Projects/CPP/UserInterfaces/Demo/Demo.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CAB9BE4208334CBCA5FCE507 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				634A45DCBEB74C51959C8915 /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Main.cpp */,
+				B9E0A5A89FB14C91B0B3327A /* /Users/txc/Projects/CPP/UserInterfaces/Simulator/Simulator.cpp */,
+				30DB75C134A74FD494062955 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_glfw.cpp */,
+				844D4FC9261645649B754085 /* /Users/txc/Projects/CPP/includes/imgui/backends/imgui_impl_opengl3.cpp */,
+				17ACCFD9717B430FAE5B7396 /* /Users/txc/Projects/CPP/includes/imgui/imgui.cpp */,
+				97BBED984E274C9E89160FF5 /* /Users/txc/Projects/CPP/includes/imgui/imgui_demo.cpp */,
+				31DB48AFA7FA455EB868542C /* /Users/txc/Projects/CPP/includes/imgui/imgui_draw.cpp */,
+				F073B3D212F3490480452321 /* /Users/txc/Projects/CPP/includes/imgui/imgui_tables.cpp */,
+				D77CD2A2C68548BBA025460B /* /Users/txc/Projects/CPP/includes/imgui/imgui_widgets.cpp */,
+				0EDDEA0E76F24ACAAA973409 /* /Users/txc/Projects/CPP/includes/imgui/misc/freetype/imgui_freetype.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		03ECB35ABCC54D2999D4E07B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A79585F0E9EA4BB29064831B /* ZERO_CHECK */;
+			targetProxy = F4DA49003D5743E9AA3CE3DD /* PBXContainerItemProxy */;
+		};
+		1428340F48094C85ABBEBEAB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E8AB458061304D6B8EC82968 /* Processor */;
+			targetProxy = 0928ECCEFCA448F3A835A4E5 /* PBXContainerItemProxy */;
+		};
+		37553BBEF833411CA3EF82BD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A3DCA7F5665D456EA5CCF03D /* ProcessorTests */;
+			targetProxy = B5BFE8FF533149A0B8E29E51 /* PBXContainerItemProxy */;
+		};
+		42383419DC484C35BCD9153E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5A65914968784E69864DA5D6 /* ImGuiDemo */;
+			targetProxy = 1D2F221CF4ED40BF808C52C8 /* PBXContainerItemProxy */;
+		};
+		6C8C49B8387C44698119A55E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E8AB458061304D6B8EC82968 /* Processor */;
+			targetProxy = 006EA8A6D4F94BCF83EFCC6D /* PBXContainerItemProxy */;
+		};
+		8C8B2B7F143E4B9390E0339F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D9891E41E78D4129B63CFFAC /* Simulator */;
+			targetProxy = BB4D150F19E343D5BAC521D3 /* PBXContainerItemProxy */;
+		};
+		BE739D0DC8084B74B2E26019 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8B848E83F1824E9EB040E233 /* Demo */;
+			targetProxy = A1330DE63E7C477B8404C497 /* PBXContainerItemProxy */;
+		};
+		D8C67F2BF8204413BF01A8D8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E8AB458061304D6B8EC82968 /* Processor */;
+			targetProxy = 389B9173CA164062B9EF82C1 /* PBXContainerItemProxy */;
+		};
+		EC28F7ED0D6B490A96E341AE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E8AB458061304D6B8EC82968 /* Processor */;
+			targetProxy = D505DA7B2FAA4479BE80BFBA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0135DC141E194D609F22DDF1 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/RelWithDebInfo;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1'","'IMGUI_DISABLE_OBSOLETE_KEYIO=1'","'IMGUI_ENABLE_FREETYPE=1'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo,/Users/txc/Projects/CPP/includes/imgui,/Library/Frameworks/Mono.framework/Headers,/usr/local/include/freetype2,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/CMakeFiles/ImGuiDemo.dir/Info.plist;
+				INSTALL_PATH = "";
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-I/usr/local/Cellar/glfw/3.3.8/include' -fobjc-arc '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names","-L/usr/local/Cellar/glfw/3.3.8/lib","-lglfw",/usr/local/lib/libfreetype.dylib,"-framework Cocoa","-framework Metal","-framework QuartzCore","-lobjc","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ImGuiDemo;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/includes/imgui/backends,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/ImGuiDemo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		033F0EBB34CE42D4AD9AD231 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = NightlyMemoryCheck;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		05F1BE2F5868422DB7BEBFFB /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Continuous;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		0C7768C4CAF8443C95A0B292 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk;
+				SYMROOT = /Users/txc/Projects/CPP/xcode/build;
+			};
+			name = Debug;
+		};
+		0D2800FB2B7C4C8AA087267E /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Nightly;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		0E28984AFF0442868DF06EBE /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = NightlyMemoryCheck;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		109CFB3CA6784B3DA5FAC4A8 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk;
+				SYMROOT = /Users/txc/Projects/CPP/xcode/build;
+			};
+			name = RelWithDebInfo;
+		};
+		12D014AA32F345FCB3728D16 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Experimental;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		1DD5EF9BC1264712811776C7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/Release;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1'","'IMGUI_DISABLE_OBSOLETE_KEYIO=1'","'IMGUI_ENABLE_FREETYPE=1'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo,/Users/txc/Projects/CPP/includes/imgui,/Library/Frameworks/Mono.framework/Headers,/usr/local/include/freetype2,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/CMakeFiles/ImGuiDemo.dir/Info.plist;
+				INSTALL_PATH = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-I/usr/local/Cellar/glfw/3.3.8/include' -fobjc-arc '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names","-L/usr/local/Cellar/glfw/3.3.8/lib","-lglfw",/usr/local/lib/libfreetype.dylib,"-framework Cocoa","-framework Metal","-framework QuartzCore","-lobjc","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ImGuiDemo;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/includes/imgui/backends,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/ImGuiDemo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		2195638168594BBE91CBCE21 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/Processor/Debug;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++20' ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Processor;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Processor.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		25B79AB7F6F748EBBC0E5AA7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Continuous;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		278D2FCC388A4953B56503A4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/Debug;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/Demo,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/CMakeFiles/Demo.dir/Info.plist;
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/Debug/libProcessor.a,/usr/local/lib/libfmt.9.1.0.dylib,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Demo;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Demo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		3FF043DA33024FCBAC9FD349 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/ProcessorTests/RelWithDebInfo;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'TESTDIR=/Users/txc/Projects/CPP/ProcessorTests/FunctionalTests'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/ProcessorTests,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/RelWithDebInfo/libProcessor.a,/usr/local/lib/libCatch2Main.a,/usr/local/lib/libfmt.9.1.0.dylib,/usr/local/lib/libCatch2.a,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ProcessorTests;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/ProcessorTests.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		423A2674C8884394AA4E6CDD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/ProcessorTests/Release;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'TESTDIR=/Users/txc/Projects/CPP/ProcessorTests/FunctionalTests'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/ProcessorTests,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/Release/libProcessor.a,/usr/local/lib/libCatch2Main.a,/usr/local/lib/libfmt.9.1.0.dylib,/usr/local/lib/libCatch2.a,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ProcessorTests;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/ProcessorTests.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		537DEED885D44176B9FA5857 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Experimental;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		6802E31801EF4ECCA93B3AA6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Nightly;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		6BE1866B119E474FBA62F3E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = NightlyMemoryCheck;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		6E7713485DDD4B22B9E84387 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		7E9D25454D294ACC8AC68560 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = NightlyMemoryCheck;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		87212F9D3A81421B9DC54F91 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/MinSizeRel;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/Demo,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/CMakeFiles/Demo.dir/Info.plist;
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/MinSizeRel/libProcessor.a,/usr/local/lib/libfmt.9.1.0.dylib,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Demo;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Demo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		8B3BAB97D3FF4E20A4670DD8 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		8BB0E2925557407996041186 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/ProcessorTests/MinSizeRel;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'TESTDIR=/Users/txc/Projects/CPP/ProcessorTests/FunctionalTests'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/ProcessorTests,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/MinSizeRel/libProcessor.a,/usr/local/lib/libCatch2Main.a,/usr/local/lib/libfmt.9.1.0.dylib,/usr/local/lib/libCatch2.a,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ProcessorTests;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/ProcessorTests.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		9036926BEE764D47877E89B6 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Nightly;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		96901777D37E45E59E081A41 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		9C080EB883A34E5D879D13E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk;
+				SYMROOT = /Users/txc/Projects/CPP/xcode/build;
+			};
+			name = Release;
+		};
+		9C4697A00B9847DA8059117F /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Continuous;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		A2F6E2250DFF446A996E4B89 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Continuous;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		A623EB89BF9A45B292ECB0DC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/Release;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/Demo,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/CMakeFiles/Demo.dir/Info.plist;
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/Release/libProcessor.a,/usr/local/lib/libfmt.9.1.0.dylib,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Demo;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Demo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		A9AAB8F1557B4B6EB1A7E946 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/Processor/Release;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++20' ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Processor;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Processor.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		B41154792419446BBD5695CD /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/RelWithDebInfo;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/Demo,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/Demo/CMakeFiles/Demo.dir/Info.plist;
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/RelWithDebInfo/libProcessor.a,/usr/local/lib/libfmt.9.1.0.dylib,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Demo;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Demo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		B859EA8D690F456EB549F0DB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/Debug;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1'","'IMGUI_DISABLE_OBSOLETE_KEYIO=1'","'IMGUI_ENABLE_FREETYPE=1'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo,/Users/txc/Projects/CPP/includes/imgui,/Library/Frameworks/Mono.framework/Headers,/usr/local/include/freetype2,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/CMakeFiles/ImGuiDemo.dir/Info.plist;
+				INSTALL_PATH = "";
+				OTHER_CPLUSPLUSFLAGS = "   '-I/usr/local/Cellar/glfw/3.3.8/include' -fobjc-arc '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names","-L/usr/local/Cellar/glfw/3.3.8/lib","-lglfw",/usr/local/lib/libfreetype.dylib,"-framework Cocoa","-framework Metal","-framework QuartzCore","-lobjc","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ImGuiDemo;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/includes/imgui/backends,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/ImGuiDemo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		BB077D020E024AB297A3157E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/ProcessorTests/Debug;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'TESTDIR=/Users/txc/Projects/CPP/ProcessorTests/FunctionalTests'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/ProcessorTests,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "   '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/Debug/libProcessor.a,/usr/local/lib/libCatch2Main.a,/usr/local/lib/libfmt.9.1.0.dylib,/usr/local/lib/libCatch2.a,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ProcessorTests;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/ProcessorTests.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		BF0C81AE0E2844AD8CB54449 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/MinSizeRel;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1'","'IMGUI_DISABLE_OBSOLETE_KEYIO=1'","'IMGUI_ENABLE_FREETYPE=1'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/Simulator,/Users/txc/Projects/CPP/includes/imgui,/Library/Frameworks/Mono.framework/Headers,/usr/local/include/freetype2,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/CMakeFiles/Simulator.dir/Info.plist;
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-I/usr/local/Cellar/glfw/3.3.8/include' '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/MinSizeRel/libProcessor.a,"-L/usr/local/Cellar/glfw/3.3.8/lib","-lglfw",/usr/local/lib/libfreetype.dylib,/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/OpenGL.tbd,/usr/local/lib/libfmt.9.1.0.dylib,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Simulator;
+				SECTORDER_FLAGS = "";
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks,"$(inherited)");
+				SYSTEM_HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/includes/imgui/backends,/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Simulator.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		CD8F29791F084EEBAC1FDAB8 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/Processor/RelWithDebInfo;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-std=gnu++20' ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Processor;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Processor.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		D07B69E466AD4CBBB82334F6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		D172B2B202B24C0BAE33EBEF /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/RelWithDebInfo;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1'","'IMGUI_DISABLE_OBSOLETE_KEYIO=1'","'IMGUI_ENABLE_FREETYPE=1'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/Simulator,/Users/txc/Projects/CPP/includes/imgui,/Library/Frameworks/Mono.framework/Headers,/usr/local/include/freetype2,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/CMakeFiles/Simulator.dir/Info.plist;
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "       -DNDEBUG '-I/usr/local/Cellar/glfw/3.3.8/include' '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/RelWithDebInfo/libProcessor.a,"-L/usr/local/Cellar/glfw/3.3.8/lib","-lglfw",/usr/local/lib/libfreetype.dylib,/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/OpenGL.tbd,/usr/local/lib/libfmt.9.1.0.dylib,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Simulator;
+				SECTORDER_FLAGS = "";
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks,"$(inherited)");
+				SYSTEM_HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/includes/imgui/backends,/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Simulator.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		D3DDCFD308CA427C87EDB2D7 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk;
+				SYMROOT = /Users/txc/Projects/CPP/xcode/build;
+			};
+			name = MinSizeRel;
+		};
+		D47518114DFE4DE882AE04EA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/Debug;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1'","'IMGUI_DISABLE_OBSOLETE_KEYIO=1'","'IMGUI_ENABLE_FREETYPE=1'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/Simulator,/Users/txc/Projects/CPP/includes/imgui,/Library/Frameworks/Mono.framework/Headers,/usr/local/include/freetype2,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/CMakeFiles/Simulator.dir/Info.plist;
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "   '-I/usr/local/Cellar/glfw/3.3.8/include' '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/Debug/libProcessor.a,"-L/usr/local/Cellar/glfw/3.3.8/lib","-lglfw",/usr/local/lib/libfreetype.dylib,/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/OpenGL.tbd,/usr/local/lib/libfmt.9.1.0.dylib,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Simulator;
+				SECTORDER_FLAGS = "";
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks,"$(inherited)");
+				SYSTEM_HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/includes/imgui/backends,/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Simulator.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		D767461733A34FD3B3297EE9 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		D8D59B60E8F8461CB7032D5A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/Release;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1'","'IMGUI_DISABLE_OBSOLETE_KEYIO=1'","'IMGUI_ENABLE_FREETYPE=1'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/Simulator,/Users/txc/Projects/CPP/includes/imgui,/Library/Frameworks/Mono.framework/Headers,/usr/local/include/freetype2,/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/Simulator/CMakeFiles/Simulator.dir/Info.plist;
+				INSTALL_PATH = "";
+				LD_RUNPATH_SEARCH_PATHS = (/usr/local/lib,"$(inherited)");
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-I/usr/local/Cellar/glfw/3.3.8/include' '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names",/Users/txc/Projects/CPP/xcode/Processor/Release/libProcessor.a,"-L/usr/local/Cellar/glfw/3.3.8/lib","-lglfw",/usr/local/lib/libfreetype.dylib,/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/OpenGL.tbd,/usr/local/lib/libfmt.9.1.0.dylib,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Simulator;
+				SECTORDER_FLAGS = "";
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks,"$(inherited)");
+				SYSTEM_HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/includes/imgui/backends,/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Simulator.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		DC1478CE6A014C33B7D8AD8A /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Experimental;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		DCACEEFDB0334E2789DFEEC1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Nightly;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		DE2D32B735C54ADCB632E778 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		E00D61262B364DE693B8772F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (PROJECT_LINK_FLAGS,"$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Experimental;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		E27B4D83882B4F9587761002 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/MinSizeRel;
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1'","'IMGUI_DISABLE_OBSOLETE_KEYIO=1'","'IMGUI_ENABLE_FREETYPE=1'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/UserInterfaces/ImGuiDemo,/Users/txc/Projects/CPP/includes/imgui,/Library/Frameworks/Mono.framework/Headers,/usr/local/include/freetype2,"$(inherited)");
+				INFOPLIST_FILE = /Users/txc/Projects/CPP/xcode/UserInterfaces/ImGuiDemo/CMakeFiles/ImGuiDemo.dir/Info.plist;
+				INSTALL_PATH = "";
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-I/usr/local/Cellar/glfw/3.3.8/include' -fobjc-arc '-std=gnu++20' ";
+				OTHER_LDFLAGS = (" -Wl,-search_paths_first -Wl,-headerpad_max_install_names","-L/usr/local/Cellar/glfw/3.3.8/lib","-lglfw",/usr/local/lib/libfreetype.dylib,"-framework Cocoa","-framework Metal","-framework QuartzCore","-lobjc","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ImGuiDemo;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/includes/imgui/backends,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/ImGuiDemo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		E28FA1078A0A4954A6C85E3F /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		F44A7D07846546638373428F /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/txc/Projects/CPP/xcode/Processor/MinSizeRel;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","'DEBUG=ON'","'ILLEGAL=ON'","'LOGMODE=ON'","'EMULATE65C02=ON'","'FMT_HEADER_ONLY=1'",SPDLOG_FMT_EXTERNAL,FMT_SHARED,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/txc/Projects/CPP/Processor,"$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				OTHER_CPLUSPLUSFLAGS = "    -DNDEBUG '-std=gnu++20' ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = Processor;
+				SECTORDER_FLAGS = "";
+				SYSTEM_HEADER_SEARCH_PATHS = (/usr/local/include,"$(inherited)");
+				TARGET_TEMP_DIR = "/Users/txc/Projects/CPP/xcode/build/Processor.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		F5193808C41D4E96977375EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1266B62F03BF4ED0AD1DFFBD /* Build configuration list for PBXAggregateTarget "Continuous" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				25B79AB7F6F748EBBC0E5AA7 /* Debug */,
+				A2F6E2250DFF446A996E4B89 /* Release */,
+				9C4697A00B9847DA8059117F /* MinSizeRel */,
+				05F1BE2F5868422DB7BEBFFB /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		1891BD170A8A4BB9AF00A7A1 /* Build configuration list for PBXNativeTarget "Processor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2195638168594BBE91CBCE21 /* Debug */,
+				A9AAB8F1557B4B6EB1A7E946 /* Release */,
+				F44A7D07846546638373428F /* MinSizeRel */,
+				CD8F29791F084EEBAC1FDAB8 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		1CEF34336AB94256850C5D7B /* Build configuration list for PBXNativeTarget "Simulator" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D47518114DFE4DE882AE04EA /* Debug */,
+				D8D59B60E8F8461CB7032D5A /* Release */,
+				BF0C81AE0E2844AD8CB54449 /* MinSizeRel */,
+				D172B2B202B24C0BAE33EBEF /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		259A7A15B5904832BCAF5BAE /* Build configuration list for PBXAggregateTarget "Nightly" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6802E31801EF4ECCA93B3AA6 /* Debug */,
+				DCACEEFDB0334E2789DFEEC1 /* Release */,
+				0D2800FB2B7C4C8AA087267E /* MinSizeRel */,
+				9036926BEE764D47877E89B6 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		29368C70AE644516B71239D4 /* Build configuration list for PBXProject "6502_Emulator" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C7768C4CAF8443C95A0B292 /* Debug */,
+				9C080EB883A34E5D879D13E3 /* Release */,
+				D3DDCFD308CA427C87EDB2D7 /* MinSizeRel */,
+				109CFB3CA6784B3DA5FAC4A8 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4BD9F8322704415F9C1242F1 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DE2D32B735C54ADCB632E778 /* Debug */,
+				D07B69E466AD4CBBB82334F6 /* Release */,
+				8B3BAB97D3FF4E20A4670DD8 /* MinSizeRel */,
+				E28FA1078A0A4954A6C85E3F /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		50A685C345344FA7994904C7 /* Build configuration list for PBXAggregateTarget "NightlyMemoryCheck" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				033F0EBB34CE42D4AD9AD231 /* Debug */,
+				6BE1866B119E474FBA62F3E3 /* Release */,
+				7E9D25454D294ACC8AC68560 /* MinSizeRel */,
+				0E28984AFF0442868DF06EBE /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		86A605ACA6EE42DF8A47EF21 /* Build configuration list for PBXNativeTarget "ProcessorTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB077D020E024AB297A3157E /* Debug */,
+				423A2674C8884394AA4E6CDD /* Release */,
+				8BB0E2925557407996041186 /* MinSizeRel */,
+				3FF043DA33024FCBAC9FD349 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8C7C51150BDE49E9A3E7E317 /* Build configuration list for PBXNativeTarget "Demo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				278D2FCC388A4953B56503A4 /* Debug */,
+				A623EB89BF9A45B292ECB0DC /* Release */,
+				87212F9D3A81421B9DC54F91 /* MinSizeRel */,
+				B41154792419446BBD5695CD /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BA20505BF51D47FA94DC5537 /* Build configuration list for PBXNativeTarget "ImGuiDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B859EA8D690F456EB549F0DB /* Debug */,
+				1DD5EF9BC1264712811776C7 /* Release */,
+				E27B4D83882B4F9587761002 /* MinSizeRel */,
+				0135DC141E194D609F22DDF1 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E827F31ABE9D4FE2A3291ACE /* Build configuration list for PBXAggregateTarget "Experimental" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				12D014AA32F345FCB3728D16 /* Debug */,
+				E00D61262B364DE693B8772F /* Release */,
+				537DEED885D44176B9FA5857 /* MinSizeRel */,
+				DC1478CE6A014C33B7D8AD8A /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F7E54EF83252475C9998B741 /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F5193808C41D4E96977375EC /* Debug */,
+				6E7713485DDD4B22B9E84387 /* Release */,
+				D767461733A34FD3B3297EE9 /* MinSizeRel */,
+				96901777D37E45E59E081A41 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1E07580073374DA2B08BB597 /* Project object */;
+}

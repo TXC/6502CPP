@@ -9,9 +9,11 @@
 int main()
 {
   CPU::Bus bus;
-  
+  std::cout << "Hej" << std::endl;
+
   bus.cpu->reset();
 
+  std::cout << "Hej" << std::endl;
   // Load Program (assembled at https://www.masswerk.at/6502/assembler.html)
   /*
     *=$8000

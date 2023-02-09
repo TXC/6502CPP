@@ -1,10 +1,9 @@
 #pragma once
 
-//#include "Executioner.hpp"
-
 #include <memory>
 #include <string>
 #include <map>
+#include <utility>
 #include <iostream>
 #include <ostream>
 #include <vector>
@@ -26,7 +25,7 @@
 #include <sstream>
 #endif
 
-namespace CPU
+namespace Processor
 {
   class Executioner;
 

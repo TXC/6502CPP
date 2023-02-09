@@ -3,7 +3,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace CPU
+namespace Processor
 {
   class JammedCPU : public std::exception
   {

@@ -9,10 +9,6 @@
 #include <vector>
 #include <filesystem>
 
-
-#define _STRINGIZE(x) #x
-#define STRINGIZE(x) _STRINGIZE(x)
-
 namespace CPUTest
 {
   using namespace CPU;
@@ -24,7 +20,7 @@ namespace CPUTest
       std::fstream fp;
 
 #if defined TESTDIR
-      std::filesystem::path filepath = std::string(STRINGIZE(TESTDIR));
+      std::filesystem::path filepath = std::string(CPUSTRINGIZE(TESTDIR));
 #else
       std::filesystem::path filepath = std::filesystem::current_path();
 #endif
